@@ -11,7 +11,11 @@ There are 40 tables, of which :
 - 10 are completely empty
 
 ### Tables & Database schema
-There is an official [description of the SPIP database](https://www.spip.net/en_article4936.html) as well as a [documentation of its structure](https://www.spip.net/en_article4939.html).
+Elents to take into account :
+
+- SPIP [Markup language](https://www.spip.net/fr_article1578.html)
+- SPIP [Database structure](https://www.spip.net/fr_article713.html)
+- SPIP [HTML templates](https://www.spip.net/fr_article879.html)
 
 #### Main tables, with a lot of data
 These tables contains a lot of data. Each row will probably correspond to one Markdown file.
