@@ -3,6 +3,7 @@ Script(s) to export the SPIP MySQL database of the current website to plain text
 
 ## Notes on exporting the SPIP MySQL data to Markdown files
 There are 40 tables, of which :
+
 - 8 contain the major part of the data
 - 4 are relations between other tables
 - 5 contain as few data as global parameters
@@ -10,6 +11,7 @@ There are 40 tables, of which :
 - 10 are completely empty
 
 ### Tables & Database schema
+There is of official [description of the SPIP database](https://www.spip.net/en_article4936.html) as well as a [documentation of they structure](https://www.spip.net/en_article4939.html).
 
 #### Main tables, with a lot of data
 These tables contains a lot of data. Each row will probably correspond to one Markdown file.
