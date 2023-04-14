@@ -11,7 +11,7 @@ There are 40 tables, of which :
 - 10 are completely empty
 
 ### Tables & Database schema
-Elents to take into account :
+Elements to take into account :
 
 - SPIP [Markup language](https://www.spip.net/fr_article1578.html)
 - SPIP [Database structure](https://www.spip.net/fr_article713.html)
