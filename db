@@ -1,0 +1,2 @@
+#!/bin/sh
+mysql -u spip --password=password spip -e "$*"
