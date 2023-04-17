@@ -15,12 +15,17 @@ cursor = db.cursor()
 cursor.execute('SELECT * FROM spip_articles')
 
 # Loop through the results and format data into Markdown files
-for row in cursor.fetchall():
-    front_matter = {'title': row[1], 'date': row[2]} # Example front matter fields
-    markdown_content = f'---\n{yaml.dump(front_matter)}---\n{row[3]}' # Example Markdown content
-    file_path = f'{row[0]}.md' # Example file path
-    with open(file_path, 'w') as f:
-        f.write(markdown_content)
+# Columns:
+#   2: titre
+#   7: texte
+#   9: date
+# for row in cursor.fetchall():
+for row in cursor.fetchmany(5):
+    frontmatter = {'title': row[2], 'date': row[9]}
+    content = f'---\n{yaml.dump(frontmatter)}---\n{row[7]}'
+    path = f'markdown/{row[2]}.md'
+    with open(path, 'w') as f:
+        f.write(content)
 
 # Close the database connection
 db.close()
