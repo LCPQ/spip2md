@@ -1,5 +1,5 @@
 # SPIP Database to Markdown
-Script(s) to export the SPIP MySQL database of the current website to plain text Markdown files with YAML front-matter metadata.
+Python scripts to export the SPIP MySQL database of the current website to plain text Markdown files with YAML front-matter metadata.
 
 ## Notes on exporting the SPIP MySQL data to Markdown files
 There are 40 tables, of which :
