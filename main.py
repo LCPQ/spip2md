@@ -12,15 +12,15 @@ os.mkdir(outputDir)
 
 # Connect to the MySQL database
 db = pymysql.connect(
-    host='localhost',
-    db='spip',
-    user='spip',
-    password='password',
+    host="localhost",
+    db="spip",
+    user="spip",
+    password="password",
 )
 
 # Query the database to retrieve all data
 cursor = db.cursor()
-cursor.execute('SELECT * FROM spip_articles ORDER BY date DESC')
+cursor.execute("SELECT * FROM spip_articles ORDER BY date DESC")
 
 # Loop through the results and format data into Markdown files
 # Columns:
@@ -37,10 +37,10 @@ else:
     fetch = cursor.fetchmany(3 + 1)
 
 for row in fetch:
-    frontmatter = {'title': row[2], 'date': row[9]}
-    content = f'---\n{yaml.dump(frontmatter)}---\n{row[2]}\n\n{row[7]}'
-    path = f'{outputDir}/{row[2]}.md'
-    with open(path, 'w') as f:
+    frontmatter = {"title": row[2], "date": row[9]}
+    content = f"---\n{yaml.dump(frontmatter)}---\n{row[2]}\n\n{row[7]}"
+    path = f"{outputDir}/{row[2]}.md"
+    with open(path, "w") as f:
         f.write(content)
 
 # Close the database connection
