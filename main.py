@@ -1,6 +1,11 @@
-import pymysql
 import os
+import shutil
+import pymysql
 import yaml
+
+# Clean the output dir & create a new
+shutil.rmtree("output/", true)
+os.mkdir("output/", 777)
 
 # Connect to the MySQL database
 db = pymysql.connect(
