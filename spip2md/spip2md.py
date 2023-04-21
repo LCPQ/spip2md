@@ -37,17 +37,22 @@ if len(sys.argv) > 1:
         fetch = cursor.fetchall()
 else:
     fetch = cursor.fetchmany(3)
-    print("--- {} articles will be converted to Markdown files wihth YAML metadata ---\n".format(len(fetch)))
+
+print("--- Conversion of {} articles to Markdown files + YAML metadata ---\n"
+      .format(len(fetch)))
+
+if len(fetch) < 5:
     pprint(fetch)
 
 # Loop among every articles & export them in Markdown files
 for row in fetch:
     meta = metadata(row)
     body = content(row[7])
-    with open("{}/{}.{}".format(outputDir, meta.get_slug(), outputType), "w") as f:
-        f.write("{}\n{}\n{}".format(
-            meta.get_frontmatter(), meta.get_title(), body.get_markdown())
-                )
+    articleDir = "{}/{}".format(outputDir, meta.get_slug())
+    os.mkdir(articleDir)
+    with open("{}/index.md".format(articleDir), "w") as f:
+        f.write("{}\n{}\n{}"
+                .format(meta.get_frontmatter(), meta.get_title(), body.get_markdown()))
 
 # Close the database connection
 db.close()
