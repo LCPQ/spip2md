@@ -1,3 +1,4 @@
 pymysql
 peewee
 unicode-slugify
+pyyaml
