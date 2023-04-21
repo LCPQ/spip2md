@@ -1,13 +1,26 @@
 from peewee import *
 
-db = MySQLDatabase('spip', **{'charset': 'utf8', 'sql_mode': 'PIPES_AS_CONCAT', 'use_unicode': True, 'user': 'spip', 'password': 'password'})
+db = MySQLDatabase(
+    "spip",
+    **{
+        "charset": "utf8",
+        "sql_mode": "PIPES_AS_CONCAT",
+        "use_unicode": True,
+        "user": "spip",
+        "password": "password",
+    }
+)
+
 
 class UnknownField(object):
-    def __init__(self, *_, **__): pass
+    def __init__(self, *_, **__):
+        pass
+
 
 class BaseModel(Model):
     class Meta:
         database = db
+
 
 class SpipArticles(BaseModel):
     accepter_forum = CharField(constraints=[SQL("DEFAULT ''")])
@@ -41,10 +54,9 @@ class SpipArticles(BaseModel):
     visites = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
-        table_name = 'spip_articles'
-        indexes = (
-            (('statut', 'date'), False),
-        )
+        table_name = "spip_articles"
+        indexes = ((("statut", "date"), False),)
+
 
 class SpipAuteurs(BaseModel):
     alea_actuel = TextField()
@@ -52,7 +64,9 @@ class SpipAuteurs(BaseModel):
     bio = TextField()
     cookie_oubli = TextField()
     email = TextField()
-    en_ligne = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True)
+    en_ligne = DateTimeField(
+        constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True
+    )
     extra = TextField(null=True)
     htpass = TextField()
     id_auteur = BigAutoField()
@@ -64,7 +78,7 @@ class SpipAuteurs(BaseModel):
     messagerie = CharField()
     nom = TextField()
     nom_site = TextField()
-    pass_ = TextField(column_name='pass')
+    pass_ = TextField(column_name="pass")
     pgp = TextField()
     prefs = TextField()
     source = CharField(constraints=[SQL("DEFAULT 'spip'")])
@@ -73,7 +87,8 @@ class SpipAuteurs(BaseModel):
     webmestre = CharField(constraints=[SQL("DEFAULT 'non'")])
 
     class Meta:
-        table_name = 'spip_auteurs'
+        table_name = "spip_auteurs"
+
 
 class SpipAuteursLiens(BaseModel):
     id_auteur = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
@@ -82,11 +97,10 @@ class SpipAuteursLiens(BaseModel):
     vu = CharField(constraints=[SQL("DEFAULT 'non'")])
 
     class Meta:
-        table_name = 'spip_auteurs_liens'
-        indexes = (
-            (('id_auteur', 'id_objet', 'objet'), True),
-        )
-        primary_key = CompositeKey('id_auteur', 'id_objet', 'objet')
+        table_name = "spip_auteurs_liens"
+        indexes = ((("id_auteur", "id_objet", "objet"), True),)
+        primary_key = CompositeKey("id_auteur", "id_objet", "objet")
+
 
 class SpipBreves(BaseModel):
     date_heure = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
@@ -103,7 +117,8 @@ class SpipBreves(BaseModel):
     titre = TextField()
 
     class Meta:
-        table_name = 'spip_breves'
+        table_name = "spip_breves"
+
 
 class SpipDepots(BaseModel):
     descriptif = TextField()
@@ -122,18 +137,18 @@ class SpipDepots(BaseModel):
     xml_paquets = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
-        table_name = 'spip_depots'
+        table_name = "spip_depots"
+
 
 class SpipDepotsPlugins(BaseModel):
     id_depot = BigIntegerField()
     id_plugin = BigIntegerField()
 
     class Meta:
-        table_name = 'spip_depots_plugins'
-        indexes = (
-            (('id_depot', 'id_plugin'), True),
-        )
-        primary_key = CompositeKey('id_depot', 'id_plugin')
+        table_name = "spip_depots_plugins"
+        indexes = ((("id_depot", "id_plugin"), True),)
+        primary_key = CompositeKey("id_depot", "id_plugin")
+
 
 class SpipDocuments(BaseModel):
     brise = IntegerField(constraints=[SQL("DEFAULT 0")], null=True)
@@ -156,7 +171,8 @@ class SpipDocuments(BaseModel):
     titre = TextField()
 
     class Meta:
-        table_name = 'spip_documents'
+        table_name = "spip_documents"
+
 
 class SpipDocumentsLiens(BaseModel):
     id_document = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
@@ -165,18 +181,21 @@ class SpipDocumentsLiens(BaseModel):
     vu = CharField(constraints=[SQL("DEFAULT 'non'")])
 
     class Meta:
-        table_name = 'spip_documents_liens'
-        indexes = (
-            (('id_document', 'id_objet', 'objet'), True),
-        )
-        primary_key = CompositeKey('id_document', 'id_objet', 'objet')
+        table_name = "spip_documents_liens"
+        indexes = ((("id_document", "id_objet", "objet"), True),)
+        primary_key = CompositeKey("id_document", "id_objet", "objet")
+
 
 class SpipEvenements(BaseModel):
     adresse = TextField()
     attendee = CharField(constraints=[SQL("DEFAULT ''")])
     date_creation = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_debut = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True)
-    date_fin = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True)
+    date_debut = DateTimeField(
+        constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True
+    )
+    date_fin = DateTimeField(
+        constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True
+    )
     descriptif = TextField()
     horaire = CharField(constraints=[SQL("DEFAULT 'oui'")])
     id_article = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
@@ -192,7 +211,8 @@ class SpipEvenements(BaseModel):
     titre = TextField()
 
     class Meta:
-        table_name = 'spip_evenements'
+        table_name = "spip_evenements"
+
 
 class SpipEvenementsParticipants(BaseModel):
     date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
@@ -204,7 +224,8 @@ class SpipEvenementsParticipants(BaseModel):
     reponse = CharField(constraints=[SQL("DEFAULT '?'")])
 
     class Meta:
-        table_name = 'spip_evenements_participants'
+        table_name = "spip_evenements_participants"
+
 
 class SpipForum(BaseModel):
     auteur = TextField()
@@ -226,10 +247,9 @@ class SpipForum(BaseModel):
     url_site = TextField()
 
     class Meta:
-        table_name = 'spip_forum'
-        indexes = (
-            (('statut', 'id_parent', 'id_objet', 'objet', 'date_heure'), False),
-        )
+        table_name = "spip_forum"
+        indexes = ((("statut", "id_parent", "id_objet", "objet", "date_heure"), False),)
+
 
 class SpipGroupesMots(BaseModel):
     comite = CharField(constraints=[SQL("DEFAULT ''")])
@@ -245,7 +265,8 @@ class SpipGroupesMots(BaseModel):
     unseul = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
-        table_name = 'spip_groupes_mots'
+        table_name = "spip_groupes_mots"
+
 
 class SpipJobs(BaseModel):
     args = TextField()
@@ -259,7 +280,8 @@ class SpipJobs(BaseModel):
     status = IntegerField(constraints=[SQL("DEFAULT 1")], index=True)
 
     class Meta:
-        table_name = 'spip_jobs'
+        table_name = "spip_jobs"
+
 
 class SpipJobsLiens(BaseModel):
     id_job = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
@@ -267,11 +289,10 @@ class SpipJobsLiens(BaseModel):
     objet = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
-        table_name = 'spip_jobs_liens'
-        indexes = (
-            (('id_job', 'id_objet', 'objet'), True),
-        )
-        primary_key = CompositeKey('id_job', 'id_objet', 'objet')
+        table_name = "spip_jobs_liens"
+        indexes = ((("id_job", "id_objet", "objet"), True),)
+        primary_key = CompositeKey("id_job", "id_objet", "objet")
+
 
 class SpipMeslettres(BaseModel):
     date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
@@ -282,7 +303,8 @@ class SpipMeslettres(BaseModel):
     url_txt = CharField()
 
     class Meta:
-        table_name = 'spip_meslettres'
+        table_name = "spip_meslettres"
+
 
 class SpipMessages(BaseModel):
     date_fin = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
@@ -298,7 +320,8 @@ class SpipMessages(BaseModel):
     type = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
-        table_name = 'spip_messages'
+        table_name = "spip_messages"
+
 
 class SpipMeta(BaseModel):
     impt = CharField(constraints=[SQL("DEFAULT 'oui'")])
@@ -307,7 +330,8 @@ class SpipMeta(BaseModel):
     valeur = TextField(null=True)
 
     class Meta:
-        table_name = 'spip_meta'
+        table_name = "spip_meta"
+
 
 class SpipMots(BaseModel):
     descriptif = TextField()
@@ -320,7 +344,8 @@ class SpipMots(BaseModel):
     type = TextField()
 
     class Meta:
-        table_name = 'spip_mots'
+        table_name = "spip_mots"
+
 
 class SpipMotsLiens(BaseModel):
     id_mot = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
@@ -328,11 +353,10 @@ class SpipMotsLiens(BaseModel):
     objet = CharField(constraints=[SQL("DEFAULT ''")], index=True)
 
     class Meta:
-        table_name = 'spip_mots_liens'
-        indexes = (
-            (('id_mot', 'id_objet', 'objet'), True),
-        )
-        primary_key = CompositeKey('id_mot', 'id_objet', 'objet')
+        table_name = "spip_mots_liens"
+        indexes = ((("id_mot", "id_objet", "objet"), True),)
+        primary_key = CompositeKey("id_mot", "id_objet", "objet")
+
 
 class SpipOrthoCache(BaseModel):
     lang = CharField()
@@ -342,11 +366,10 @@ class SpipOrthoCache(BaseModel):
     suggest = TextField()
 
     class Meta:
-        table_name = 'spip_ortho_cache'
-        indexes = (
-            (('lang', 'mot'), True),
-        )
-        primary_key = CompositeKey('lang', 'mot')
+        table_name = "spip_ortho_cache"
+        indexes = ((("lang", "mot"), True),)
+        primary_key = CompositeKey("lang", "mot")
+
 
 class SpipOrthoDico(BaseModel):
     id_auteur = BigIntegerField()
@@ -355,11 +378,10 @@ class SpipOrthoDico(BaseModel):
     mot = CharField()
 
     class Meta:
-        table_name = 'spip_ortho_dico'
-        indexes = (
-            (('lang', 'mot'), True),
-        )
-        primary_key = CompositeKey('lang', 'mot')
+        table_name = "spip_ortho_dico"
+        indexes = ((("lang", "mot"), True),)
+        primary_key = CompositeKey("lang", "mot")
+
 
 class SpipPaquets(BaseModel):
     actif = CharField(constraints=[SQL("DEFAULT 'non'")])
@@ -401,7 +423,8 @@ class SpipPaquets(BaseModel):
     version_base = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
-        table_name = 'spip_paquets'
+        table_name = "spip_paquets"
+
 
 class SpipPetitions(BaseModel):
     email_unique = CharField(constraints=[SQL("DEFAULT ''")])
@@ -415,7 +438,8 @@ class SpipPetitions(BaseModel):
     texte = TextField()
 
     class Meta:
-        table_name = 'spip_petitions'
+        table_name = "spip_petitions"
+
 
 class SpipPlugins(BaseModel):
     branches_spip = CharField(constraints=[SQL("DEFAULT ''")])
@@ -431,7 +455,8 @@ class SpipPlugins(BaseModel):
     vmax = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
-        table_name = 'spip_plugins'
+        table_name = "spip_plugins"
+
 
 class SpipReferers(BaseModel):
     date = DateField()
@@ -443,7 +468,8 @@ class SpipReferers(BaseModel):
     visites_veille = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
-        table_name = 'spip_referers'
+        table_name = "spip_referers"
+
 
 class SpipReferersArticles(BaseModel):
     id_article = IntegerField()
@@ -453,11 +479,10 @@ class SpipReferersArticles(BaseModel):
     visites = IntegerField()
 
     class Meta:
-        table_name = 'spip_referers_articles'
-        indexes = (
-            (('id_article', 'referer_md5'), True),
-        )
-        primary_key = CompositeKey('id_article', 'referer_md5')
+        table_name = "spip_referers_articles"
+        indexes = ((("id_article", "referer_md5"), True),)
+        primary_key = CompositeKey("id_article", "referer_md5")
+
 
 class SpipResultats(BaseModel):
     id = IntegerField()
@@ -468,8 +493,9 @@ class SpipResultats(BaseModel):
     table_objet = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
-        table_name = 'spip_resultats'
+        table_name = "spip_resultats"
         primary_key = False
+
 
 class SpipRubriques(BaseModel):
     agenda = IntegerField(constraints=[SQL("DEFAULT 0")])
@@ -491,7 +517,8 @@ class SpipRubriques(BaseModel):
     titre = TextField()
 
     class Meta:
-        table_name = 'spip_rubriques'
+        table_name = "spip_rubriques"
+
 
 class SpipSignatures(BaseModel):
     ad_email = TextField()
@@ -506,7 +533,8 @@ class SpipSignatures(BaseModel):
     url_site = TextField()
 
     class Meta:
-        table_name = 'spip_signatures'
+        table_name = "spip_signatures"
+
 
 class SpipSyndic(BaseModel):
     date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
@@ -529,10 +557,9 @@ class SpipSyndic(BaseModel):
     url_syndic = TextField()
 
     class Meta:
-        table_name = 'spip_syndic'
-        indexes = (
-            (('statut', 'date_syndic'), False),
-        )
+        table_name = "spip_syndic"
+        indexes = ((("statut", "date_syndic"), False),)
+
 
 class SpipSyndicArticles(BaseModel):
     date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
@@ -550,14 +577,16 @@ class SpipSyndicArticles(BaseModel):
     url_source = TextField()
 
     class Meta:
-        table_name = 'spip_syndic_articles'
+        table_name = "spip_syndic_articles"
+
 
 class SpipTest(BaseModel):
     a = IntegerField(null=True)
 
     class Meta:
-        table_name = 'spip_test'
+        table_name = "spip_test"
         primary_key = False
+
 
 class SpipTypesDocuments(BaseModel):
     descriptif = TextField()
@@ -570,7 +599,8 @@ class SpipTypesDocuments(BaseModel):
     upload = CharField(constraints=[SQL("DEFAULT 'oui'")])
 
     class Meta:
-        table_name = 'spip_types_documents'
+        table_name = "spip_types_documents"
+
 
 class SpipUrls(BaseModel):
     date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
@@ -582,12 +612,13 @@ class SpipUrls(BaseModel):
     url = CharField()
 
     class Meta:
-        table_name = 'spip_urls'
+        table_name = "spip_urls"
         indexes = (
-            (('id_parent', 'url'), True),
-            (('type', 'id_objet'), False),
+            (("id_parent", "url"), True),
+            (("type", "id_objet"), False),
         )
-        primary_key = CompositeKey('id_parent', 'url')
+        primary_key = CompositeKey("id_parent", "url")
+
 
 class SpipVersions(BaseModel):
     champs = TextField()
@@ -600,11 +631,10 @@ class SpipVersions(BaseModel):
     titre_version = TextField()
 
     class Meta:
-        table_name = 'spip_versions'
-        indexes = (
-            (('id_version', 'id_objet', 'objet'), True),
-        )
-        primary_key = CompositeKey('id_objet', 'id_version', 'objet')
+        table_name = "spip_versions"
+        indexes = ((("id_version", "id_objet", "objet"), True),)
+        primary_key = CompositeKey("id_objet", "id_version", "objet")
+
 
 class SpipVersionsFragments(BaseModel):
     compress = IntegerField()
@@ -616,11 +646,10 @@ class SpipVersionsFragments(BaseModel):
     version_min = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
-        table_name = 'spip_versions_fragments'
-        indexes = (
-            (('id_objet', 'objet', 'id_fragment', 'version_min'), True),
-        )
-        primary_key = CompositeKey('id_fragment', 'id_objet', 'objet', 'version_min')
+        table_name = "spip_versions_fragments"
+        indexes = ((("id_objet", "objet", "id_fragment", "version_min"), True),)
+        primary_key = CompositeKey("id_fragment", "id_objet", "objet", "version_min")
+
 
 class SpipVisites(BaseModel):
     date = DateField(primary_key=True)
@@ -628,7 +657,8 @@ class SpipVisites(BaseModel):
     visites = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
-        table_name = 'spip_visites'
+        table_name = "spip_visites"
+
 
 class SpipVisitesArticles(BaseModel):
     date = DateField()
@@ -637,11 +667,10 @@ class SpipVisitesArticles(BaseModel):
     visites = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
-        table_name = 'spip_visites_articles'
-        indexes = (
-            (('date', 'id_article'), True),
-        )
-        primary_key = CompositeKey('date', 'id_article')
+        table_name = "spip_visites_articles"
+        indexes = ((("date", "id_article"), True),)
+        primary_key = CompositeKey("date", "id_article")
+
 
 class SpipZones(BaseModel):
     descriptif = TextField()
@@ -652,7 +681,8 @@ class SpipZones(BaseModel):
     titre = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
-        table_name = 'spip_zones'
+        table_name = "spip_zones"
+
 
 class SpipZonesLiens(BaseModel):
     id_objet = BigIntegerField(constraints=[SQL("DEFAULT 0")])
@@ -660,9 +690,6 @@ class SpipZonesLiens(BaseModel):
     objet = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
-        table_name = 'spip_zones_liens'
-        indexes = (
-            (('id_zone', 'id_objet', 'objet'), True),
-        )
-        primary_key = CompositeKey('id_objet', 'id_zone', 'objet')
-
+        table_name = "spip_zones_liens"
+        indexes = ((("id_zone", "id_objet", "objet"), True),)
+        primary_key = CompositeKey("id_objet", "id_zone", "objet")

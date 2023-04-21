@@ -1,4 +1,1 @@
-CONFIG = {
-    "outputDir": "output",
-    "nbToExport": 3
-}
+CONFIG = {"outputDir": "output", "nbToExport": 3}

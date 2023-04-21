@@ -4,6 +4,7 @@ import shutil
 import sys
 from pprint import pprint
 from datetime import *
+
 # Modules
 from config import CONFIG
 from SpipDatabase import *
@@ -31,8 +32,11 @@ if len(sys.argv) > 1:
 else:
     nbToExport = CONFIG["nbToExport"]
 
-print("--- Conversion of {} articles to Markdown files + YAML metadata ---\n"
-      .format(nbToExport))
+print(
+    "--- Conversion of {} articles to Markdown files + YAML metadata ---\n".format(
+        nbToExport
+    )
+)
 
 # Loop among every articles & export them in Markdown files
 for article in articles:
@@ -41,11 +45,15 @@ for article in articles:
     articleDir = "{}/{}".format(CONFIG["outputDir"], meta.get_slug())
     os.mkdir(articleDir)
     with open("{}/index.md".format(articleDir), "w") as f:
-        f.write("{}\n{}\n{}"
-                .format(meta.get_frontmatter(), meta.get_title(), body.get_markdown()))
+        f.write(
+            "{}\n{}\n{}".format(
+                meta.get_frontmatter(), meta.get_title(), body.get_markdown()
+            )
+        )
     # End export if no more to export
     nbToExport -= 1
-    if nbToExport <= 0: break
+    if nbToExport <= 0:
+        break
 
 # Close the database connection
 db.close()
