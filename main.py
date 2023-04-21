@@ -43,7 +43,7 @@ else:
 
 for row in fetch:
     frontmatter = {"title": row[2], "date": row[9]}
-    content = "---\n{}---\n{}\n\n{}".format(yaml.dump(frontmatter), row[2], row[7])
+    content = "---\n{}---\n# {}\n\n{}".format(yaml.dump(frontmatter), row[2], row[7])
     path = "{}/{}.md".format(outputDir, slugify("{}-{}".format(row[0], row[2])))
     with open(path, "w") as f:
         f.write(content)
