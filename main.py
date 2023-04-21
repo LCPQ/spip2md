@@ -5,10 +5,14 @@ import sys
 from pprint import pprint
 # from peewee import *
 import pymysql
-from slugify import slugify
-import yaml
+# Local modules
+from metadata import metadata
+from content import content
 
+# Constants definition
 outputDir = "output"
+outputType = "md"
+
 # Clean the output dir & create a new
 shutil.rmtree(outputDir, True)
 os.mkdir(outputDir)
@@ -25,12 +29,7 @@ db = pymysql.connect(
 cursor = db.cursor()
 cursor.execute("SELECT * FROM spip_articles ORDER BY date DESC")
 
-# Loop through the results and format data into Markdown files
-# Columns:
-#   2: titre
-#   7: texte
-#   9: date
-
+# Choose how many articles export based on first param
 if len(sys.argv) > 1:
     if int(sys.argv[1]) > 0:
         fetch = cursor.fetchmany(int(sys.argv[1]))
@@ -41,12 +40,14 @@ else:
     print("--- {} articles will be converted to Markdown files wihth YAML metadata ---\n".format(len(fetch)))
     pprint(fetch)
 
+# Loop among every articles & export them in Markdown files
 for row in fetch:
-    frontmatter = {"title": row[2], "date": row[9]}
-    content = "---\n{}---\n# {}\n\n{}".format(yaml.dump(frontmatter), row[2], row[7])
-    path = "{}/{}.md".format(outputDir, slugify("{}-{}".format(row[0], row[2])))
-    with open(path, "w") as f:
-        f.write(content)
+    meta = metadata(row)
+    body = content(row[7])
+    with open("{}/{}.{}".format(outputDir, meta.get_slug(), outputType), "w") as f:
+        f.write("{}\n{}\n{}".format(
+            meta.get_frontmatter(), meta.get_title(), body.get_markdown())
+                )
 
 # Close the database connection
 db.close()
