@@ -1,3 +1,6 @@
+# Anything that contains ignore
+*ignore*
+
 # ---> Python
 # Byte-compiled / optimized / DLL files
 __pycache__/
