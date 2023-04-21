@@ -2,15 +2,10 @@ import yaml
 from slugify import slugify
 
 class metadata:
-    # row is an array containing at positions :
-    # 0: id
-    # 2: title (titre)
-    # 7: body (texte)
-    # 9: date
-    def __init__(self, row):
-        self.id = row[0]
-        self.title = row[2]
-        self.date = row[9]
+    def __init__(self, article):
+        self.id = article.id_article
+        self.title = article.titre
+        self.date = article.date
     def get_title(self):
         return "# {}\n".format(self.title)
     def get_slug(self):

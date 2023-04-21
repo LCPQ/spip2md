@@ -3,56 +3,49 @@ import os
 import shutil
 import sys
 from pprint import pprint
-# from peewee import *
-import pymysql
-# Local modules
+from datetime import *
+# Modules
+from config import CONFIG
+from SpipDatabase import *
 from metadata import metadata
 from content import content
 
-# Constants definition
-outputDir = "output"
-outputType = "md"
-
 # Clean the output dir & create a new
-shutil.rmtree(outputDir, True)
-os.mkdir(outputDir)
+shutil.rmtree(CONFIG["outputDir"], True)
+os.mkdir(CONFIG["outputDir"])
 
-# Connect to the MySQL database
-db = pymysql.connect(
-    host="localhost",
-    db="spip",
-    user="spip",
-    password="password",
-)
+# Connect to the MySQL database with Peewee ORM
+db.connect()
 
-# Query the database to retrieve all data
-cursor = db.cursor()
-cursor.execute("SELECT * FROM spip_articles ORDER BY date DESC")
+# Query the DB to retrieve all articles sorted by publication date
+articles = SpipArticles.select().order_by(SpipArticles.date.desc())
+# Query the DB to retrieve all articles sorted by modification date
+# articles = SpipArticles.select().order_by(SpipArticles.date_modif.desc())
 
-# Choose how many articles export based on first param
+# Choose how many articles to export based on first param
 if len(sys.argv) > 1:
     if int(sys.argv[1]) > 0:
-        fetch = cursor.fetchmany(int(sys.argv[1]))
+        nbToExport = int(sys.argv[1])
     else:
-        fetch = cursor.fetchall()
+        nbToExport = 0
 else:
-    fetch = cursor.fetchmany(3)
+    nbToExport = CONFIG["nbToExport"]
 
 print("--- Conversion of {} articles to Markdown files + YAML metadata ---\n"
-      .format(len(fetch)))
-
-if len(fetch) < 5:
-    pprint(fetch)
+      .format(nbToExport))
 
 # Loop among every articles & export them in Markdown files
-for row in fetch:
-    meta = metadata(row)
-    body = content(row[7])
-    articleDir = "{}/{}".format(outputDir, meta.get_slug())
+for article in articles:
+    meta = metadata(article)
+    body = content(article.texte)
+    articleDir = "{}/{}".format(CONFIG["outputDir"], meta.get_slug())
     os.mkdir(articleDir)
     with open("{}/index.md".format(articleDir), "w") as f:
         f.write("{}\n{}\n{}"
                 .format(meta.get_frontmatter(), meta.get_title(), body.get_markdown()))
+    # End export if no more to export
+    nbToExport -= 1
+    if nbToExport <= 0: break
 
 # Close the database connection
 db.close()
