@@ -2,3 +2,6 @@ pymysql
 peewee
 unicode-slugify
 pyyaml
+
+python-lsp-ruff
+pylsp-rope
