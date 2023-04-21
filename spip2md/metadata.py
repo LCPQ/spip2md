@@ -51,10 +51,18 @@ class metadata:
 
     # Contains things before the article like caption & titles
     def get_starting(self):
-        return "{}\n\n# {}\n".format(self.caption, self.title)
+        return (
+            f"{self.caption}\n" if len(self.caption) > 0 else "" + f"# {self.title}\n"
+        )
 
     # Contains things after the article like ps & extra
     def get_ending(self):
-        return "# EXTRA\n\n{}\n\n# POST-SCRIPTUM\n\n{}\n\n# MICROBLOGGING\n\n{}".format(
-            self.extra, self.ps, self.microblog
+        return (
+            f"# EXTRA\n\n{self.extra}"
+            if self.extra != None and len(self.extra) > 0
+            else "" + f"# POST-SCRIPTUM\n\n{self.ps}"
+            if len(self.ps) > 0
+            else "" + f"# MICROBLOGGING\n\n{self.microblog}"
+            if len(self.microblog) > 0
+            else ""
         )
