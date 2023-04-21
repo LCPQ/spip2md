@@ -2,7 +2,6 @@
 import os
 import shutil
 import sys
-from pprint import pprint
 from datetime import *
 
 # Modules
