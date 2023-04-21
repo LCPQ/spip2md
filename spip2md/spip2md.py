@@ -2,7 +2,7 @@
 import os
 import shutil
 import sys
-from datetime import *
+from datetime import date, time, datetime
 
 # Modules
 from config import CONFIG
@@ -45,8 +45,11 @@ for article in articles:
     os.mkdir(articleDir)
     with open("{}/index.md".format(articleDir), "w") as f:
         f.write(
-            "{}\n{}\n{}".format(
-                meta.get_frontmatter(), meta.get_title(), body.get_markdown()
+            "{}\n{}\n{}\n{}".format(
+                meta.get_frontmatter(),
+                meta.get_starting(),
+                body.get_markdown(),
+                meta.get_ending(),
             )
         )
     # End export if no more to export
