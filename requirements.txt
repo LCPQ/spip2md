@@ -1,4 +1,4 @@
 pymysql
 peewee
-unicode-slugify
+python-slugify[unidecode]
 pyyaml
