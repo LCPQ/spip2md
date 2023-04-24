@@ -9,10 +9,11 @@ class metadata:
         self.title = article.titre
         self.subtitle = article.soustitre  # Probably unused
         # self.section = article.id_rubrique # TODO join
+        self.description = article.descriptif
         self.caption = article.chapo  # Probably unused
         self.ps = article.ps  # Probably unused
         self.publicationDate = article.date
-        self.status = article.statut
+        self.draft = "false" if article.statut == "publie" else "true"
         # self.sector = article.id_secteur # TODO join
         self.update = article.maj
         # self.export = article.export  # USELESS
@@ -40,11 +41,12 @@ class metadata:
                 {
                     "lang": self.lang,
                     "title": self.title,
-                    "subtitle": self.subtitle,
-                    "creation": self.creationDate,
-                    "date": self.publicationDate,
-                    "update": self.update,
-                    "status": self.status,
+                    # "subtitle": self.subtitle,
+                    "date": self.creationDate,
+                    "publishDate": self.publicationDate,
+                    "lastmod": self.update,
+                    "draft": self.draft,
+                    "description": self.description,
                 },
                 allow_unicode=True,
             )
