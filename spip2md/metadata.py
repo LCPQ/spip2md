@@ -27,7 +27,7 @@ class metadata:
         self.caption = article.chapo  # Probably unused
         self.ps = article.ps  # Probably unused
         self.publicationDate = article.date
-        self.draft = "false" if article.statut == "publie" else "true"
+        self.draft = False if article.statut == "publie" else True
         # self.sector = article.id_secteur # TODO join
         self.update = article.maj
         # self.export = article.export  # USELESS
