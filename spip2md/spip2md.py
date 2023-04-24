@@ -2,7 +2,7 @@
 import os
 import shutil
 import sys
-from datetime import date, datetime, time
+# from datetime import date, datetime, time
 
 # Modules
 from config import CONFIG
@@ -27,14 +27,12 @@ if len(sys.argv) > 1:
     if int(sys.argv[1]) > 0:
         nbToExport = int(sys.argv[1])
     else:
-        nbToExport = 0
+        nbToExport = len(articles)
 else:
     nbToExport = CONFIG["nbToExport"]
 
 print(
-    "--- Conversion of {} articles to Markdown files + YAML metadata ---\n".format(
-        nbToExport
-    )
+    f"--- {nbToExport} SPIP articles -> Markdown & YAML files ---\n"
 )
 
 # Loop among every articles & export them in Markdown files
@@ -54,11 +52,15 @@ for article in articles:
         )
     # End export if no more to export
     nbToExport -= 1
+    print(f"Exported {meta.title}")
+    print(f"    in {meta.get_slug()}/index.md")
     if nbToExport <= 0:
         break
+    elif nbToExport % 5 == 0:
+        print(f"--- {nbToExport} articles remaining")
 
 # Close the database connection
 db.close()
 
 # Announce the end of the script
-print("\n--- End of script ---")
+print(f"\n--- Finished converting SPIP articles ---")

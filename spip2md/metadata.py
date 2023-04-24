@@ -32,7 +32,7 @@ class metadata:
         self.microblog = article.microblog  # Probably unused
 
     def get_slug(self):
-        return slugify("{}-{}".format(self.id, self.title))
+        return slugify(f"{self.id}-{self.title}")
 
     def get_frontmatter(self):
         return "---\n{}---".format(
@@ -45,7 +45,8 @@ class metadata:
                     "date": self.publicationDate,
                     "update": self.update,
                     "status": self.status,
-                }
+                },
+                allow_unicode=True,
             )
         )
 
