@@ -1,12 +1,26 @@
+import re
+
 import yaml
 from slugify import slugify
+# Modules
+from SpipDatabase import *
+
+
+def clean(string):
+    cleaned = string
+    # Keep only the first lang of multilingual titles
+    cleaned = re.sub(
+        r"<multi>\s*\[[a-z]{2}\]\s*([^<\[]*)\s*[^<]*\s*<\/multi>", r"\1", cleaned
+    )
+    # cleaned = re.sub(r"<[^\>]*>", r"", cleaned)
+    return cleaned
 
 
 class metadata:
     def __init__(self, article):
         self.id = article.id_article
         # self.surtitle = article.surtitre  # Probably unused
-        self.title = article.titre
+        self.title = clean(article.titre)
         self.subtitle = article.soustitre  # Probably unused
         # self.section = article.id_rubrique # TODO join
         self.description = article.descriptif
@@ -35,6 +49,9 @@ class metadata:
     def get_slug(self):
         return slugify(f"{self.id}-{self.title}")
 
+    def get_authors(self):
+        return SpipAuteursLiens.select().where(SpipAuteursLiens.id_objet == self.id)
+
     def get_frontmatter(self):
         return "---\n{}---".format(
             yaml.dump(
@@ -47,6 +64,7 @@ class metadata:
                     "lastmod": self.update,
                     "draft": self.draft,
                     "description": self.description,
+                    "authors": [author.id_auteur for author in self.get_authors()],
                 },
                 allow_unicode=True,
             )
