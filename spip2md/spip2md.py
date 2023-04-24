@@ -2,13 +2,13 @@
 import os
 import shutil
 import sys
-from datetime import date, time, datetime
+from datetime import date, datetime, time
 
 # Modules
 from config import CONFIG
-from SpipDatabase import *
-from metadata import metadata
 from content import content
+from metadata import metadata
+from SpipDatabase import *
 
 # Clean the output dir & create a new
 shutil.rmtree(CONFIG["outputDir"], True)
