@@ -2,6 +2,7 @@
 import os
 import shutil
 import sys
+
 # from datetime import date, datetime, time
 # Modules
 from config import CONFIG
@@ -33,9 +34,7 @@ else:
     else:
         nbToExport = len(articles)
 
-print(
-    f"--- Export of {nbToExport} SPIP articles to Markdown & YAML files ---\n"
-)
+print(f"--- Export of {nbToExport} SPIP articles to Markdown & YAML files ---\n")
 
 exported = 1
 
@@ -68,3 +67,4 @@ db.close()
 
 # Announce the end of the script
 print(f"\n--- Finished exporting {nbToExport} SPIP articles to md & YAML ---")
+print(f"---     stored as ./{CONFIG['outputDir']}/*/index.md     ---")
