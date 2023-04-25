@@ -6,9 +6,9 @@ spipParser = Lark(
            ( heading
            | list
            | table
-           | separator
            | quote
            | paragraph
+           | SEPARATOR
            ) /\n\r?/
 
     heading: "{{{" paragraph "}}}"
@@ -27,33 +27,35 @@ spipParser = Lark(
     row: /\n\r?\|/ cell+
     cell: paragraph "|"
 
-    separator: /-{4,}/
-
     quote: "<quote>" paragraph "</quote>"
 
     paragraph: text+
 
     text: format_text
         | link
-        | /[^\n\r]+/
+        | PURE_TEXT
 
     format_text: italic
                | bold
                | bold_italic
 
-    italic: "{" /[^\n\r]+/ "}"
-    bold: "{{" /[^\n\r]+/ "}}"
-    bold_italic: "{{ {" /[^\n\r]+/ "} }}" | "{ {{" /[^\n\r]+/ "}} }"
+    italic: "{" PURE_TEXT "}"
+    bold: "{{" PURE_TEXT "}}"
+    bold_italic: "{{ {"  PURE_TEXT "} }}" | "{ {{"  PURE_TEXT "}} }"
 
     link: internal_link
         | external_link
         | footnote
         | glossary
 
-    internal_link: "[" /[^\n\r]+/ "->" /[^\n\r]+/ "]"
-    external_link: "[" /[^\n\r]+/ "->" /[a-z]{3,6}://[^\n\r]+/ "]"
-    footnote: "[[" /[^\n\r]+/ "]]"
-    footnote: "[?" /[^\n\r]+/ "]"
+    internal_link: "[" PURE_TEXT "->" PURE_TEXT "]"
+    external_link: "[" PURE_TEXT "->" /[a-z]{3,6}:\/\// PURE_TEXT "]"
+    footnote: "[[" PURE_TEXT "]]"
+    footnote: "[?" PURE_TEXT "]"
+
+    PURE_TEXT: /[^\n\r]+/
+
+    SEPARATOR: /-{4,}/
 """,
     start="section",
 )
