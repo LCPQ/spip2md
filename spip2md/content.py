@@ -3,41 +3,38 @@ from lark import Lark
 spipParser = Lark(
     r"""
     section: /\n\r?/
-           ( heading
+           ( paragraph
+           | heading
            | list
            | table
            | quote
-           | paragraph
            | SEPARATOR
            ) /\n\r?/
 
-    heading: "{{{" paragraph "}}}"
+    paragraph: format_text
+
+    heading: "{{{" format_text "}}}"
 
     list: unordered_list
         | unordered_sublist
         | ordered_list
         | ordered_sublist
 
-    unordered_list: (/\n\r?-* / paragraph)+
-    unordered_sublist: (/\n\r?-*{2,7} / paragraph)+
-    ordered_list: (\/n/r?-# / paragraph)+
-    ordered_sublist: (\/n/r?-#{2,7} / paragraph)+
+    unordered_list: (/\n\r?-* / format_text)+
+    unordered_sublist: (/\n\r?-*{2,7} / format_text)+
+    ordered_list: (\/n/r?-# / format_text)+
+    ordered_sublist: (\/n/r?-#{2,7} / format_text)+
 
     table: row+
     row: /\n\r?\|/ cell+
-    cell: paragraph "|"
+    cell: format_text "|"
 
-    quote: "<quote>" paragraph "</quote>"
+    quote: "<quote>" format_text "</quote>"
 
-    paragraph: text+
-
-    text: format_text
-        | link
-        | PURE_TEXT
-
-    format_text: italic
-               | bold
-               | bold_italic
+    format_text: (
+                 | link
+                 | PURE_TEXT
+                 )+
 
     italic: "{" PURE_TEXT "}"
     bold: "{{" PURE_TEXT "}}"
@@ -53,7 +50,7 @@ spipParser = Lark(
     footnote: "[[" PURE_TEXT "]]"
     footnote: "[?" PURE_TEXT "]"
 
-    PURE_TEXT: /[^\n\r]+/
+    PURE_TEXT: /[^\s\{\-\|\<\[\}\>\]][^\n\r\{\<\[\}\]]*/
 
     SEPARATOR: /-{4,}/
 """,
