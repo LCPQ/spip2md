@@ -2,7 +2,6 @@ import re
 
 import yaml
 from slugify import slugify
-# Modules
 from SpipDatabase import *
 
 

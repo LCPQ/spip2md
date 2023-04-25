@@ -1,17 +1,16 @@
 #!python3
-import os
-import shutil
 import sys
+from os import mkdir
+from shutil import rmtree
 
-# from datetime import date, datetime, time
 from config import CONFIG
 from content import content
 from metadata import metadata
 from SpipDatabase import *
 
 # Clean the output dir & create a new
-shutil.rmtree(CONFIG["outputDir"], True)
-os.mkdir(CONFIG["outputDir"])
+rmtree(CONFIG["outputDir"], True)
+mkdir(CONFIG["outputDir"])
 
 # Connect to the MySQL database with Peewee ORM
 db.connect()
@@ -44,7 +43,7 @@ for article in articles:
     print(f"    in {meta.get_slug()}/index.md")
     body = content(article.texte)
     articleDir = "{}/{}".format(CONFIG["outputDir"], meta.get_slug())
-    os.mkdir(articleDir)
+    mkdir(articleDir)
     with open("{}/index.md".format(articleDir), "w") as f:
         f.write(
             "{}\n{}\n{}\n{}".format(
