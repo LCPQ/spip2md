@@ -1,13 +1,14 @@
+from config import CONFIG
 from peewee import *
 
 db = MySQLDatabase(
-    "spip",
+    CONFIG["db"],
     **{
         "charset": "utf8",
         "sql_mode": "PIPES_AS_CONCAT",
         "use_unicode": True,
-        "user": "spip",
-        "password": "password",
+        "user": CONFIG["dbUser"],
+        "password": CONFIG["dbPass"],
     }
 )
 

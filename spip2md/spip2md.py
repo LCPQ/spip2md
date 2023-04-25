@@ -4,7 +4,6 @@ import shutil
 import sys
 
 # from datetime import date, datetime, time
-# Modules
 from config import CONFIG
 from content import content
 from metadata import metadata

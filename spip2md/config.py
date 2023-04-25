@@ -1,1 +1,7 @@
-CONFIG = {"outputDir": "output", "maxExportNb": 1000}
+CONFIG = {
+    "db": "spip",
+    "dbUser": "spip",
+    "dbPass": "password",
+    "outputDir": "output",
+    "maxExportNb": 1000,
+}
