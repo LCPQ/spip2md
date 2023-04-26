@@ -1,42 +1,59 @@
-?start: unordered_list
+start: _N? block ( _N+ block )+ _N*
+
+?block: heading
+      | SEPARATOR
+      | unordered_list
       | ordered_list
       | table
-      | SEPARATOR
-      | N+
-      | heading
       | paragraph
 
-unordered_list: ( N "-*" list_element )+
-ordered_list: ( N "-#" list_element )+
-list_element: text
+heading: "{{{" ( TEXT | link | nested_italic | nested_bold ) "}}}"
 
-table: ( N row )+
+SEPARATOR: "----" "-"*
+
+unordered_list: ( "-*" list_element _N )+
+ordered_list: ( "-#" list_element _N )+
+list_element: _inline_format
+
+table: ( row _N )+
 row: ( "|" cell )+ "|"
-cell: text
+cell: _inline_format
 
-SEPARATOR: N /-{4,}/
+paragraph: ( _inline_format _N? )+
 
-N: /\r/? /\n/
+// Windows or Unix line break
+_N: /\r/? /\n/
 
-heading: "{{{" text "}}}"
+_inline_format: bold
+              | italic
+              | link
+              | TEXT
 
-paragraph: text
+bold: "{{" ( TEXT | link  | nested_italic )+ "}}"
+italic: "{" ( TEXT | link | nested_bold )+ "}"
 
-text: ( italic | bold | link | PURE_TEXT )+
+nested_bold: _NOT_LBRACE "{{" ( TEXT | link ) "}}" _NOT_RBRACE -> bold
+nested_italic: _NOT_LBRACE "{" ( TEXT | link ) "}" _NOT_RBRACE -> italic
 
-italic: "{" ( PURE_TEXT | link | bold_in_italic )+ "}"
-bold: "{{" ( PURE_TEXT | link  | italic_in_bold )+ "}}"
-bold_in_italic: "{{" ( PURE_TEXT | link ) "}}"
-italic_in_bold: "{" ( PURE_TEXT | link ) "}"
+_NOT_LBRACE: /[^\{]/
+_NOT_RBRACE: /[^\}]/
 
-link: internal_link
-    | external_link
-    | footnote
-    | glossary
+?link: internal_link
+     | external_link
+     | footnote
+     | glossary
 
-internal_link: "[" PURE_TEXT "->" PURE_TEXT "]"
-external_link: "[" PURE_TEXT "->" /[a-z]{3,6}:\/\// PURE_TEXT "]"
-footnote: "[[" PURE_TEXT "]]"
-glossary: "[?" PURE_TEXT "]"
+internal_link: "[" TEXT "->" TEXT "]"
+external_link: "[" TEXT "->" _PROTOCOL "://" TEXT "]"
 
-PURE_TEXT: /[^\{\}]+/
+// Protocol, probably http(s)
+// Is made of 2 to 8 latin letters
+_PROTOCOL: /[a-zA-Z]{2,8}/
+
+footnote: "[[" TEXT "]]"
+glossary: "[?" TEXT "]"
+
+// Pure text :
+// - Never contains line breaks
+// - Never contains curly braces
+TEXT: /[^\r\n\{\}]/+
