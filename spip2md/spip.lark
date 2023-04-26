@@ -1,29 +1,38 @@
-section: /\n\r?/ TAG* ( paragraph | heading | list | table | SEPARATOR ) TAG* /\n\r?/
-
-TAG: "<" [ "/" ] PURE_TEXT [ "|" PURE_TEXT ] ">" [ /\n\r?/ ]
-
-paragraph: format_text
-
-heading: "{{{" format_text "}}}"
+section: list
+       | table
+       | SEPARATOR
+       | N+
+       | heading | paragraph
 
 list: unordered_list
     | unordered_sublist
     | ordered_list
     | ordered_sublist
 
-unordered_list: (/\n\r?-\* / format_text)+
-unordered_sublist: (/\n\r?-\*{2,7} / format_text)+
-ordered_list: (/\n\r?-# / format_text)+
-ordered_sublist: (/\n\r?-#{2,7} / format_text)+
+unordered_list: ( N "-*" list_element )+
+unordered_sublist: ( N "-**" list_element )+
+ordered_list: ( N "-#" list_element )+
+ordered_sublist: ( N "-##" list_element )+
+list_element: text
 
-table: row+
-row: /\n\r?\|/ cell+
-cell: format_text "|"
+table: ( N row )+
+row: ( "|" cell )+ "|"
+cell: text
 
-format_text: ( italic | bold | link | PURE_TEXT )+
+SEPARATOR: N /-{4,}/
 
-italic: "{" PURE_TEXT | ( " " bold " " ) "}"
-bold: "{{" PURE_TEXT | ( " " italic " " ) "}}"
+N: /\r/? /\n/
+
+heading: "{{{" text "}}}"
+
+paragraph: text
+
+text: ( italic | bold | link | PURE_TEXT )+
+
+italic: "{" ( PURE_TEXT | link | bold_in_italic )+ "}"
+bold: "{{" ( PURE_TEXT | link  | italic_in_bold )+ "}}"
+bold_in_italic: "{{" ( PURE_TEXT | link ) "}}"
+italic_in_bold: "{" ( PURE_TEXT | link ) "}"
 
 link: internal_link
     | external_link
@@ -35,6 +44,4 @@ external_link: "[" PURE_TEXT "->" /[a-z]{3,6}:\/\// PURE_TEXT "]"
 footnote: "[[" PURE_TEXT "]]"
 glossary: "[?" PURE_TEXT "]"
 
-PURE_TEXT: /[^\{\<\[\}\>\]]+/
-
-SEPARATOR: /-{4,}/
+PURE_TEXT: /[^\{\}]+/
