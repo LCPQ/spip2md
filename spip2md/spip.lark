@@ -1,10 +1,10 @@
-start: unordered_list
-     | ordered_list
-     | table
-     | SEPARATOR
-     | N+
-     | heading
-     | paragraph
+?start: unordered_list
+      | ordered_list
+      | table
+      | SEPARATOR
+      | N+
+      | heading
+      | paragraph
 
 unordered_list: ( N "-*" list_element )+
 ordered_list: ( N "-#" list_element )+
