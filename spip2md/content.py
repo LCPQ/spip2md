@@ -18,11 +18,10 @@ class content:
 def test(filename):
     print(f"--- Parsing of {filename}")
     parsed = spipParser.parse(open(path.dirname(__file__) + "/" + filename).read())
-    print(parsed)
-    print(parsed.pretty())
-    print()
+    print(parsed, "\n")
+    print(parsed.pretty(), "\n")
 
 
 # Test
 test("../test/1.spip")
-test("../test/2.spip")
+# test("../test/2.spip")

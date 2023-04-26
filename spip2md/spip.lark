@@ -2,21 +2,21 @@ start: unordered_list
      | ordered_list
      | table
      | SEPARATOR
-     | _N+
+     | N+
      | heading
      | paragraph
 
-unordered_list: ( _N "-*" list_element )+
-ordered_list: ( _N "-#" list_element )+
+unordered_list: ( N "-*" list_element )+
+ordered_list: ( N "-#" list_element )+
 list_element: text
 
-table: ( _N row )+
+table: ( N row )+
 row: ( "|" cell )+ "|"
 cell: text
 
-SEPARATOR: _N /-{4,}/
+SEPARATOR: N /-{4,}/
 
-_N: /\r/? /\n/
+N: /\r/? /\n/
 
 heading: "{{{" text "}}}"
 
