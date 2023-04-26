@@ -9,7 +9,7 @@ start: _N? block ( _N+ block )+ _N*
 
 heading: "{{{" ( TEXT | link | nested_italic | nested_bold ) "}}}" -> h2
 
-SEPARATOR: "----" "-"*
+SEPARATOR.9: "----" "-"*
 
 unordered_list: ( "-*" list_element _N )+ -> ul
 ordered_list: ( "-#" list_element _N )+ -> ol
@@ -53,4 +53,4 @@ wikipedia_query: TEXT -> query
 // Pure text :
 // - Never contains line breaks
 // - Never contains curly braces
-TEXT: /[^\r\n\{\}]/+
+TEXT.0: /[^\r\n\{\}]/+
