@@ -38,20 +38,17 @@ nested_italic: _NOT_LBRACE "{" ( TEXT | link ) "}" _NOT_RBRACE -> em
 _NOT_LBRACE: /[^\{]/
 _NOT_RBRACE: /[^\}]/
 
-?link: internal_link
-     | external_link
+?link: a
      | footnote
-     | glossary
+     | wikipedia_link
 
-internal_link: "[" TEXT "->" TEXT "]"
-external_link: "[" TEXT "->" _PROTOCOL "://" TEXT "]"
-
-// Protocol, probably http(s)
-// Is made of 2 to 8 latin letters
-_PROTOCOL: /[a-zA-Z]{2,8}/
-
-footnote: "[[" TEXT "]]"
-glossary: "[?" TEXT "]"
+a: "[" link_text "->" link_destination "]" -> a
+link_text: TEXT -> text
+link_destination: TEXT -> href
+footnote: "[[" footnote_content "]]" -> footnote
+footnote_content: TEXT -> content
+wikipedia_link: "[?" wikipedia_query "]" -> a_wikipedia
+wikipedia_query: TEXT -> query
 
 // Pure text :
 // - Never contains line breaks
