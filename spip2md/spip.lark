@@ -1,27 +1,22 @@
-section: list
-       | table
-       | SEPARATOR
-       | N+
-       | heading | paragraph
+start: unordered_list
+     | ordered_list
+     | table
+     | SEPARATOR
+     | _N+
+     | heading
+     | paragraph
 
-list: unordered_list
-    | unordered_sublist
-    | ordered_list
-    | ordered_sublist
-
-unordered_list: ( N "-*" list_element )+
-unordered_sublist: ( N "-**" list_element )+
-ordered_list: ( N "-#" list_element )+
-ordered_sublist: ( N "-##" list_element )+
+unordered_list: ( _N "-*" list_element )+
+ordered_list: ( _N "-#" list_element )+
 list_element: text
 
-table: ( N row )+
+table: ( _N row )+
 row: ( "|" cell )+ "|"
 cell: text
 
-SEPARATOR: N /-{4,}/
+SEPARATOR: _N /-{4,}/
 
-N: /\r/? /\n/
+_N: /\r/? /\n/
 
 heading: "{{{" text "}}}"
 

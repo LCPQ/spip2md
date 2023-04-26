@@ -2,7 +2,7 @@ from os import path
 
 from lark import Lark
 
-spipParser = Lark(open(path.dirname(__file__) + "/spip.lark"), start="section")
+spipParser = Lark(open(path.dirname(__file__) + "/spip.lark"))
 
 
 # Test
