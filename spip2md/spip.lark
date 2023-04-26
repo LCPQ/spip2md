@@ -1,6 +1,6 @@
-section: /\n\r?/ TAG* ( paragraph | heading | list | table | SEPARATOR ) /\n\r?/
+section: /\n\r?/ TAG* ( paragraph | heading | list | table | SEPARATOR ) TAG* /\n\r?/
 
-TAG: "<" PURE_TEXT [ "|" PURE_TEXT ] ">" [ /\n\r?/ ]
+TAG: "<" [ "/" ] PURE_TEXT [ "|" PURE_TEXT ] ">" [ /\n\r?/ ]
 
 paragraph: format_text
 
@@ -20,11 +20,10 @@ table: row+
 row: /\n\r?\|/ cell+
 cell: format_text "|"
 
-format_text: ( link | PURE_TEXT )+
+format_text: ( italic | bold | link | PURE_TEXT )+
 
-italic: "{" PURE_TEXT "}"
-bold: "{{" PURE_TEXT "}}"
-bold_italic: "{{ {"  PURE_TEXT "} }}" | "{ {{"  PURE_TEXT "}} }"
+italic: "{" PURE_TEXT | ( " " bold " " ) "}"
+bold: "{{" PURE_TEXT | ( " " italic " " ) "}}"
 
 link: internal_link
     | external_link
@@ -36,6 +35,6 @@ external_link: "[" PURE_TEXT "->" /[a-z]{3,6}:\/\// PURE_TEXT "]"
 footnote: "[[" PURE_TEXT "]]"
 glossary: "[?" PURE_TEXT "]"
 
-PURE_TEXT: /[^\s\{\-\|\<\[\}\>\]][^\n\r\{\<\[\}\]]*/
+PURE_TEXT: /[^\{\<\[\}\>\]]+/
 
 SEPARATOR: /-{4,}/
