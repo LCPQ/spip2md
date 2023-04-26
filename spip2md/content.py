@@ -5,15 +5,6 @@ from lark import Lark
 spipParser = Lark(open(path.dirname(__file__) + "/spip.lark"))
 
 
-# Test
-print("\n--- First test")
-text = open(path.dirname(__file__) + "/../test/1.spip").read()
-print(spipParser.parse(text).pretty())
-print("\n--- Second test")
-text = open(path.dirname(__file__) + "/../test/2.spip").read()
-print(spipParser.parse(text).pretty())
-
-
 class content:
     def __init__(self, content):
         self.spip = content
@@ -21,3 +12,17 @@ class content:
     def get_markdown(self):
         markdown = self.spip
         return markdown
+
+
+# Parses a file & display its parse tree
+def test(filename):
+    print(f"--- Parsing of {filename}")
+    parsed = spipParser.parse(open(path.dirname(__file__) + "/" + filename).read())
+    print(parsed)
+    print(parsed.pretty())
+    print()
+
+
+# Test
+test("../test/1.spip")
+test("../test/2.spip")
