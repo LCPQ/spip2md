@@ -1,25 +1,25 @@
 start: _N? block ( _N+ block )+ _N*
 
 ?block: heading
-      | SEPARATOR
+      | SEPARATOR -> hr
       | unordered_list
       | ordered_list
       | table
       | paragraph
 
-heading: "{{{" ( TEXT | link | nested_italic | nested_bold ) "}}}"
+heading: "{{{" ( TEXT | link | nested_italic | nested_bold ) "}}}" -> h2
 
 SEPARATOR: "----" "-"*
 
-unordered_list: ( "-*" list_element _N )+
-ordered_list: ( "-#" list_element _N )+
-list_element: _inline_format
+unordered_list: ( "-*" list_element _N )+ -> ul
+ordered_list: ( "-#" list_element _N )+ -> ol
+list_element: _inline_format -> li
 
-table: ( row _N )+
-row: ( "|" cell )+ "|"
-cell: _inline_format
+table: ( row _N )+ -> table
+row: ( "|" cell )+ "|" -> tr
+cell: _inline_format -> td
 
-paragraph: ( _inline_format _N? )+
+paragraph: ( _inline_format _N? )+ -> p
 
 // Windows or Unix line break
 _N: /\r/? /\n/
@@ -29,11 +29,11 @@ _inline_format: bold
               | link
               | TEXT
 
-bold: "{{" ( TEXT | link  | nested_italic )+ "}}"
-italic: "{" ( TEXT | link | nested_bold )+ "}"
+bold: "{{" ( TEXT | link  | nested_italic )+ "}}" -> strong
+italic: "{" ( TEXT | link | nested_bold )+ "}" -> em
 
-nested_bold: _NOT_LBRACE "{{" ( TEXT | link ) "}}" _NOT_RBRACE -> bold
-nested_italic: _NOT_LBRACE "{" ( TEXT | link ) "}" _NOT_RBRACE -> italic
+nested_bold: _NOT_LBRACE "{{" ( TEXT | link ) "}}" _NOT_RBRACE -> strong
+nested_italic: _NOT_LBRACE "{" ( TEXT | link ) "}" _NOT_RBRACE -> em
 
 _NOT_LBRACE: /[^\{]/
 _NOT_RBRACE: /[^\}]/
