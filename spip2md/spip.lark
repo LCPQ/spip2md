@@ -6,6 +6,7 @@ start: _N* block ( _N+ block )+ _N*
       | heading
       | list
       | table
+      | orphan_tag
       | SEPARATOR -> hr
 
 list: unordered_list
@@ -27,6 +28,8 @@ _inline_format: TEXT
               | italic
               | bold
               | link
+              | orphan_tag
+              | tag
 
 bold: _O_CURLY_2 ( TEXT | link | nested_italic )+ _C_CURLY_2 -> strong
 italic: _O_CURLY ( TEXT | link | nested_bold )+ _C_CURLY -> em
@@ -41,6 +44,13 @@ footnote: _O_SQUARE_2 HREF _C_SQUARE_2 -> footnote
 wikipedia_link: _O_SQUARE_INTERO HREF _C_SQUARE -> a_wikipedia
 a: _LINK_OPENING LINK_TEXT _ARROW HREF _C_SQUARE -> a
 
+tag: closing_tag
+   | opening_tag
+
+orphan_tag: _ORPHAN_OPENING TEXT ( _PIPE TEXT )? _C_ANGLE -> orphan_tag
+closing_tag: _O_ANGLE _SLASH TEXT ( _PIPE TEXT )? _C_ANGLE -> closing_tag
+opening_tag: _O_ANGLE TEXT ( _PIPE TEXT )? _C_ANGLE -> opening_tag
+
 // Terminals
 /// Windows or Unix line breaks
 _N: /\r?\n/
@@ -49,6 +59,11 @@ _N: /\r?\n/
 _HYPHEN_STAR: "-*"
 _HYPHEN_HASH: "-#"
 _PIPE: "|"
+_SLASH: "/"
+_O_ANGLE: "<"
+_C_ANGLE: ">"
+/// Opening angle bracket followed by text and not followed by a closing tag
+_ORPHAN_OPENING: /<(?=([^>\/]+?)>)(?!.*<\/\1>)/
 
 /// Markup
 _O_CURLY_3: "{{{"
@@ -74,7 +89,7 @@ SEPARATOR: "----" "-"*
 // - Don’t contains line breaks
 // - Don’t contains any markup element…
 // - EXCEPTED when they are used as in regular text
-TEXT: /[^\r\n\{\}\[\]\<\>]+/
+TEXT: /[^\r\n\|\{\}\[\]\<\>]+/
     | /\[(?!.*->.*\])/
     | /\]/
 
