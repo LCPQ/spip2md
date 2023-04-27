@@ -52,12 +52,12 @@ tag: closing_quote
    | opening_tag
 
 orphan_quote: _ORPHAN_OPENING "quote" _C_ANGLE -> orphan_quote
-orphan_tag: _ORPHAN_OPENING TEXT ( _PIPE TEXT )? _C_ANGLE -> orphan_tag
+orphan_tag: _ORPHAN_OPENING TEXT ( _PIPE TEXT )* _C_ANGLE -> orphan_tag
 
 closing_quote: _O_ANGLE _SLASH "quote" _C_ANGLE -> closing_quote
 opening_quote: _O_ANGLE "quote" _C_ANGLE -> opening_quote
-closing_tag: _O_ANGLE _SLASH TEXT ( _PIPE TEXT )? _C_ANGLE -> closing_tag
-opening_tag: _O_ANGLE TEXT ( _PIPE TEXT )? _C_ANGLE -> opening_tag
+closing_tag: _O_ANGLE _SLASH TEXT ( _PIPE TEXT )* _C_ANGLE -> closing_tag
+opening_tag: _O_ANGLE TEXT ( _PIPE TEXT )* _C_ANGLE -> opening_tag
 
 // Terminals
 _N: /\r?\n/
