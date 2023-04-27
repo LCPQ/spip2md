@@ -47,6 +47,12 @@ I have collaborations through various projects:
 Other collaborations : 
 * Vincent Pauchard : CUNY Energy Institute, New-York
 
+|{{Test}}|{{Result}}|
+|1=1|True|
+|2=1|False|
+|Life=Tacos|True|
+|World|False|
+
 ----
 
 {{{Student Supervision (starting 2012)}}}
