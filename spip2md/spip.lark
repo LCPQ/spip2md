@@ -86,10 +86,11 @@ _C_SQUARE: "]"
 _ARROW: "->"
 _LINK_OPENING: /\[(?=/ PURE_TEXT+ /]*->)/
 HREF: PURE_TEXT+
-LINK_TEXT: PURE_TEXT /+(?=->)/
+LINK_TEXT: PURE_TEXT+ /(?=->)/
 
-/// Every characters that have no markup meaning
-PURE_TEXT: /[^\r\n\|\{\}\[\]\<\>]/
 /// Characters that could be markup but aren’t in this situation
 AMBIGUOUS_TEXT: /\[(?!.*->.*\])/
               | /\]/
+              | /\\}/
+/// Every characters that have no markup meaning
+PURE_TEXT: /[^\r\n\|\{\}\[\]\<\>]/
