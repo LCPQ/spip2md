@@ -52,20 +52,18 @@ closing_tag: _O_ANGLE _SLASH TEXT ( _PIPE TEXT )? _C_ANGLE -> closing_tag
 opening_tag: _O_ANGLE TEXT ( _PIPE TEXT )? _C_ANGLE -> opening_tag
 
 // Terminals
-/// Windows or Unix line breaks
 _N: /\r?\n/
+SEPARATOR: "----" "-"*
+TEXT: ( PURE_TEXT | AMBIGUOUS_TEXT )+
 
-/// Blocks
 _HYPHEN_STAR: "-*"
 _HYPHEN_HASH: "-#"
 _PIPE: "|"
 _SLASH: "/"
 _O_ANGLE: "<"
 _C_ANGLE: ">"
-/// Opening angle bracket followed by text and not followed by a closing tag
 _ORPHAN_OPENING: /<(?=([^>\/]+?)>)(?!.*<\/\1>)/
 
-/// Markup
 _O_CURLY_3: "{{{"
 _C_CURLY_3: "}}}"
 _O_CURLY_2: "{{"
@@ -73,39 +71,17 @@ _C_CURLY_2: "}}"
 _O_CURLY: "{"
 _C_CURLY: "}"
 
-/// Links
 _O_SQUARE_2: "[["
 _C_SQUARE_2: "]]"
 _O_SQUARE_INTERO: "[?"
 _C_SQUARE: "]"
 _ARROW: "->"
-/// Opening square bracket followed by text and an hyphen angle bracket arrow
-_LINK_OPENING: /\[(?=[^\r\n\[\]]*->)/
+_LINK_OPENING: /\[(?=/ PURE_TEXT+ /]*->)/
+HREF: PURE_TEXT+
+LINK_TEXT: PURE_TEXT /+(?=->)/
 
-/// Content
-SEPARATOR: "----" "-"*
-
-/// Text
-// - Don’t contains line breaks
-// - Don’t contains any markup element…
-// - EXCEPTED when they are used as in regular text
-TEXT: /[^\r\n\|\{\}\[\]\<\>]+/
-    | /\[(?!.*->.*\])/
-    | /\]/
-
-/// Inner text :
-// - Don’t contains line breaks
-// - Don’t contains markup closing right curly braces
-// INNER_TEXT: /[^\r\n\}]+/
-
-/// Link href :
-// - Don’t contains line breaks
-// - Don’t contains markup closing right square brackets
-// HREF: /[^\r\n\]]+/
-HREF: TEXT
-
-/// Link text :
-// - Don’t contains line breaks
-// - Don’t contains an opening or closing square bracket
-// - Don’t contains an hyphen angle bracket arrow ( -> )
-LINK_TEXT: /[^\r\n\[\]]+(?=->)/
+/// Every characters that have no markup meaning
+PURE_TEXT: /[^\r\n\|\{\}\[\]\<\>]/
+/// Characters that could be markup but aren’t in this situation
+AMBIGUOUS_TEXT: /\[(?!.*->.*\])/
+              | /\]/
