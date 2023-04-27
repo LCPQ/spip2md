@@ -9,8 +9,8 @@ start: _N* block ( _N+ block )+ _N*
       | orphan_tag
       | SEPARATOR -> hr
 
-list: unordered_list
-    | ordered_list
+?list: unordered_list
+     | ordered_list
 
 unordered_list: ( _HYPHEN_STAR list_element _N )+ -> ul
 ordered_list: ( _HYPHEN_HASH list_element _N )+ -> ol
