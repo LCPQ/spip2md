@@ -1,58 +1,93 @@
-// SPIP Markup grammar for Lark
+// SPIP Markup grammar for Lark parser
 
 start: _N* block ( _N+ block )+ _N*
 
-?block: SEPARATOR -> hr
-      | unordered_list
-      | ordered_list
-      | table
-      | paragraph
+?block: paragraph
       | heading
+      | list
+      | table
+      | SEPARATOR -> hr
 
-unordered_list: ( "-*" list_element _N )+ -> ul
-ordered_list: ( "-#" list_element _N )+ -> ol
+list: unordered_list
+    | ordered_list
+
+unordered_list: ( _HYPHEN_STAR list_element _N )+ -> ul
+ordered_list: ( _HYPHEN_HASH list_element _N )+ -> ol
 list_element: _inline_format -> li
 
 table: ( row _N )+ -> table
-row: ( "|" cell )+ "|" -> tr
+row: ( _PIPE cell )+ _PIPE -> tr
 cell: _inline_format -> td
 
-heading: "{{{" ( link | nested_italic | nested_bold | TEXT ) "}}}" -> h2
+heading: _O_CURLY_3 ( INNER_TEXT | link | nested_italic | nested_bold ) _C_CURLY_3 -> h2
 
 paragraph: ( _inline_format _N? )+ -> p
 
-_inline_format: bold
+_inline_format: TEXT
               | italic
+              | bold
               | link
-              | TEXT
 
-bold: "{{" ( link | nested_italic | TEXT )+ "}}" -> strong
-italic: "{" ( link | nested_bold | TEXT )+ "}" -> em
-nested_bold: TEXT _NOT_LEFT_BRACE "{{" ( link | TEXT )+ "}}" -> strong
-nested_italic: TEXT _NOT_LEFT_BRACE "{" ( link | TEXT )+ "}" -> em
+bold: _O_CURLY_2 ( INNER_TEXT | link | nested_italic )+ _C_CURLY_2 -> strong
+italic: _O_CURLY ( INNER_TEXT | link | nested_bold )+ _C_CURLY -> em
+nested_bold: TEXT+ _O_CURLY_2 ( INNER_TEXT | link )+ _C_CURLY_2 -> strong
+nested_italic: TEXT+ _O_CURLY ( INNER_TEXT | link )+ _C_CURLY -> em
 
-?link: a
-     | footnote
+?link: footnote
      | wikipedia_link
+     | a
 
-a: "[" TEXT "->" link_destination "]" -> a
-link_destination: TEXT -> href
-
-footnote: "[[" TEXT "]]" -> footnote
-wikipedia_link: "[?" TEXT "]" -> a_wikipedia
-
-// Negative terminals
-
-_NOT_LEFT_BRACE: /[^\{]/
+footnote: _O_SQUARE_2 HREF _C_SQUARE_2 -> footnote
+wikipedia_link: _O_SQUARE_INTERO HREF _C_SQUARE -> a_wikipedia
+a: _LINK_OPENING LINK_TEXT _ARROW HREF _C_SQUARE -> a
 
 // Terminals
+/// Windows or Unix line breaks
+_N: /\r?\n/
 
+/// Blocks
+_HYPHEN_STAR: "-*"
+_HYPHEN_HASH: "-#"
+_PIPE: "|"
+
+/// Markup
+_O_CURLY_3: "{{{"
+_C_CURLY_3: "}}}"
+_O_CURLY_2: "{{"
+_C_CURLY_2: "}}"
+_O_CURLY: "{"
+_C_CURLY: "}"
+
+/// Links
+_O_SQUARE_2: "[["
+_C_SQUARE_2: "]]"
+_O_SQUARE_INTERO: "[?"
+_C_SQUARE: "]"
+_ARROW: "->"
+/// Opening square bracket followed by text and an hyphen angle bracket arrow
+_LINK_OPENING: /\[(?=[^\r\n\[\]]*->)/
+
+/// Content
 SEPARATOR: "----" "-"*
 
-// Windows or Unix line breaks
-_N: /\r/? /\n/
+/// Text
+// - Don’t contains line breaks
+// - Don’t contains any opening markup elements…
+// - EXCEPTED when they are used as in regular text
+TEXT: /[^\r\n\{\[\<]+/
+    | /\[(?!.*->.*\])/
 
-// Pure text :
-// - Never contains line breaks
-// - Is the least priority element, so should be lazily matched
-TEXT: /.+?/
+/// Inner text :
+// - Don’t contains line breaks
+// - Don’t contains markup closing right curly braces
+INNER_TEXT: /[^\r\n\}]+/
+
+/// Link href :
+// - Don’t contains line breaks
+// - Don’t contains markup closing right square brackets
+HREF: /[^\r\n\]]+/
+
+/// Link text :
+// - Don’t contains line breaks
+// - Don’t contains an hyphen angle bracket arrow ( -> )
+LINK_TEXT: /[^\r\n\[\]]+(?=->)/
