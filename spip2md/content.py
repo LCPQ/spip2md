@@ -24,4 +24,4 @@ def test(filename):
 
 # Test
 test("../test/1.spip")
-# test("../test/2.spip")
+test("../test/2.spip")
