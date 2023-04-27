@@ -1,15 +1,13 @@
-start: _N? block ( _N+ block )+ _N*
+// SPIP Markup grammar for Lark
 
-?block: heading
-      | SEPARATOR -> hr
+start: _N* block ( _N+ block )+ _N*
+
+?block: SEPARATOR -> hr
       | unordered_list
       | ordered_list
       | table
       | paragraph
-
-heading: "{{{" ( TEXT | link | nested_italic | nested_bold ) "}}}" -> h2
-
-SEPARATOR.9: "----" "-"*
+      | heading
 
 unordered_list: ( "-*" list_element _N )+ -> ul
 ordered_list: ( "-#" list_element _N )+ -> ol
@@ -19,38 +17,42 @@ table: ( row _N )+ -> table
 row: ( "|" cell )+ "|" -> tr
 cell: _inline_format -> td
 
-paragraph: ( _inline_format _N? )+ -> p
+heading: "{{{" ( link | nested_italic | nested_bold | TEXT ) "}}}" -> h2
 
-// Windows or Unix line break
-_N: /\r/? /\n/
+paragraph: ( _inline_format _N? )+ -> p
 
 _inline_format: bold
               | italic
               | link
               | TEXT
 
-bold: "{{" ( TEXT | link  | nested_italic )+ "}}" -> strong
-italic: "{" ( TEXT | link | nested_bold )+ "}" -> em
-
-nested_bold: _NOT_LBRACE "{{" ( TEXT | link ) "}}" _NOT_RBRACE -> strong
-nested_italic: _NOT_LBRACE "{" ( TEXT | link ) "}" _NOT_RBRACE -> em
-
-_NOT_LBRACE: /[^\{]/
-_NOT_RBRACE: /[^\}]/
+bold: "{{" ( link | nested_italic | TEXT )+ "}}" -> strong
+italic: "{" ( link | nested_bold | TEXT )+ "}" -> em
+nested_bold: TEXT _NOT_LEFT_BRACE "{{" ( link | TEXT )+ "}}" -> strong
+nested_italic: TEXT _NOT_LEFT_BRACE "{" ( link | TEXT )+ "}" -> em
 
 ?link: a
      | footnote
      | wikipedia_link
 
-a: "[" link_text "->" link_destination "]" -> a
-link_text: TEXT -> text
+a: "[" TEXT "->" link_destination "]" -> a
 link_destination: TEXT -> href
-footnote: "[[" footnote_content "]]" -> footnote
-footnote_content: TEXT -> content
-wikipedia_link: "[?" wikipedia_query "]" -> a_wikipedia
-wikipedia_query: TEXT -> query
+
+footnote: "[[" TEXT "]]" -> footnote
+wikipedia_link: "[?" TEXT "]" -> a_wikipedia
+
+// Negative terminals
+
+_NOT_LEFT_BRACE: /[^\{]/
+
+// Terminals
+
+SEPARATOR: "----" "-"*
+
+// Windows or Unix line breaks
+_N: /\r/? /\n/
 
 // Pure text :
 // - Never contains line breaks
-// - Never contains curly braces
-TEXT.0: /[^\r\n\{\}]/+
+// - Is the least priority element, so should be lazily matched
+TEXT: /.+?/
