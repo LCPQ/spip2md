@@ -1,0 +1,84 @@
+// SPIP Markup grammar for Lark parser, more flexible try
+
+start: _N* block ( _N+ block )+ _N*
+
+?block: paragraph
+      | heading
+      | list
+      | table
+      | tag
+      | HORIZONTAL_RULE -> horizontal_rule
+
+?list: unordered_list
+     | ordered_list
+
+unordered_list: ( _HYPHEN list_element _N )+
+ordered_list: ( _HYPHEN_HASH list_element _N )+
+list_item: _inline
+
+table: ( table_metadata _N )? ( row _N )+
+table_metadata: _PIPE _PIPE TEXT _PIPE TEXT _PIPE _PIPE
+table_row: ( _PIPE cell )+ _PIPE
+table_cell: _inline
+
+heading: _O_CURLY_3 ( _inline /(?=/ _C_CURLY_3 /)/ ) _C_CURLY_3
+
+paragraph: ( _inline _N? )+
+
+_inline: TEXT /(?=/ ( _O_CURLY | _O_SQUARE | _O_ANGLE ) /)/
+       | emphasis
+       | strong
+       | anchor
+       | tag
+
+strong: _O_CURLY_2 ( _inline /(?=/ _C_CURLY_2 /)/ )+ _C_CURLY_2
+emphasis: _O_CURLY ( _inline /(?=/ _C_CURLY /)/ )+ _C_CURLY
+
+?anchor: anchor_footnote
+       | anchor_wikipedia
+       | anchor_normal -> anchor
+
+footnote: _O_SQUARE_2 HREF _C_SQUARE_2
+wikipedia_link: _O_SQUARE_INTERO HREF _C_SQUARE
+a: _LINK_OPENING LINK_TEXT _ARROW HREF _C_SQUARE
+
+tag: closing_quote
+   | opening_quote
+   | closing_tag
+   | opening_tag
+
+orphan_tag: _ORPHAN_OPENING TEXT ( _PIPE TEXT )* _C_ANGLE
+start_tag: _O_ANGLE _SLASH TEXT ( _PIPE TEXT )* _C_ANGLE
+end_tag: _O_ANGLE TEXT ( _PIPE TEXT )* _C_ANGLE
+
+// Terminals
+_N: /\r?\n/
+HORIZONTAL_RULE: "----" "-"*
+TEXT: /.+?/
+
+_HYPHEN: "-"
+_HYPHEN_HASH: "-#"
+_PIPE: "|"
+_SLASH: "/"
+_O_ANGLE: "<"
+_C_ANGLE: ">"
+_ORPHAN_OPENING: /<(?=([^>\/]+?)>)(?!.*<\/\1>)/
+
+_O_CURLY_3: "{{{"
+_C_CURLY_3: "}}}"
+_O_CURLY_2: "{{"
+_C_CURLY_2: "}}"
+_O_CURLY: "{"
+_C_CURLY: "}"
+
+_O_SQUARE_2: "[["
+_C_SQUARE_2: "]]"
+_O_SQUARE_INTERO: "[?"
+_C_SQUARE: "]"
+_ARROW: "->"
+_LINK_OPENING: /\[(?=/ PURE_TEXT+ /]*->)/
+HREF: PURE_TEXT+
+LINK_TEXT: PURE_TEXT+ /(?=->)/
+
+/// Every characters that have no markup meaning
+PURE_TEXT: /[^\r\n\|\{\}\[\]\<\>]/
