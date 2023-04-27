@@ -47,6 +47,7 @@ I have collaborations through various projects:
 Other collaborations : 
 * Vincent Pauchard : CUNY Energy Institute, New-York
 
+||Test table|This is a test table||
 |{{Test}}|{{Result}}|
 |1=1|True|
 |2=1|False|
@@ -61,6 +62,13 @@ Other collaborations :
 {{2013-2015:}} Christophe Iftner, PhD entitled "Modeling molecular clusters in cryogenic environment" (co-supervision with Fernand Spiegelman)
 {{April - June 2015:}} Guillaume Rouaut, M1, Topic : "Molecular dynamics and infrared spectra at finite temperature of PAH of astrophysical interest : isomerisations"
 {{2014-2016:}} Eric Michoulier, PhD entitled "Modeling the interactions of PAHs with interstellar water ice" (co-supervision with Céline Toubin, PhLAM, Lille)
+
+|{{Test}}|{{Result}}|
+|1=1|True|
+|2=1|False|
+|Life=Tacos|True|
+|World|False|
+
 {{January-June 2016:}} Guillaume Rouaut, M2, Topic :  "Modeling molecular clusters in a cryogenic environment : structures, energetics and IR spectra" 
 {{2015-2017:}} Sarah Rodriguez-Castillo, PhD entitled "Formation and destruction of interstellar PAHs: experience and theory" (thesis supervised by C. Joblin, supervision of the theoretical part)
 

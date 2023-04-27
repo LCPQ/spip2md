@@ -16,7 +16,8 @@ unordered_list: ( _HYPHEN_STAR list_element _N )+ -> ul
 ordered_list: ( _HYPHEN_HASH list_element _N )+ -> ol
 list_element: _inline_format -> li
 
-table: ( row _N )+ -> table
+table: ( table_meta _N )? ( row _N )+ -> table
+table_meta: _PIPE _PIPE TEXT _PIPE TEXT _PIPE _PIPE -> title_description
 row: ( _PIPE cell )+ _PIPE -> tr
 cell: _inline_format -> td
 
