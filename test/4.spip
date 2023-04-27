@@ -1,0 +1,78 @@
+# Louisnard Fernand
+
+<doc1211|right>
+
+<h1>{{Ph.D Student}}</h1>
+
+{ {{E-mail:}} } fernand.louisnard[AT]irsamc.ups-tlse.fr
+
+<p align=justify>
+{ {{Address:}} } Laboratoire de Chimie et Physique Quantiques, IRSAMC, Université Paul Sabatier, 118 Route de Narbonne, 31062 Toulouse Cedex 4, France
+
+{ {{Office:}} } 221 Building 3R1B4
+
+{ {{Phone:}} }
+
+{ {{Fax:}} }
+
+---
+
+{{{SHORT CV}}}
+
+<p align=justify>
+{ {{2018 - 2021:}} } Ph.D in Theoretical chemistry   
+Paul Sabatier University, {{Laboratoire de Chimie et Physique Quantiques (LCPQ)}}, Toulouse, FRANCE.
+Exploration of energetic landscapes and nuclear quantum effects: A Parallel-Tempering Path-Integral Molecular Dynamics approach.
+Director: Aude Simon
+Co-director: Jérôme Cuny
+<p align=justify>{ {{2017 - 2018}} } Master 2 in Theoretical chemistry and computational modelling,
+TCCM ERASMUS Mundus Master, Valencia, SPAIN. 
+<p align=justify>{ {{2016 - 2017:}} } Master 1 in Theoretical chemistry and modelling, 
+Paul Sabatier University, Toulouse, FRANCE.
+<p align=justify>{ {{2012 - 2015:}} } Bachelor in chemistry "Parcours spéciaux",
+Paul Sabatier University, Toulouse, FRANCE.
+
+- [Full curriculum vitae (french)-> doc1215 ]
+
+- [Full curriculum vitae (english)-> doc1214 ]
+
+{{{RESEARCH  ACTIVITIES}}}
+
+<sjcycle393|rubrique|cycle|random=true|docs=830,831,832,833|fx=carousel|carouselvisible=2|carouselfluid=true|carouselslidedimension=100|timeout=2000|largeurmax=300>
+
+<p align=justify>I am developping methods (Path Integral Molecular Dynamics (PIMD), asynchronous Replica Exchange Molecular Dynamics (REMD) and (Replica Exchange Path Integral Molecular Dynamics (PIREMD) to enhance Molecular Dynamic simulations on the [deMonNano->http://demon-nano.ups-tlse.fr/] code (which is a DFTB code) and the [deMon2k->http://demon-software.com/public_html/index.html] code (a DFT code). Using the right parallelization method for their implementation, they fit perfectly the architecture of supercomputers and show a great scaling peformance.
+
+In the second part of my Ph.D I will use these methods to determine the impact of Nuclear Quantum Effects (NQEs) on:
+
+- neutral and protonated water clusters
+- proton transfer on water clusters
+- the behavior of protons adsorbed on metals surfaces such as silver, gold or ruthenium
+- the absorption and emission properties of simple organic molecules in aqueous solvant.
+
+- [Full publication list -> ******* ]
+
+{{{TEACHING}}}
+
+{{L1 Level:}}
+
+-{{2018-2019 Physique}} S2 Rebondir (27h Cours/TD)
+
+{{L2 Level:}}
+
+-{{2018-2019 Atomistique et liaison chimique I}} L2 Parcours Spéciaux (4h Cours/TD)
+
+{{L3 Level:}}
+
+-{{2018-2020 Structure Géométrique et Réactivité}} L3 Chimie (14h TD) -{{2018-2020 Thermodynamique et Cinétique}} L3 Chimie (20h TP)
+
+{{Schools:}}
+
+-{{2019 Molecular Dynamics}} TCCM Winter School} School for advanced sciences of Luchon, Luchon-Superbagnères, FRANCE
+
+{{{ORAL COMMUNICATIONS}}}
+
+-{{MPI implementation of the Parallel-Tempering Molecular Dynamics (PTMD) approach in deMon2k.}}
+F. Louisnard, J. Cuny, A. Simon
+19th deMon developpers Workshop, Fréjus (France), May 2019} -{{Synchronous and Asynchronous implementation of the Parallel-Tempering Molecular Dynamics method in the codes deMonNano and deMon2k}}
+F. Louisnard, J. Cuny, A. Simon
+Les Toulousaines du Calcul Atomique et Moléculaire" â€“TouCAM, Toulouse (France), November 2019}
