@@ -2,7 +2,8 @@ from os import path
 
 from lark import Lark
 
-spipParser = Lark(open(path.dirname(__file__) + "/spip.lark"))
+# spipParser = Lark(open(path.dirname(__file__) + "/spip.lark"))
+spipParser = Lark(open(path.dirname(__file__) + "/spip.flex.lark"))
 
 
 class content:

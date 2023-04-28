@@ -1,5 +1,4 @@
-// SPIP Markup grammar for Lark parser, more flexible try
-
+// Flexible SPIP Markup grammar for Lark parser
 start: _N* block ( _N+ block )+ _N*
 
 ?block: paragraph
@@ -12,73 +11,83 @@ start: _N* block ( _N+ block )+ _N*
 ?list: unordered_list
      | ordered_list
 
-unordered_list: ( _HYPHEN list_element _N )+
-ordered_list: ( _HYPHEN_HASH list_element _N )+
+unordered_list: ( _HYPHEN _STAR? list_item _N )+
+ordered_list: ( _HYPHEN_HASH list_item _N )+
 list_item: _inline
 
-table: ( table_metadata _N )? ( row _N )+
-table_metadata: _PIPE _PIPE TEXT _PIPE TEXT _PIPE _PIPE
-table_row: ( _PIPE cell )+ _PIPE
-table_cell: _inline
+table: ( _PIPE~2 table_title _PIPE table_description _PIPE~2 _N )? ( table_row _N )+
+table_title: _table_inline
+table_description: _table_inline
+table_row: ( _PIPE table_cell )+ _PIPE
+table_cell: _table_inline
 
-heading: _O_CURLY_3 ( _inline /(?=/ _C_CURLY_3 /)/ ) _C_CURLY_3
+heading: _O_CURLY_3 _markup_inline _C_CURLY_3
 
 paragraph: ( _inline _N? )+
 
-_inline: TEXT /(?=/ ( _O_CURLY | _O_SQUARE | _O_ANGLE ) /)/
+_table_inline: TABLE_TEXT
+             | emphasis
+             | strong
+             | anchor
+             | tag
+
+_inline: TEXT
        | emphasis
        | strong
        | anchor
        | tag
 
-strong: _O_CURLY_2 ( _inline /(?=/ _C_CURLY_2 /)/ )+ _C_CURLY_2
-emphasis: _O_CURLY ( _inline /(?=/ _C_CURLY /)/ )+ _C_CURLY
+strong: _O_CURLY_2 ( _markup_inline )+ _C_CURLY_2
+emphasis: _O_CURLY ( _markup_inline )+ _C_CURLY
 
 ?anchor: anchor_footnote
        | anchor_wikipedia
        | anchor_normal -> anchor
 
-footnote: _O_SQUARE_2 HREF _C_SQUARE_2
-wikipedia_link: _O_SQUARE_INTERO HREF _C_SQUARE
-a: _LINK_OPENING LINK_TEXT _ARROW HREF _C_SQUARE
+_markup_inline: MARKUP_TEXT
+              | emphasis
+              | strong
+              | anchor
+              | tag
 
-tag: closing_quote
-   | opening_quote
-   | closing_tag
-   | opening_tag
+anchor_footnote: _O_SQUARE_2 HREF _C_SQUARE_2
+anchor_wikipedia: _O_SQUARE_INTERO HREF _C_SQUARE
+anchor_normal: _LINK_O_SQUARE ANCHOR_TEXT _ARROW HREF _C_SQUARE
 
-orphan_tag: _ORPHAN_OPENING TEXT ( _PIPE TEXT )* _C_ANGLE
-start_tag: _O_ANGLE _SLASH TEXT ( _PIPE TEXT )* _C_ANGLE
-end_tag: _O_ANGLE TEXT ( _PIPE TEXT )* _C_ANGLE
+tag: end_tag
+   | start_tag
+
+start_tag: _O_ANGLE _SLASH PURE_TEXT+ ( _PIPE PURE_TEXT+ )* _C_ANGLE
+end_tag: _O_ANGLE PURE_TEXT+ ( _PIPE PURE_TEXT+ )* _C_ANGLE
 
 // Terminals
+HORIZONTAL_RULE: /----+/
+TABLE_TEXT: /.+?(?=[\{\[\|])/
+TEXT: /.+?(?=[\{\[\<])/
+MARKUP_TEXT: /.+?(?=[\{\}\[\]])/
+PURE_TEXT: /[^\r\n\|\{\}\[\]\<\>]/
+ANCHOR_TEXT: PURE_TEXT+ /(?=->)/
+HREF: PURE_TEXT+
+// Filtered terminals
 _N: /\r?\n/
-HORIZONTAL_RULE: "----" "-"*
-TEXT: /.+?/
-
+_O_MARKUP: _O_CURLY | _O_ANGLE | _O_SQUARE | _HYPHEN | _PIPE
 _HYPHEN: "-"
+_STAR: "*"
 _HYPHEN_HASH: "-#"
 _PIPE: "|"
 _SLASH: "/"
 _O_ANGLE: "<"
 _C_ANGLE: ">"
-_ORPHAN_OPENING: /<(?=([^>\/]+?)>)(?!.*<\/\1>)/
-
 _O_CURLY_3: "{{{"
 _C_CURLY_3: "}}}"
 _O_CURLY_2: "{{"
 _C_CURLY_2: "}}"
 _O_CURLY: "{"
 _C_CURLY: "}"
-
 _O_SQUARE_2: "[["
 _C_SQUARE_2: "]]"
 _O_SQUARE_INTERO: "[?"
+_O_SQUARE: "["
 _C_SQUARE: "]"
 _ARROW: "->"
-_LINK_OPENING: /\[(?=/ PURE_TEXT+ /]*->)/
-HREF: PURE_TEXT+
-LINK_TEXT: PURE_TEXT+ /(?=->)/
-
-/// Every characters that have no markup meaning
-PURE_TEXT: /[^\r\n\|\{\}\[\]\<\>]/
+_LINK_O_SQUARE: _O_SQUARE /(?=/ PURE_TEXT+ /->)/
