@@ -8,28 +8,30 @@ start: _N* block ( _N+ block )+ _N*
       | tag
       | HORIZONTAL_RULE -> horizontal_rule
 
+HORIZONTAL_RULE: /----+/
+
 ?list: unordered_list
      | ordered_list
 
-unordered_list: ( _HYPHEN _STAR? list_item _N )+
-ordered_list: ( _HYPHEN_HASH list_item _N )+
+unordered_list: ( _UL list_item _N )+
+ordered_list: ( _OL list_item _N )+
 list_item: _inline
+_UL: /-|-\*/
+_OL: /-#/
 
-table: ( _PIPE~2 table_title _PIPE table_description _PIPE~2 _N )? ( table_row _N )+
+table: ( _TBL_META table_metadata "||" _N )? ( table_row _N )+
+table_metadata: table_title "|" table_description
 table_title: _table_inline
 table_description: _table_inline
-table_row: ( _PIPE table_cell )+ _PIPE
+table_row: ( _TBL table_cell )+ "|"
 table_cell: _table_inline
+_TBL_META: "||"
+_TBL: "|"
 
-heading: _O_CURLY_3 _markup_inline _C_CURLY_3
+heading: _H _markup_inline "}}}"
+_H: "{{{"
 
 paragraph: ( _inline _N? )+
-
-_table_inline: TABLE_TEXT
-             | emphasis
-             | strong
-             | anchor
-             | tag
 
 _inline: TEXT
        | emphasis
@@ -37,12 +39,14 @@ _inline: TEXT
        | anchor
        | tag
 
-strong: _O_CURLY_2 ( _markup_inline )+ _C_CURLY_2
-emphasis: _O_CURLY ( _markup_inline )+ _C_CURLY
+TEXT.-2: /[^\r\n]+/
 
-?anchor: anchor_footnote
-       | anchor_wikipedia
-       | anchor_normal -> anchor
+_table_inline: TABLE_TEXT
+             | emphasis
+             | strong
+             | anchor
+
+TABLE_TEXT: /[^\r\n|]+(?=[\{\[\|])/
 
 _markup_inline: MARKUP_TEXT
               | emphasis
@@ -50,44 +54,33 @@ _markup_inline: MARKUP_TEXT
               | anchor
               | tag
 
-anchor_footnote: _O_SQUARE_2 HREF _C_SQUARE_2
-anchor_wikipedia: _O_SQUARE_INTERO HREF _C_SQUARE
-anchor_normal: _LINK_O_SQUARE ANCHOR_TEXT _ARROW HREF _C_SQUARE
+MARKUP_TEXT.-1: /[^\r\n\}]+/
+
+strong: _B ( _markup_inline )+ "}}"
+emphasis: _I ( _markup_inline )+ "}"
+_B: "{{"
+_I: "{"
+
+?anchor: anchor_footnote
+       | anchor_wikipedia
+       | anchor_normal -> anchor
+
+anchor_footnote: _FOOT HREF "]]"
+anchor_wikipedia: _WIKI HREF "]"
+anchor_normal: _A A_TEXT "->" HREF "]"
+_FOOT: "[["
+_WIKI: "[?"
+_A: /\[(?=[^\n\r]+->)/
+HREF: /[^\r\n\]]+/
+A_TEXT: /[^\r\n]+(?=->)/
 
 tag: end_tag
    | start_tag
 
-start_tag: _O_ANGLE _SLASH PURE_TEXT+ ( _PIPE PURE_TEXT+ )* _C_ANGLE
-end_tag: _O_ANGLE PURE_TEXT+ ( _PIPE PURE_TEXT+ )* _C_ANGLE
+end_tag: _E_TAG TAG_TEXT ( "|" TAG_TEXT )* ">"
+start_tag: _S_TAG TAG_TEXT ( "|" TAG_TEXT )* ">"
+_S_TAG: "<"
+_E_TAG: "</"
+TAG_TEXT: /[\r\n\|\>]+/
 
-// Terminals
-HORIZONTAL_RULE: /----+/
-TABLE_TEXT: /.+?(?=[\{\[\|])/
-TEXT: /.+?(?=[\{\[\<])/
-MARKUP_TEXT: /.+?(?=[\{\}\[\]])/
-PURE_TEXT: /[^\r\n\|\{\}\[\]\<\>]/
-ANCHOR_TEXT: PURE_TEXT+ /(?=->)/
-HREF: PURE_TEXT+
-// Filtered terminals
 _N: /\r?\n/
-_O_MARKUP: _O_CURLY | _O_ANGLE | _O_SQUARE | _HYPHEN | _PIPE
-_HYPHEN: "-"
-_STAR: "*"
-_HYPHEN_HASH: "-#"
-_PIPE: "|"
-_SLASH: "/"
-_O_ANGLE: "<"
-_C_ANGLE: ">"
-_O_CURLY_3: "{{{"
-_C_CURLY_3: "}}}"
-_O_CURLY_2: "{{"
-_C_CURLY_2: "}}"
-_O_CURLY: "{"
-_C_CURLY: "}"
-_O_SQUARE_2: "[["
-_C_SQUARE_2: "]]"
-_O_SQUARE_INTERO: "[?"
-_O_SQUARE: "["
-_C_SQUARE: "]"
-_ARROW: "->"
-_LINK_O_SQUARE: _O_SQUARE /(?=/ PURE_TEXT+ /->)/
