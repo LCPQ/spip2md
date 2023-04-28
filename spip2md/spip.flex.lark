@@ -31,7 +31,7 @@ _TBL: "|"
 heading: _H _markup_inline "}}}"
 _H: "{{{"
 
-paragraph: ( _inline _N? )+
+paragraph.-1: ( _inline _N? )+
 
 _inline: TEXT
        | emphasis
@@ -39,7 +39,7 @@ _inline: TEXT
        | anchor
        | tag
 
-TEXT.-2: /[^\r\n]+/
+TEXT.-1: /[^\r\n]+/
 
 _table_inline: TABLE_TEXT
              | emphasis
