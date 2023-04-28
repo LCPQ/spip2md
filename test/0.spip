@@ -1,0 +1,54 @@
+{{{Test {SPIP}}}}
+
+----
+
+{{{Une {liste} non ordonnée}}}
+
+- { {{E-mail:}} } aude.simon@irsamc.ups-tlse.fr
+- {{ {Address:} }} Laboratoire de Chimie et Physique Quantiques, IRSAMC, Université
+- { {{Office:}} } 220 Bâtiment 3R1B4
+- {{ {Phone:} }} +33 (0)5 61 55 60 33
+- { {{Fax:}} } +33 (0)5 61 55 60 65
+
+{{{Une autre {liste} non ordonnée}}}
+
+-* { {{E-mail:}} } aude.simon@irsamc.ups-tlse.fr
+-* {{ {Address:} }} Laboratoire de Chimie et Physique Quantiques, IRSAMC, Université
+-* { {{Office:}} } 220 Bâtiment 3R1B4
+-* {{ {Phone:} }} +33 (0)5 61 55 60 33
+-* { {{Fax:}} } +33 (0)5 61 55 60 65
+
+{{{Une {liste} ordonnée}}}
+
+-# { {{E-mail:}} } aude.simon@irsamc.ups-tlse.fr
+-# {{ {Address:} }} Laboratoire de Chimie et Physique Quantiques, IRSAMC, Université
+-# { {{Office:}} } 220 Bâtiment 3R1B4
+-# {{ {Phone:} }} +33 (0)5 61 55 60 33
+-# { {{Fax:}} } +33 (0)5 61 55 60 65
+
+----
+
+{{{Un paragraphe bien garni}}}
+
+Un lien [lark->https://lark-parser.readthedocs.io] dans un {paragraphe} en italique,
+avec un peu de {{gras}}, voire même du { {{gras}} dans de l’{{italique}} (en gras)}.
+Conclut par un {{ {Lorem ipsum} }} dolor sit amet, officia excepteur ex fugiat reprehenderit enim labore culpa sint ad nisi Lorem pariatur mollit ex esse exercitation amet. Nisi anim cupidatat excepteur officia.
+
+Reprehenderit nostrud nostrud ipsum Lorem est aliquip amet voluptate voluptate dolor minim nulla est proident. Nostrud officia {{pariatur}} ut officia. Sit irure elit esse ea nulla sunt ex occaecat reprehenderit commodo officia dolor Lorem duis laboris cupidatat officia voluptate.
+
+Culpa proident adipisicing id {nulla} nisi laboris ex in Lorem sunt duis officia eiusmod. Aliqua reprehenderit commodo ex non excepteur duis sunt velit enim. Voluptate laboris sint cupidatat ullamco ut ea consectetur et est culpa et culpa duis.
+
+----
+
+{{{Un petit tableau}}}
+
+||Test table|This is a test table||
+|{{Test}}|{{Result}}|
+|1=1|True|
+|2=1|False|
+|Life=Tacos|True|
+|World|False|
+
+-------------------------------------------------------------
+
+FIN

@@ -24,7 +24,8 @@ def test(filename):
 
 
 # Test
-test("../test/1.spip")
-test("../test/2.spip")
-test("../test/3.spip")
-test("../test/4.spip")
+test("../test/0.spip")
+# test("../test/1.spip")
+# test("../test/2.spip")
+# test("../test/3.spip")
+# test("../test/4.spip")
