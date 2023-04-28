@@ -1,5 +1,5 @@
 // Flexible SPIP Markup grammar for Lark parser
-start: _N* block ( _N+ block )+ _N*
+start: _N* block ( _N+ block )* _N*
 
 ?block: paragraph
       | heading
@@ -15,51 +15,38 @@ HORIZONTAL_RULE: /----+/
 
 unordered_list: ( _UL list_item _N )+
 ordered_list: ( _OL list_item _N )+
-list_item: _inline
-_UL: /-|-\*/
+list_item: _inline{TEXT}+
+_UL: /-\*|-[^#-]/
 _OL: /-#/
 
 table: ( _TBL_META table_metadata "||" _N )? ( table_row _N )+
 table_metadata: table_title "|" table_description
-table_title: _table_inline
-table_description: _table_inline
+table_title: _inline{TABLE_TEXT}
+table_description: _inline{TABLE_TEXT}
 table_row: ( _TBL table_cell )+ "|"
-table_cell: _table_inline
+table_cell: _inline{TABLE_TEXT}
 _TBL_META: "||"
 _TBL: "|"
 
-heading: _H _markup_inline "}}}"
+heading: _H _inline{MARKED_TEXT}+ "}}}"
 _H: "{{{"
 
-paragraph.-1: ( _inline _N? )+
+paragraph: ( _inline{TEXT} _N? )+
 
-_inline: TEXT
-       | emphasis
-       | strong
-       | anchor
-       | tag
-
-TEXT.-1: /[^\r\n]+/
-
-_table_inline: TABLE_TEXT
+_inline{text}: text
              | emphasis
              | strong
              | anchor
+             | tag
 
-TABLE_TEXT: /[^\r\n|]+(?=[\{\[\|])/
+TEXT: /(?:[^\r\n\{](?![^\[\n\r]*->))+/
+TABLE_TEXT: /[^\|\r\n\{]+/
+MARKED_TEXT: /[^\}\r\n\{]+/
 
-_markup_inline: MARKUP_TEXT
-              | emphasis
-              | strong
-              | anchor
-              | tag
-
-MARKUP_TEXT.-1: /[^\r\n\}]+/
-
-strong: _B ( _markup_inline )+ "}}"
-emphasis: _I ( _markup_inline )+ "}"
-_B: "{{"
-_I: "{"
+strong: _B ( _inline{MARKED_TEXT} )+ ( "}}" | _N )
+emphasis: _I ( _inline{MARKED_TEXT} )+ ( "}" | _N )
+_B: /{{(?=[^\{])/
+_I: /{(?=[^\{])/
 
 ?anchor: anchor_footnote
        | anchor_wikipedia
@@ -68,19 +55,21 @@ _I: "{"
 anchor_footnote: _FOOT HREF "]]"
 anchor_wikipedia: _WIKI HREF "]"
 anchor_normal: _A A_TEXT "->" HREF "]"
-_FOOT: "[["
-_WIKI: "[?"
-_A: /\[(?=[^\n\r]+->)/
-HREF: /[^\r\n\]]+/
-A_TEXT: /[^\r\n]+(?=->)/
+_FOOT: /\[\[/
+_WIKI: /\[\?/
+_A: /\[(?=[^\[\n\r]+->)/
+HREF: _PURE_TEXT
+A_TEXT: /[^\r\n\{]+?(?=->)/
 
 tag: end_tag
    | start_tag
 
-end_tag: _E_TAG TAG_TEXT ( "|" TAG_TEXT )* ">"
-start_tag: _S_TAG TAG_TEXT ( "|" TAG_TEXT )* ">"
-_S_TAG: "<"
-_E_TAG: "</"
-TAG_TEXT: /[\r\n\|\>]+/
+end_tag: _ETAG TAG_NAME ( "|" TAG_OPTION )* ">"
+start_tag: _STAG TAG_NAME ( "|" TAG_OPTION )* ">"
+_STAG: "<"
+_ETAG: "</"
+TAG_NAME: _PURE_TEXT
+TAG_OPTION: _PURE_TEXT
 
 _N: /\r?\n/
+_PURE_TEXT: /[0-9A-Za-z_:\/\-\.]+/
