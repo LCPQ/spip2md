@@ -31,7 +31,7 @@ _TBL: "|"
 heading: _H _inline{MARKED_TEXT}+ "}}}"
 _H: "{{{"
 
-paragraph: ( _inline{TEXT} _N? )+
+paragraph.-1: ( _inline{TEXT} _N? )+
 
 _inline{text}: text
              | emphasis
