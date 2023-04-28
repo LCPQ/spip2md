@@ -39,9 +39,9 @@ _inline{text}: text
              | anchor
              | tag
 
-TEXT: /(?:[^\r\n\{](?![^\[\n\r]*->))+/
-TABLE_TEXT: /[^\|\r\n\{]+/
-MARKED_TEXT: /[^\}\r\n\{]+/
+TEXT.-1: /(?:[^\r\n\{](?![^\[\n\r]*->))+/
+TABLE_TEXT.-1: /[^\|\r\n\{]+/
+MARKED_TEXT.-1: /[^\}\r\n\{]+/
 
 strong: _B ( _inline{MARKED_TEXT} )+ ( "}}" | _N )
 emphasis: _I ( _inline{MARKED_TEXT} )+ ( "}" | _N )
@@ -61,13 +61,12 @@ _A: /\[(?=[^\[\n\r]+->)/
 HREF: _PURE_TEXT
 A_TEXT: /[^\r\n\{]+?(?=->)/
 
-tag: end_tag
-   | start_tag
+tag.1: start_tag block? end_tag?
 
-end_tag: _ETAG TAG_NAME ( "|" TAG_OPTION )* ">"
-start_tag: _STAG TAG_NAME ( "|" TAG_OPTION )* ">"
-_STAG: "<"
-_ETAG: "</"
+start_tag.1: _STAG TAG_NAME ( "|" TAG_OPTION )* ">"
+end_tag.1: _ETAG TAG_NAME ( "|" TAG_OPTION )* ">"
+_ETAG.1: /<\/(?=[0-9A-Za-z_:\|\/\-\.]+>)/
+_STAG.1: /<(?=[0-9A-Za-z_:\|\/\-\.]+>)/
 TAG_NAME: _PURE_TEXT
 TAG_OPTION: _PURE_TEXT
 
