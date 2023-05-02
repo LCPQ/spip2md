@@ -62,8 +62,10 @@ Lorem ipsum dolor sit amet, officia excepteur ex fugiat reprehenderit enim labor
 {{{Cadre de code}}}
 
 <cadre>
+
 def spipParser():
   return False
+
 </cadre>
 
 {{{Citation sans balise fermante}}}
