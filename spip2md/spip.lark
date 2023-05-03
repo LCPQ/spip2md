@@ -61,12 +61,13 @@ _link: footnote
      | wikilink
      | anchor
 
-footnote: _FOOT HREF "]]"
+footnote: _FOOT FOOTNOTE_CONTENT "]]"
 wikilink: _WIKI HREF "]"
 anchor: _A A_TEXT "->" HREF "]"
 _FOOT: /\[\[/
 _WIKI: /\[\?/
 _A: /\[(?=[^\[\n\r]+->)/
+FOOTNOTE_CONTENT: /[0-9A-Za-z_:\/\-\.\ ]+/
 HREF: _PURE_TEXT
 A_TEXT: /[^\r\n\{]+?(?=->)/
 
@@ -75,8 +76,9 @@ emphasis: _I ( _inline{MARKED_TEXT} )+ ( "}" | _N )
 _B: /{{(?=[^\{])/
 _I: /{(?=[^\{])/
 
-TEXT.-1: / (?:[^\r\n\{\<](?![^\[\n\r]*->))+
+TEXT.-1: / (?:[^\r\n\{\<](?![^\[\n\r]*->|\?[^\[\n\r]*\]|\[[^\[\n\r]*\]\]))+
          | (?:\<(?![0-9A-Za-z_:\/\-\.]+\>))+
+         | \\{
          /x
 TABLE_TEXT.-1: /(?:[^\|\r\n\{](?![^\[\n\r]*->))+/
 MARKED_TEXT.-1: /(?:[^\}\r\n\{](?![^\[\n\r]*->))+/
