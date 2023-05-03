@@ -1,7 +1,7 @@
 // Flexible SPIP Markup grammar for Lark parser
 start: _N* block ( _N+ block )* _N*
 
-?block: HORIZONTAL_RULE -> horizontal_rule
+?block: HORIZONTAL_RULE
       | heading
       | list
       | table
@@ -55,7 +55,7 @@ pair_inline_tag: _PAIR_INLINE_TAG_ANGLE TAG_NAME ( "|" TAG_OPTION )* ">" paragra
 orphan_inline_tag: _INLINE_TAG_ANGLE "/"? TAG_NAME ( "|" TAG_OPTION )* ">" -> orphan_tag
 
 _PAIR_INLINE_TAG_ANGLE: /\<(?=(?:quote|section|div|cadre|frame|code|poesie)(?:\|[0-9A-Za-z_:\/\-\.]+)*\>)/
-_INLINE_TAG_ANGLE: /\<(?=([0-9A-Za-z_:\/\-\.]+)(?:\|[0-9A-Za-z_:\/\-\.]+)*\>)/
+_INLINE_TAG_ANGLE: /\<(?!quote|section|div|cadre|frame|code|poesie)(?=[0-9A-Za-z\|_:\/\-\.]+\>)/
 
 _link: footnote
      | wikilink
