@@ -19,7 +19,7 @@ def test(filename):
     print(f"--- Parsing of {filename} ---\n")
     parsed = spipParser.parse(open(path.dirname(__file__) + "/" + filename).read())
     print(parsed, "\n")
-    print("--- Pretty print : ---\n\n", parsed.pretty(), "\n")
+    print(f"--- Parse tree of {filename} ---\n\n", parsed.pretty(), "\n")
 
 
 # Test
