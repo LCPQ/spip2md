@@ -54,8 +54,8 @@ _inline_tag.1: pair_inline_tag
 pair_inline_tag: _PAIR_INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" paragraph ( "</" _PURE_TEXT ">" | _N ) -> tag
 orphan_inline_tag: _INLINE_TAG_ANGLE "/"? TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" -> orphan_tag
 
-_PAIR_INLINE_TAG_ANGLE.1: /\<(?=(?:quote|section|div|cadre|frame|code|poesie|del|p|P)(?:\|[0-9A-Za-z_:,=\/\-\. ]+)*\>)/
-_INLINE_TAG_ANGLE: /\<(?!\/?(?:quote|section|div|cadre|frame|code|poesie|del|p|P))(?=[0-9A-Za-z\|_:,=\/\-\. ]+\>)/
+_PAIR_INLINE_TAG_ANGLE.1: /\<(?=(?:quote|section|div|cadre|frame|code|poesie|del|p)(?:\|[0-9A-Za-z_:,=\/\-\. ]+)*\>)/i
+_INLINE_TAG_ANGLE: /\<(?!\/?(?:quote|section|div|cadre|frame|code|poesie|del|p))(?=[0-9A-Za-z\|_:,=\/\-\. ]+\>)/i
 
 _link: footnote
      | wikilink
