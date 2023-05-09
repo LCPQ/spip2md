@@ -40,10 +40,9 @@ orphan_block_tag: _ORPHAN_TAG_ANGLE "/"? TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">
 _PAIR_TAG_ANGLE: /<(?=([0-9a-z]+)[^{}<>\[\]]*>[\s\S]*<\/\1>)/i
 _ORPHAN_TAG_ANGLE: /<(?=([0-9a-z]+)[^{}<>\[\]]*>)(?![\s\S]*\<\/\1\>)/i
 
-paragraph{begin, text}: _inline{begin} _N? ( _inline{text} _N? )*
+paragraph{begin, text}: _inline{begin} _N? ( ( _inline{text} | _inline_tag ) _N? )*
 
-_inline{text}: _inline_tag
-             | _link
+_inline{text}: _link
              | emphasis
              | strong
              | text
