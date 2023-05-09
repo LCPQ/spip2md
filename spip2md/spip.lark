@@ -8,7 +8,7 @@ start: _N* block ( _N+ block )* _N*
       | _block_tag
       | paragraph{TEXT}
 
-HORIZONTAL_RULE: /----+/
+HORIZONTAL_RULE: /- *- *- *- *[\- ]*/
 
 ?list: unordered_list
      | ordered_list
@@ -16,7 +16,7 @@ HORIZONTAL_RULE: /----+/
 unordered_list: ( _UL list_item _N )+
 ordered_list: ( _OL list_item _N )+
 list_item: _inline{TEXT}+
-_UL: /-\*|-[^#-]/
+_UL: /-\*|-(?!#|---)/
 _OL: /-#/
 
 table: ( _TBL_META table_metadata "||" _N )? ( table_row _N )+
@@ -25,8 +25,8 @@ table_title: _inline{TABLE_TEXT}
 table_description: _inline{TABLE_TEXT}
 table_row: ( _TBL table_cell )+ "|"
 table_cell: _inline{TABLE_TEXT}
-_TBL_META: "||"
-_TBL: "|"
+_TBL_META: /\|\|(?=[^\r\n]+\|\|)/
+_TBL: /\|(?=[^\r\n]+\|)/
 
 heading: _H _inline{MARKED_TEXT}+ "}}}"
 _H: "{{{"
@@ -83,7 +83,7 @@ PARAGRAPH_TEXT: / [^\r\n|\-{<]
                                 |\[[^\[\r\n]*\]\]
                   ))*
                 | (?:\<(?![0-9A-Za-z_:|,=\/\-\. ]+\>))+
-                | \\{
+                | \|(?=[^\r\n|])
                 /x
 
 TEXT: / (?:[^\r\n{<](?!
