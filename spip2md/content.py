@@ -1,8 +1,9 @@
 from os import path
 
 from lark import Lark
+from pyparsing import Word, alphas
 
-spipParser = Lark(open(path.dirname(__file__) + "/spip.lark"))
+larkParser = Lark(open(path.dirname(__file__) + "/spip.lark"))
 
 
 class content:
@@ -13,18 +14,19 @@ class content:
         markdown = self.spip
         # Parses the body & display parse tree
         try:
-            parsed = spipParser.parse(self.spip)
-            print(f"    parse tree :\n", parsed.pretty(), "\n")
+            print(f"    parse tree :\n")
+            print(larkParser.parse(self.spip).pretty())
         except Exception as e:
             print("    PARSING FAILED :\n", e)
         return markdown
 
+
 # Parses a file & display its parse tree
 def test(filename):
-    print(f"--- Parsing of {filename} ---\n")
-    parsed = spipParser.parse(open(path.dirname(__file__) + "/" + filename).read())
-    print(parsed, "\n")
-    print(f"--- Parse tree of {filename} ---\n\n", parsed.pretty(), "\n")
+    raw = open(path.dirname(__file__) + "/" + filename).read()
+    print(f"--- Parse tree of {filename} ---\n\n")
+    print(larkParser.parse(raw))
+
 
 if __name__ == "__main__":
     # Test

@@ -1,4 +1,5 @@
-peewee
-lark
-python-slugify[unidecode]
 pyyaml
+python-slugify[unidecode]
+peewee
+pyparsing
+lark
