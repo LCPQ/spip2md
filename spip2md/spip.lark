@@ -101,5 +101,5 @@ TAG_OPTION: _PURE_TEXT
 
 _OPTION_SEP: " "* "|" " "* | " "+
 _N: /\r?\n/
-_PURE_TEXT: /[0-9A-Za-z_:,=\/\-\.]+/
-_PLACEHOLDER: /[\*]+/
+_PURE_TEXT: /[0-9A-Za-z_:,=?\/\-\.]+/
+_PLACEHOLDER: /\*+/
