@@ -37,8 +37,8 @@ _block_tag: pair_block_tag
 pair_block_tag: _PAIR_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" start "</" _PURE_TEXT ">" -> tag
 orphan_block_tag: _ORPHAN_TAG_ANGLE "/"? TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" -> orphan_tag
 
-_PAIR_TAG_ANGLE: /<(?=([0-9A-Za-z_:|,=\/\-\. ]+)>\r?\n[\s\S]+<\/\1>)/
-_ORPHAN_TAG_ANGLE: /<(?=([0-9A-Za-z_:|,=\/\-\. ])+>\r?\n)(?![\s\S]+\<\/\1\>)/
+_PAIR_TAG_ANGLE: /<(?=([0-9A-Za-z]+)[0-9A-Za-z_:|,="\/\-\. ]*>\r?\n[\s\S]+<\/\1>)/
+_ORPHAN_TAG_ANGLE: /<(?=([0-9A-Za-z]+)[0-9A-Za-z_:|,="\/\-\. ]*>\r?\n)(?![\s\S]+\<\/\1\>)/
 
 paragraph{begin, text}: _inline{begin} _N? ( _inline{text} _N? )*
 
@@ -49,13 +49,16 @@ _inline{text}: _inline_tag
              | text
 
 _inline_tag: pair_inline_tag
+           | short_inline_tag
            | orphan_inline_tag
 
-pair_inline_tag: _PAIR_INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" _N? paragraph{TEXT, TEXT} ( "</" _PURE_TEXT ">" | _N )? -> tag
-orphan_inline_tag: _INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" -> orphan_tag
+pair_inline_tag: _INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" _N? paragraph{TEXT, TEXT} "</" _PURE_TEXT ">" -> tag
+short_inline_tag: _SHORT_INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" _N? paragraph{TEXT, TEXT} -> tag
+orphan_inline_tag: _ORPHAN_INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" -> orphan_tag
 
-_PAIR_INLINE_TAG_ANGLE: /<(?!\/|img|emb|doc)(?=[0-9A-Za-z_:,=\/\.\|\- ]*>)/i
-_INLINE_TAG_ANGLE: /<\/?(?=(?:img|emb|doc)[0-9A-Za-z\|_:,=\/\.\|\- ]+>)/i
+_INLINE_TAG_ANGLE: /<(?=([0-9A-Za-z]+)[0-9A-Za-z_:|,="\/\-\. ]*>[\s\S]+<\/\1>)/
+_SHORT_INLINE_TAG_ANGLE: /<(?=([0-9A-Za-z]+)[0-9A-Za-z_:,="\/\.\|\- ]*>)(?!\/|img|emb|doc|[\s\S]+<\/\1>)/i
+_ORPHAN_INLINE_TAG_ANGLE: /<(?=(img|emb|doc)[0-9A-Za-z\|_:,="\/\.\|\- ]*>)/i
 
 _link: footnote
      | wikilink
@@ -71,10 +74,10 @@ FOOTNOTE_CONTENT: /[0-9A-Za-z_:\/\-\.\ ]+/
 HREF: _PURE_TEXT | _PLACEHOLDER
 A_TEXT: /[^\r\n\{]+?(?=->)/
 
-strong: _B ( _inline{MARKED_TEXT} )+ ( "}}" | _N )
-emphasis: _I ( _inline{MARKED_TEXT} )+ ( "}" | _N )
-_B: /{{(?=[^\{])/
-_I: /{(?=[^\{])/
+strong: _STRONG ( _inline{MARKED_TEXT} )+ ( "}}" | _N )
+emphasis: _EM ( _inline{MARKED_TEXT} )+ ( "}" | _N )
+_STRONG: /{{(?=[^\{])/
+_EM: /{(?=[^\{])/
 
 PARAGRAPH_TEXT: / [^\r\n|\-{<]
                   (?:[^\r\n{<](?!
