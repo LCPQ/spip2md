@@ -49,12 +49,12 @@ _inline{text}: _inline_tag
              | text
 
 _inline_tag: pair_inline_tag
-             | orphan_inline_tag
+           | orphan_inline_tag
 
 pair_inline_tag: _PAIR_INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" _N? paragraph{TEXT} ( "</" _PURE_TEXT ">" | _N ) -> tag
 orphan_inline_tag: _INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" -> orphan_tag
 
-_PAIR_INLINE_TAG_ANGLE: /<(?!img|emb|doc)(?=[0-9A-Za-z_:,=\/\.\|\- ]*>)/i
+_PAIR_INLINE_TAG_ANGLE: /<(?!\/|img|emb|doc)(?=[0-9A-Za-z_:,=\/\.\|\- ]*>)/i
 _INLINE_TAG_ANGLE: /<\/?(?=(?:img|emb|doc)[0-9A-Za-z\|_:,=\/\.\|\- ]+>)/i
 
 _link: footnote
@@ -77,13 +77,13 @@ _B: /{{(?=[^\{])/
 _I: /{(?=[^\{])/
 
 TEXT: / (?:[^\r\n{<](?!
-                         [^\[\n\r]*->
-                         |\?[^\[\n\r]*\]
-                         |\[[^\[\n\r]*\]\]
-                         ))+
-         | (?:\<(?![0-9A-Za-z_:|,=\/\-\. ]+\>))+
-         | \\{
-         /x
+                      [^\[\n\r]*->
+                      |\?[^\[\n\r]*\]
+                      |\[[^\[\n\r]*\]\]
+        ))+
+      | (?:\<(?![0-9A-Za-z_:|,=\/\-\. ]+\>))+
+      | \\{
+      /x
 TABLE_TEXT: /(?:[^\|\r\n\{](?![^\[\n\r]*->))+/
 MARKED_TEXT: /(?:[^\}\r\n\{](?![^\[\n\r]*->))+/
 TAG_NAME: _PURE_TEXT
