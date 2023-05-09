@@ -34,35 +34,29 @@ else:
 
 print(f"--- Export of {nbToExport} SPIP articles to Markdown & YAML files ---\n")
 
-exported = 1
-
 # Loop among every articles & export them in Markdown files
-for article in articles:
+for exported in range(nbToExport):
+    if exported > 0 and exported % 10 == 0:
+        print(f"\n--- {nbToExport - exported} articles remaining ---\n")
+    article = articles[exported]
     meta = metadata(article)
-    print(f"{exported}. Exporting {meta.title}")
-    print(f"    in {meta.get_slug()}/index.md")
+    print(f"{exported+1}. Exporting {meta.title}")
+    print(f"    to {meta.get_slug()}/index.md")
     body = content(article.texte)
     articleDir = "{}/{}".format(CONFIG["outputDir"], meta.get_slug())
     mkdir(articleDir)
     with open("{}/index.md".format(articleDir), "w") as f:
         f.write(
-            "{}\n{}\n{}\n{}".format(
+            "{}\n\n{}\n{}\n{}".format(
                 meta.get_frontmatter(),
                 meta.get_starting(),
                 body.get_markdown(),
                 meta.get_ending(),
             )
         )
-    # End export if no more to export
-    if exported > nbToExport:
-        break
-    elif exported % 10 == 0:
-        print(f"\n--- {nbToExport - exported} articles remaining ---\n")
-    exported += 1
 
 # Close the database connection
 db.close()
 
 # Announce the end of the script
-print(f"\n--- Finished exporting {nbToExport} SPIP articles to md & YAML ---")
-print(f"---     stored as ./{CONFIG['outputDir']}/*/index.md     ---")
+print(f"\n--- Exported {nbToExport} SPIP articles to ./{CONFIG['outputDir']}/*/index.md ---")
