@@ -51,7 +51,7 @@ _inline{text}: _inline_tag
 _inline_tag: pair_inline_tag
            | orphan_inline_tag
 
-pair_inline_tag: _PAIR_INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" _N? paragraph{TEXT, TEXT} ( "</" _PURE_TEXT ">" | _N ) -> tag
+pair_inline_tag: _PAIR_INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" _N? paragraph{TEXT, TEXT} ( "</" _PURE_TEXT ">" | _N )? -> tag
 orphan_inline_tag: _INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" -> orphan_tag
 
 _PAIR_INLINE_TAG_ANGLE: /<(?!\/|img|emb|doc)(?=[0-9A-Za-z_:,=\/\.\|\- ]*>)/i
