@@ -32,7 +32,7 @@ heading: _H _inline{MARKED_TEXT}+ "}}}"
 _H: "{{{"
 
 _block_tag: pair_block_tag
-            | orphan_block_tag
+          | orphan_block_tag
 
 pair_block_tag: _PAIR_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" start "</" _PURE_TEXT ">" -> tag
 orphan_block_tag: _ORPHAN_TAG_ANGLE "/"? TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" -> orphan_tag
@@ -40,7 +40,7 @@ orphan_block_tag: _ORPHAN_TAG_ANGLE "/"? TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">
 _PAIR_TAG_ANGLE: /<(?=([0-9A-Za-z_:|,=\/\-\. ]+)>\r?\n[\s\S]+<\/\1>)/
 _ORPHAN_TAG_ANGLE: /<(?=([0-9A-Za-z_:|,=\/\-\. ])+>\r?\n)(?![\s\S]+\<\/\1\>)/
 
-paragraph{text}.-1: ( _inline{text} _N? )+
+paragraph{text}: _inline{PARAGRAPH_TEXT} _N? ( _inline{text} _N? )*
 
 _inline{text}: _inline_tag
              | _link
@@ -76,10 +76,20 @@ emphasis: _I ( _inline{MARKED_TEXT} )+ ( "}" | _N )
 _B: /{{(?=[^\{])/
 _I: /{(?=[^\{])/
 
+PARAGRAPH_TEXT: / [^\r\n|\-{<]
+                  (?:[^\r\n{<](?!
+                                [^\[\r\n]*->
+                                |\?[^\[\r\n]*\]
+                                |\[[^\[\r\n]*\]\]
+                  ))*
+                | (?:\<(?![0-9A-Za-z_:|,=\/\-\. ]+\>))+
+                | \\{
+                /x
+
 TEXT: / (?:[^\r\n{<](?!
-                      [^\[\n\r]*->
-                      |\?[^\[\n\r]*\]
-                      |\[[^\[\n\r]*\]\]
+                      [^\[\r\n]*->
+                      |\?[^\[\r\n]*\]
+                      |\[[^\[\r\n]*\]\]
         ))+
       | (?:\<(?![0-9A-Za-z_:|,=\/\-\. ]+\>))+
       | \\{
