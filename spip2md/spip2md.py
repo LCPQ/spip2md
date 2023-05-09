@@ -40,20 +40,25 @@ for exported in range(nbToExport):
         print(f"\n--- {nbToExport - exported} articles remaining ---\n")
     article = articles[exported]
     meta = metadata(article)
-    print(f"{exported+1}. Exporting {meta.title}")
-    print(f"    to {meta.get_slug()}/index.md")
-    body = content(article.texte)
-    articleDir = "{}/{}".format(CONFIG["outputDir"], meta.get_slug())
-    mkdir(articleDir)
-    with open("{}/index.md".format(articleDir), "w") as f:
-        f.write(
-            "{}\n\n{}\n{}\n{}".format(
-                meta.get_frontmatter(),
-                meta.get_starting(),
-                body.get_markdown(),
-                meta.get_ending(),
+
+    if len(article.texte) > 0:
+        print(f"{exported+1}. Exporting {meta.title}")
+        print(f"    to {meta.get_slug()}/index.md")
+        body = content(article.texte)
+        articleDir = "{}/{}".format(CONFIG["outputDir"], meta.get_slug())
+
+        mkdir(articleDir)
+        with open("{}/index.md".format(articleDir), "w") as f:
+            f.write(
+                "{}\n\n{}\n{}\n{}".format(
+                    meta.get_frontmatter(),
+                    meta.get_starting(),
+                    body.get_markdown(),
+                    meta.get_ending(),
+                )
             )
-        )
+    else:
+        print(f"{exported+1}. NOT exporting the EMPTY article {meta.title}")
 
 # Close the database connection
 db.close()
