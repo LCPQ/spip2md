@@ -1,4 +1,4 @@
-#!python3
+#!python
 import sys
 from os import mkdir
 from shutil import rmtree
