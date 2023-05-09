@@ -13,8 +13,8 @@ HORIZONTAL_RULE: /- *- *- *- *[\- ]*/
 ?list: unordered_list
      | ordered_list
 
-unordered_list: ( _UL list_item _N )+
-ordered_list: ( _OL list_item _N )+
+unordered_list: ( _UL list_item _N )* _UL list_item _N?
+ordered_list: ( _OL list_item _N )* _OL list_item _N?
 list_item: _inline{TEXT}+
 _UL: /-\*|-(?!#|---)/
 _OL: /-#/
