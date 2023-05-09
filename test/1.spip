@@ -30,6 +30,37 @@ Un lien [lark->https://lark-parser.readthedocs.io] dans un paragraphe.
 
 ---- ---
 
+<div style="text-align:center">
+{ multi
+[fr]
+Retrouvez toutes nos publications sur :
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+[en]Find all our publications on : 
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+[es]Recobre todas nuestras publicaciones sobre :
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+multi }
+</div>
+
+----
+
+<hr noshade>
+
+<div style="text-align:center">
+{{{ <multi>
+[fr]
+Retrouvez toutes nos publications sur :
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+[en]Find all our publications on : 
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+[es]Recobre todas nuestras publicaciones sobre :
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+</multi> }}}
+</div>
+
+<br>
+<object style="width:100%;height:800px;" type="text/html" data="https://haltools.archives-ouvertes.fr/Public/afficheRequetePubli.php?annee_publideb=2003&annee_publifin=2022&typdoc=('ART')&collection_exp=LCPQ_SEM&CB_auteur=oui&CB_titre=oui&CB_article=oui&langue=Anglais&tri_exp=annee_publi&tri_exp2=typdoc&tri_exp3=date_publi&ordre_aff=TA&Fen=Aff&css=https://www.lcpq.ups-tlse.fr/squelettes/css/charte-2/VisuCondense_nic.css"></object>
+
 {{{Research Interests}}}
 
 * {{Astrochemistry}} - Atmospheric Chemistry: interactions of PAH with ions, atoms (Si, Fe) and with molecular clusters ((H2O)n) ; PAH reactivity

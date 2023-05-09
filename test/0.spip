@@ -74,6 +74,28 @@ def spipParser():
 
 ----
 
+{{{ Lien en plusieurs langues }}}
+
+<multi>
+[fr]
+Retrouvez toutes nos publications sur :
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+[en]Find all our publications on : 
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+[es]Recobre todas nuestras publicaciones sobre :
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+</multi>
+
+{{{ Titre multiligne avec beaucoup d’elements }}}
+
+{{{ {{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+[en]Find all our publications on : 
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}}
+[es]Recobre todas nuestras publicaciones sobre :
+{{[HAL-LCPQ_SEM->https://hal.archives-ouvertes.fr/LCPQ_SEM/]}} }}}
+
+----
+
 {{{Des images}}}
 
 <image1|left>

@@ -28,17 +28,17 @@ table_cell: _inline{TABLE_TEXT}
 _TBL_META: /\|\|(?=[^\r\n]+\|\|)/
 _TBL: /\|(?=[^\r\n]+\|)/
 
-heading: _H _inline{MARKED_TEXT}+ "}}}"
+heading: _H paragraph{MARKED_TEXT, MARKED_TEXT} "}}}"
 _H: "{{{"
 
 _block_tag: pair_block_tag
           | orphan_block_tag
 
-pair_block_tag: _PAIR_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" start "</" _PURE_TEXT ">" -> tag
+pair_block_tag: _PAIR_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" start? "</" _PURE_TEXT ">" -> tag
 orphan_block_tag: _ORPHAN_TAG_ANGLE "/"? TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" -> orphan_tag
 
-_PAIR_TAG_ANGLE: /<(?=([0-9A-Za-z]+)[0-9A-Za-z_:|,="\/\-\. ]*>\r?\n[\s\S]+<\/\1>)/
-_ORPHAN_TAG_ANGLE: /<(?=([0-9A-Za-z]+)[0-9A-Za-z_:|,="\/\-\. ]*>\r?\n)(?![\s\S]+\<\/\1\>)/
+_PAIR_TAG_ANGLE: /<(?=([0-9a-z]+)[^{}<>\[\]]*>[\s\S]*<\/\1>)/i
+_ORPHAN_TAG_ANGLE: /<(?=([0-9a-z]+)[^{}<>\[\]]*>)(?![\s\S]*\<\/\1\>)/i
 
 paragraph{begin, text}: _inline{begin} _N? ( _inline{text} _N? )*
 
@@ -56,9 +56,9 @@ pair_inline_tag: _INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" _N? 
 short_inline_tag: _SHORT_INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" _N? paragraph{TEXT, TEXT} -> tag
 orphan_inline_tag: _ORPHAN_INLINE_TAG_ANGLE TAG_NAME ( _OPTION_SEP TAG_OPTION )* ">" -> orphan_tag
 
-_INLINE_TAG_ANGLE: /<(?=([0-9A-Za-z]+)[0-9A-Za-z_:|,="\/\-\. ]*>[\s\S]+<\/\1>)/
-_SHORT_INLINE_TAG_ANGLE: /<(?=([0-9A-Za-z]+)[0-9A-Za-z_:,="\/\.\|\- ]*>)(?!\/|img|emb|doc|[\s\S]+<\/\1>)/i
-_ORPHAN_INLINE_TAG_ANGLE: /<(?=(img|emb|doc)[0-9A-Za-z\|_:,="\/\.\|\- ]*>)/i
+_INLINE_TAG_ANGLE: /<(?=([0-9a-z]+)[0-9a-z_:|,="\/\-\. ]*>[\s\S]+<\/\1>)/i
+_SHORT_INLINE_TAG_ANGLE: /<(?=([0-9a-z]+)[0-9a-z_:,="\/\.\|\- ]*>)(?!\/|img|emb|doc|[\s\S]+<\/\1>)/i
+_ORPHAN_INLINE_TAG_ANGLE: /<(?=(img|emb|doc)[0-9a-z\|_:,="\/\.\|\- ]*>)/i
 
 _link: footnote
      | wikilink
