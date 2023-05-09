@@ -87,6 +87,16 @@ Other collaborations :
 
 ----
 
+{{{Des tags au hasard}}}
+
+<p>Du contenu simple</p>
+
+<p>Du contenu complexe, avec un [lien->https://google.com] dedans</p>
+
+<p align=justify>Du contenu simple mais dans un paragraphe justifié</p>
+
+<p align="justify">Du contenu simple mais dans un paragraphe justifié avec des guillemets</p>
+
 {{{Un paragraphe justifié}}}
 
 <p align="justify">Anthony Scemama, l'un des deux coordinateurs du CNRS pour le centre d'excellence européen H2020 [T.REX->https://trex-coe.eu/], répond aux questions de "CNRS Le Journal" sur la révolution exascale des supercalculateurs.</p>
