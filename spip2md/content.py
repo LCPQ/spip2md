@@ -103,7 +103,7 @@ class content:
     def get_markdown(self):
         for spip, markdown in self._mappings.values():
             self.markup = spip.sub(markdown, self.markup)
-        return self.markup
+        return self.markup.encode("utf-8").decode("utf-8")
 
 
 # Parses a file & display its parse tree
