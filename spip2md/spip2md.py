@@ -22,7 +22,7 @@ articles = SpipArticles.select().order_by(SpipArticles.date.desc())
 
 # Choose how many articles to export based on first param
 if len(sys.argv) > 1:
-    if int(sys.argv[1]) > 0:
+    if int(sys.argv[1]) > 0 and int(sys.argv[1]) < len(articles):
         nbToExport = int(sys.argv[1])
     else:
         nbToExport = len(articles)
@@ -64,4 +64,6 @@ for exported in range(nbToExport):
 db.close()
 
 # Announce the end of the script
-print(f"\n--- Exported {nbToExport} SPIP articles to ./{CONFIG['outputDir']}/*/index.md ---")
+print(
+    f"\n--- Exported {nbToExport} SPIP articles to ./{CONFIG['outputDir']}/*/index.md ---"
+)
