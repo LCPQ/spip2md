@@ -1,28 +1,18 @@
-import re
-
 import yaml
+from convert import convert
 from slugify import slugify
 from SpipDatabase import *
 
 
-def clean(string):
-    cleaned = string
-    # Keep only the first lang of multilingual titles
-    cleaned = re.sub(
-        r"<multi>\s*\[[a-z]{2}\]\s*([^<\[]*)\s*[^<]*\s*<\/multi>", r"\1", cleaned
-    )
-    # cleaned = re.sub(r"<[^\>]*>", r"", cleaned)
-    return cleaned
-
-
-class metadata:
+class Metadata:
     def __init__(self, article):
         self.id = article.id_article
         # self.surtitle = article.surtitre  # Probably unused
-        self.title = clean(article.titre)
+        # self.title = self.clean(article.titre)
+        self.title = convert(article.titre)
         self.subtitle = article.soustitre  # Probably unused
         # self.section = article.id_rubrique # TODO join
-        self.description = article.descriptif
+        self.description = convert(article.descriptif)
         self.caption = article.chapo  # Probably unused
         self.ps = article.ps  # Probably unused
         self.publicationDate = article.date

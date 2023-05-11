@@ -4,8 +4,8 @@ from os import mkdir
 from shutil import rmtree
 
 from config import CONFIG
-from content import content
-from metadata import metadata
+from convert import convert
+from Metadata import Metadata
 from SpipDatabase import *
 
 # Clean the output dir & create a new
@@ -39,12 +39,11 @@ for exported in range(nbToExport):
     if exported > 0 and exported % 10 == 0:
         print(f"\n--- {nbToExport - exported} articles remaining ---\n")
     article = articles[exported]
-    meta = metadata(article)
+    meta = Metadata(article)
 
     print(f"{exported+1}. Exporting {meta.title}")
     print(f"    to {meta.get_slug()}/index.md")
     articleDir = "{}/{}".format(CONFIG["outputDir"], meta.get_slug())
-    body = content(article.texte)
 
     mkdir(articleDir)
     with open("{}/index.md".format(articleDir), "w") as f:
@@ -52,7 +51,7 @@ for exported in range(nbToExport):
             "{}\n\n{}\n{}\n{}".format(
                 meta.get_frontmatter(),
                 meta.get_starting(),
-                body.get_markdown(),
+                convert(article.texte),
                 meta.get_ending(),
             )
         )
