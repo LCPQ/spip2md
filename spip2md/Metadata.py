@@ -1,5 +1,5 @@
 import yaml
-from convert import convert
+from convert import convertMeta
 from slugify import slugify
 from SpipDatabase import *
 
@@ -8,10 +8,10 @@ class metadata:
     def __init__(self, article):
         self.id = article.id_article
         # self.surtitle = article.surtitre  # Probably unused
-        self.title = convert(article.titre)
+        self.title = convertMeta(article.titre)
         self.subtitle = article.soustitre  # Probably unused
         # self.section = article.id_rubrique # TODO join
-        self.description = convert(article.descriptif)
+        self.description = convertMeta(article.descriptif)
         self.caption = article.chapo  # Probably unused
         self.ps = article.ps  # Probably unused
         self.publicationDate = article.date

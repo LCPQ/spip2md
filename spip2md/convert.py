@@ -20,8 +20,16 @@ spipToMarkdown = (
         re.compile(r"\{\{ *(.*?) *\}\}", re.S | re.I),
         r"**\1**",
     ),
+    (  # html strong
+        re.compile(r"<strong> *(.*?) *</strong>", re.S | re.I),
+        r"**\1**",
+    ),
     (  # emphasis
         re.compile(r"\{ *(.*?) *\}", re.S | re.I),
+        r"*\1*",
+    ),
+    (  # html emphasis
+        re.compile(r"<i> *(.*?) *<\/i>", re.S | re.I),
         r"*\1*",
     ),
     (  # strikethrough
@@ -94,10 +102,55 @@ spipToMarkdown = (
     ),
     (  # Keep only the first language in multi-language blocks
         re.compile(
-            r"<multi>\s*\[.{2,4}\]\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
+            r"<multi>\s*(?:\[.{2,4}\])?\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
             re.S | re.I,
         ),
         r"\1",
+    ),
+)
+
+spipToMetadata = (
+    (  # strong
+        re.compile(r"\{\{ *(.*?) *\}\}", re.S | re.I),
+        r"\1",
+    ),
+    (  # html strong
+        re.compile(r"<strong> *(.*?) *</strong>", re.S | re.I),
+        r"\1",
+    ),
+    (  # emphasis
+        re.compile(r"\{ *(.*?) *\}", re.S | re.I),
+        r"\1",
+    ),
+    (  # html emphasis
+        re.compile(r"<i> *(.*?) *<\/i>", re.S | re.I),
+        r"\1",
+    ),
+    (  # strikethrough
+        re.compile(
+            r"<del>\s*(.*?)\s*(?:(\r?\n){2,}|<\/del>)",
+            re.S | re.I,
+        ),
+        r"\1",
+    ),
+    (  # Keep only the first language in multi-language blocks
+        re.compile(
+            r"<multi>\s*(?:\[.{2,4}\])?\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
+            re.S | re.I,
+        ),
+        r"\1",
+    ),
+    (  # remove every tag
+        re.compile(r"<\/?.*?> *", re.S | re.I),
+        r"",
+    ),
+    (  # beginning with angle bracket(s)
+        re.compile(r"^>+ +", re.S | re.I),
+        r"",
+    ),
+    (  # beginning with a number followed by a dot
+        re.compile(r"^\d+\. +", re.S | re.I),
+        r"",
     ),
 )
 
@@ -197,6 +250,17 @@ unknownIso = (re.compile(r"\w*â€¨.*\r?\n"),)  # unknown â€¨ + surroundin
 def convert(markup):
     for spip, markdown in spipToMarkdown:
         markup = spip.sub(markdown, markup)
+    for iso, utf in isoToUtf:
+        markup = iso.sub(utf, markup)
+    for iso in unknownIso:
+        for match in iso.finditer(markup):
+            print(f"    UNKNOWN CHARACTER {match.group()}")
+    return markup
+
+
+def convertMeta(markup):
+    for spip, metadata in spipToMetadata:
+        markup = spip.sub(metadata, markup)
     for iso, utf in isoToUtf:
         markup = iso.sub(utf, markup)
     for iso in unknownIso:
