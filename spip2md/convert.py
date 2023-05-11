@@ -139,10 +139,6 @@ mappings = (
         re.compile("uÌˆ"),
         r"ü",
     ),
-    (  # WARNING Fix UTF-8 é ? that was interpreted as ISO 8859-1 and saved like so
-        re.compile("eÌ "),
-        r"é",
-    ),
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1 and saved like so
         re.compile("aÌ€"),
         r"à",
@@ -178,6 +174,11 @@ mappings = (
     (  # Fix UTF-8 † that was interpreted as ISO 8859-1 and saved like so
         re.compile("â€ "),
         r"† ",
+    ),
+    ## WARNING unknown or not sure
+    (  # Fix UTF-8 é that was interpreted as ISO 8859-1 and saved like so
+        re.compile("eÌ "),
+        r"é",
     ),
     (  # Delete unknown â€¨
         re.compile("â€¨"),
