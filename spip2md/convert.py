@@ -97,10 +97,23 @@ mappings = (
         ),
         r"\1",
     ),
+    (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€™"),
+        r"’",
+    ),
+    (  # Fix UTF-8 é that was interpreted as ISO 8859-1 and saved like so
+        re.compile("eÌ\u0081"),
+        r"é",
+    ),
+    (  # Fix UTF-8 é that was interpreted as ISO 8859-1 and saved like so
+        re.compile("aÌ€"),
+        r"à",
+    ),
 )
 
 
 def convert(markup):
     for spip, markdown in mappings:
         markup = spip.sub(markdown, markup)
-    return markup.encode("utf-8").decode("utf-8")
+    # return markup.encode("utf-8").decode("utf-8")
+    return markup
