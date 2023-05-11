@@ -232,6 +232,10 @@ isoToUtf = (
         re.compile("â€¢"),
         r"•",
     ),
+    (  # Fix UTF-8 ç that was interpreted as ISO 8859-1
+        re.compile("Ã§"),
+        r"ç",
+    ),
     (  # Fix UTF-8 í that was interpreted as ISO 8859-1
         re.compile("iÌ\u0081"),
         r"í",
