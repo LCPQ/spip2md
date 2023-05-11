@@ -2,18 +2,19 @@ import re
 
 mappings = (
     # SPIP syntax to Markdown
-    (  # horizontal-rule
+    (  # horizontal rule
         re.compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", re.S | re.I),
         # r"---",
         r"***",
     ),
-    (  # line-break
+    (  # line break
         re.compile(r"\r?\n_ *(?=\r?\n)|<br ?.*?>", re.S | re.I),
         "\n",
     ),
     (  # heading
         re.compile(r"\{\{\{ *(.*?) *\}\}\}", re.S | re.I),
-        r"## \1",
+        r"# \1",
+        # r"## \1",
     ),
     (  # strong
         re.compile(r"\{\{ *(.*?) *\}\}", re.S | re.I),
@@ -38,7 +39,7 @@ mappings = (
         re.compile(r"<(?:img|image)(.*?)(\|.*?)*>", re.S | re.I),
         r"![image](\1)",
     ),
-    (  # document-anchors
+    (  # document anchor
         re.compile(r"<(?:doc|emb)(.*?)(\|.*?)*>", re.S | re.I),
         r"[document](\1)",
     ),

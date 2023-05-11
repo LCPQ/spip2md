@@ -4,12 +4,12 @@ from slugify import slugify
 from SpipDatabase import *
 
 
-class Metadata:
+class metadata:
     def __init__(self, article):
         self.id = article.id_article
         # self.surtitle = article.surtitre  # Probably unused
-        # self.title = self.clean(article.titre)
-        self.title = convert(article.titre)
+        self.title = "title"
+        # self.title = convert(article.titre)
         self.subtitle = article.soustitre  # Probably unused
         # self.section = article.id_rubrique # TODO join
         self.description = convert(article.descriptif)
@@ -62,7 +62,8 @@ class Metadata:
     # Contains things before the article like caption & titles
     def get_starting(self):
         return (
-            f"{self.caption}\n" if len(self.caption) > 0 else "" + f"# {self.title}\n"
+            # f"{self.caption}\n" if len(self.caption) > 0 else "" + f"# {self.title}\n"
+            f"{self.caption}\n" if len(self.caption) > 0 else ""
         )
 
     # Contains things after the article like ps & extra

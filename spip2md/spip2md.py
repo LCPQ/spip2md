@@ -5,7 +5,7 @@ from shutil import rmtree
 
 from config import CONFIG
 from convert import convert
-from Metadata import Metadata
+from Metadata import metadata
 from SpipDatabase import *
 
 # Clean the output dir & create a new
@@ -39,7 +39,7 @@ for exported in range(nbToExport):
     if exported > 0 and exported % 10 == 0:
         print(f"\n--- {nbToExport - exported} articles remaining ---\n")
     article = articles[exported]
-    meta = Metadata(article)
+    meta = metadata(article)
 
     print(f"{exported+1}. Exporting {meta.title}")
     print(f"    to {meta.get_slug()}/index.md")
