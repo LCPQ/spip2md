@@ -107,6 +107,10 @@ spipToMarkdown = (
         ),
         r"\1",
     ),
+    (  # WARNING remove every html tag
+        re.compile(r"<\/?.*?> *", re.S | re.I),
+        r"",
+    ),
 )
 
 spipToMetadata = (
@@ -140,7 +144,7 @@ spipToMetadata = (
         ),
         r"\1",
     ),
-    (  # remove every tag
+    (  # remove every html tag
         re.compile(r"<\/?.*?> *", re.S | re.I),
         r"",
     ),
