@@ -1,6 +1,7 @@
 import re
 
 mappings = (
+    # SPIP syntax to Markdown
     (  # horizontal-rule
         re.compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", re.S | re.I),
         # r"---",
@@ -97,17 +98,94 @@ mappings = (
         ),
         r"\1",
     ),
+    # Broken encoding
     (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1 and saved like so
         re.compile("â€™"),
         r"’",
+    ),
+    (  # Fix UTF-8 † that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€˜"),
+        r"‘",
     ),
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1 and saved like so
         re.compile("eÌ\u0081"),
         r"é",
     ),
+    (  # Fix UTF-8 è that was interpreted as ISO 8859-1 and saved like so
+        re.compile("eÌ€"),
+        r"è",
+    ),
+    (  # Fix UTF-8 ê that was interpreted as ISO 8859-1 and saved like so
+        re.compile("eÌ‚"),
+        r"ê",
+    ),
+    (  # Fix UTF-8 ê that was interpreted as ISO 8859-1 and saved like so
+        re.compile("oÌ‚"),
+        r"ô",
+    ),
+    (  # Fix UTF-8 î that was interpreted as ISO 8859-1 and saved like so
+        re.compile("iÌ‚"),
+        r"î",
+    ),
+    (  # Fix UTF-8 ï that was interpreted as ISO 8859-1 and saved like so
+        re.compile("iÌˆ"),
+        r"ï",
+    ),
+    (  # Fix UTF-8 ö that was interpreted as ISO 8859-1 and saved like so
+        re.compile("oÌˆ"),
+        r"ö",
+    ),
+    (  # Fix UTF-8 ö that was interpreted as ISO 8859-1 and saved like so
+        re.compile("uÌˆ"),
+        r"ü",
+    ),
+    (  # WARNING Fix UTF-8 é ? that was interpreted as ISO 8859-1 and saved like so
+        re.compile("eÌ "),
+        r"é",
+    ),
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1 and saved like so
         re.compile("aÌ€"),
         r"à",
+    ),
+    (  # Fix UTF-8 … that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€¦"),
+        r"…",
+    ),
+    (  # Fix UTF-8 “ that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€œ"),
+        r"“",
+    ),
+    (  # Fix UTF-8 ” that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€\u009d"),
+        r"”",
+    ),
+    (  # Fix UTF-8 – that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€“"),
+        r"–",
+    ),
+    (  # Fix UTF-8 – that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€”"),
+        r"—",
+    ),
+    (  # Fix UTF-8 − that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€\u0090"),
+        r"−",
+    ),
+    (  # Fix UTF-8 • that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€¢"),
+        r"•",
+    ),
+    (  # Fix UTF-8 † that was interpreted as ISO 8859-1 and saved like so
+        re.compile("â€ "),
+        r"† ",
+    ),
+    (  # Delete unknown â€¨
+        re.compile("â€¨"),
+        r"",
+    ),
+    (  # Delete unknown Ì\u0081
+        re.compile("Ì\u0081"),
+        r"",
     ),
 )
 
