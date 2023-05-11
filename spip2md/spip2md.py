@@ -48,7 +48,7 @@ for exported in range(nbToExport):
     mkdir(articleDir)
     with open("{}/index.md".format(articleDir), "w") as f:
         f.write(
-            "{}\n\n{}\n{}\n{}".format(
+            "{}\n{}\n{}\n{}".format(
                 meta.get_frontmatter(),
                 meta.get_starting(),
                 convert(article.texte),

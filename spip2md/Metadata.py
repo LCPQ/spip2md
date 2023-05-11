@@ -62,8 +62,8 @@ class metadata:
     def get_starting(self):
         return (
             # f"{self.caption}\n" if len(self.caption) > 0 else "" + f"# {self.title}\n"
-            f"{self.caption}\n"
-            if len(self.caption) > 0
+            f"{self.caption}\n\n***\n"
+            if len(self.caption) > 0 and self.caption != " "
             else ""
         )
 
