@@ -1,21 +1,13 @@
-from config import CONFIG
-from peewee import *
+from peewee import (SQL, BigAutoField, BigIntegerField, CharField,
+                    CompositeKey, DateField, DateTimeField, FloatField,
+                    IntegerField, Model, MySQLDatabase, TextField)
 
-db = MySQLDatabase(
-    CONFIG["db"],
-    **{
-        "charset": "utf8",
-        "sql_mode": "PIPES_AS_CONCAT",
-        "use_unicode": True,
-        "user": CONFIG["dbUser"],
-        "password": CONFIG["dbPass"],
-    }
-)
+# class UnknownField(object):
+#     def __init__(self, *_, **__):
+#         pass
 
 
-class UnknownField(object):
-    def __init__(self, *_, **__):
-        pass
+db = MySQLDatabase(None)
 
 
 class BaseModel(Model):

@@ -1,159 +1,159 @@
-import re
+from re import I, S, compile
 
 # SPIP syntax to Markdown
 spipToMarkdown = (
     (  # horizontal rule
-        re.compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", re.S | re.I),
+        compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", S | I),
         # r"---",
         r"***",
     ),
     (  # line break
-        re.compile(r"\r?\n_ *(?=\r?\n)|<br ?.*?>", re.S | re.I),
+        compile(r"\r?\n_ *(?=\r?\n)|<br ?.*?>", S | I),
         "\n",
     ),
     (  # heading
-        re.compile(r"\{\{\{ *(.*?) *\}\}\}", re.S | re.I),
+        compile(r"\{\{\{ *(.*?) *\}\}\}", S | I),
         r"# \1",
         # r"## \1",
     ),
     (  # strong
-        re.compile(r"\{\{ *(.*?) *\}\}", re.S | re.I),
+        compile(r"\{\{ *(.*?) *\}\}", S | I),
         r"**\1**",
     ),
     (  # html strong
-        re.compile(r"<strong> *(.*?) *</strong>", re.S | re.I),
+        compile(r"<strong> *(.*?) *</strong>", S | I),
         r"**\1**",
     ),
     (  # emphasis
-        re.compile(r"\{ *(.*?) *\}", re.S | re.I),
+        compile(r"\{ *(.*?) *\}", S | I),
         r"*\1*",
     ),
     (  # html emphasis
-        re.compile(r"<i> *(.*?) *<\/i>", re.S | re.I),
+        compile(r"<i> *(.*?) *<\/i>", S | I),
         r"*\1*",
     ),
     (  # strikethrough
-        re.compile(
+        compile(
             r"<del>\s*(.*?)\s*(?:(\r?\n){2,}|<\/del>)",
-            re.S | re.I,
+            S | I,
         ),
         r"~\1~",
     ),
     (  # anchor
-        re.compile(r"\[ *(.*?) *-> *(.*?) *\]", re.S | re.I),
+        compile(r"\[ *(.*?) *-> *(.*?) *\]", S | I),
         r"[\1](\2)",
     ),
     (  # image
-        re.compile(r"<(?:img|image)(.*?)(\|.*?)*>", re.S | re.I),
+        compile(r"<(?:img|image)(.*?)(\|.*?)*>", S | I),
         r"![image](\1)",
     ),
     (  # document anchor
-        re.compile(r"<(?:doc|emb)(.*?)(\|.*?)*>", re.S | re.I),
+        compile(r"<(?:doc|emb)(.*?)(\|.*?)*>", S | I),
         r"[document](\1)",
     ),
     (  # wikilink
-        re.compile(r"\[\? *(.*?) *\]", re.S | re.I),
+        compile(r"\[\? *(.*?) *\]", S | I),
         r"[\1](https://wikipedia.org/wiki/\1)",
     ),
     (  # footnote
-        re.compile(r"\[\[ *(.*?) *\]\]", re.S | re.I),
+        compile(r"\[\[ *(.*?) *\]\]", S | I),
         r"",
     ),
     (  # unordered list
-        re.compile(r"(\r?\n)-(?!#|-)\*? *", re.S | re.I),
+        compile(r"(\r?\n)-(?!#|-)\*? *", S | I),
         r"\1- ",
     ),
     (  # wrong unordered list
-        re.compile(r"(\r?\n)\* +", re.S | re.I),
+        compile(r"(\r?\n)\* +", S | I),
         r"\1- ",
     ),
     (  # wrong unordered list WARNING suppresses preceding tag
-        re.compile(r"(\r?\n)<.*?>\* +", re.I),
+        compile(r"(\r?\n)<.*?>\* +", I),
         r"\1- ",
     ),
     (  # ordered-list
-        re.compile(r"(\r?\n)-# *", re.S | re.I),
+        compile(r"(\r?\n)-# *", S | I),
         r"\g<1>1. ",
     ),
     (  # table-metadata
-        re.compile(r"(\r?\n)\|\|(.*?)\|(.*?)\|\|", re.S | re.I),
+        compile(r"(\r?\n)\|\|(.*?)\|(.*?)\|\|", S | I),
         r"",
     ),
     (  # quote
-        re.compile(
+        compile(
             r"<(?:quote|poesie)>\s*(.*?)\s*(?:(\r?\n){2,}|<\/(?:quote|poesie)>)",
-            re.S | re.I,
+            S | I,
         ),
         r"> \1\2\2",
     ),
     (  # box
-        re.compile(
+        compile(
             r"<code>\s*(.*?)\s*(?:(?:\r?\n){2,}|<\/code>)",
-            re.S | re.I,
+            S | I,
         ),
         "`\\1`",
     ),
     (  # fence
-        re.compile(
+        compile(
             r"<cadre>\s*(.*?)\s*(?:(?:\r?\n){2,}|<\/cadre>)",
-            re.S | re.I,
+            S | I,
         ),
         "```\n\\1\n\n```",
     ),
     (  # Keep only the first language in multi-language blocks
-        re.compile(
+        compile(
             r"<multi>\s*(?:\[.{2,4}\])?\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
-            re.S | re.I,
+            S | I,
         ),
         r"\1",
     ),
     (  # WARNING remove every html tag
-        re.compile(r"<\/?.*?> *", re.S | re.I),
+        compile(r"<\/?.*?> *", S | I),
         r"",
     ),
 )
 
-spipToMetadata = (
+spipToText = (
     (  # strong
-        re.compile(r"\{\{ *(.*?) *\}\}", re.S | re.I),
+        compile(r"\{\{ *(.*?) *\}\}", S | I),
         r"\1",
     ),
     (  # html strong
-        re.compile(r"<strong> *(.*?) *</strong>", re.S | re.I),
+        compile(r"<strong> *(.*?) *</strong>", S | I),
         r"\1",
     ),
     (  # emphasis
-        re.compile(r"\{ *(.*?) *\}", re.S | re.I),
+        compile(r"\{ *(.*?) *\}", S | I),
         r"\1",
     ),
     (  # html emphasis
-        re.compile(r"<i> *(.*?) *<\/i>", re.S | re.I),
+        compile(r"<i> *(.*?) *<\/i>", S | I),
         r"\1",
     ),
     (  # strikethrough
-        re.compile(
+        compile(
             r"<del>\s*(.*?)\s*(?:(\r?\n){2,}|<\/del>)",
-            re.S | re.I,
+            S | I,
         ),
         r"\1",
     ),
     (  # Keep only the first language in multi-language blocks
-        re.compile(
+        compile(
             r"<multi>\s*(?:\[.{2,4}\])?\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
-            re.S | re.I,
+            S | I,
         ),
         r"\1",
     ),
     (  # remove every html tag
-        re.compile(r"<\/?.*?> *", re.S | re.I),
+        compile(r"<\/?.*?> *", S | I),
         r"",
     ),
     (  # beginning with angle bracket(s)
-        re.compile(r"^>+ +", re.S | re.I),
+        compile(r"^>+ +", S | I),
         r"",
     ),
     (  # beginning with a number followed by a dot
-        re.compile(r"^\d+\. +", re.S | re.I),
+        compile(r"^\d+\. +", S | I),
         r"",
     ),
 )
@@ -161,117 +161,119 @@ spipToMetadata = (
 isoToUtf = (
     # Broken encoding
     (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1
-        re.compile("â€™"),
+        compile("â€™"),
         r"’",
     ),
     (  # Fix UTF-8 † that was interpreted as ISO 8859-1
-        re.compile("â€˜"),
+        compile("â€˜"),
         r"‘",
     ),
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1
-        re.compile("eÌ\u0081"),
+        compile("eÌ\u0081"),
         r"é",
     ),
     (  # Fix UTF-8 è that was interpreted as ISO 8859-1
-        re.compile("eÌ€"),
+        compile("eÌ€"),
         r"è",
     ),
     (  # Fix UTF-8 ê that was interpreted as ISO 8859-1
-        re.compile("eÌ‚"),
+        compile("eÌ‚"),
         r"ê",
     ),
     (  # Fix UTF-8 ê that was interpreted as ISO 8859-1
-        re.compile("oÌ‚"),
+        compile("oÌ‚"),
         r"ô",
     ),
     (  # Fix UTF-8 î that was interpreted as ISO 8859-1
-        re.compile("iÌ‚"),
+        compile("iÌ‚"),
         r"î",
     ),
     (  # Fix UTF-8 ï that was interpreted as ISO 8859-1
-        re.compile("iÌˆ"),
+        compile("iÌˆ"),
         r"ï",
     ),
     (  # Fix UTF-8 ö that was interpreted as ISO 8859-1
-        re.compile("oÌˆ"),
+        compile("oÌˆ"),
         r"ö",
     ),
     (  # Fix UTF-8 ö that was interpreted as ISO 8859-1
-        re.compile("uÌˆ"),
+        compile("uÌˆ"),
         r"ü",
     ),
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1
-        re.compile("aÌ€"),
+        compile("aÌ€"),
         r"à",
     ),
     (  # Fix UTF-8 … that was interpreted as ISO 8859-1
-        re.compile("â€¦"),
+        compile("â€¦"),
         r"…",
     ),
     (  # Fix UTF-8 “ that was interpreted as ISO 8859-1
-        re.compile("â€œ"),
+        compile("â€œ"),
         r"“",
     ),
     (  # Fix UTF-8 ” that was interpreted as ISO 8859-1
-        re.compile("â€\u009d"),
+        compile("â€\u009d"),
         r"”",
     ),
     (  # Fix UTF-8 – that was interpreted as ISO 8859-1
-        re.compile("â€“"),
+        compile("â€“"),
         r"–",
     ),
     (  # Fix UTF-8 – that was interpreted as ISO 8859-1
-        re.compile("â€”"),
+        compile("â€”"),
         r"—",
     ),
     (  # Fix UTF-8 − that was interpreted as ISO 8859-1
-        re.compile("â€\u0090"),
+        compile("â€\u0090"),
         r"−",
     ),
     (  # Fix UTF-8 • that was interpreted as ISO 8859-1
-        re.compile("â€¢"),
+        compile("â€¢"),
         r"•",
     ),
     (  # Fix UTF-8 ç that was interpreted as ISO 8859-1
-        re.compile("Ã§"),
+        compile("Ã§"),
         r"ç",
     ),
     (  # Fix UTF-8 í that was interpreted as ISO 8859-1
-        re.compile("iÌ\u0081"),
+        compile("iÌ\u0081"),
         r"í",
     ),
     # WARNING not sure
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1
-        re.compile("eÌ "),
+        compile("eÌ "),
         r"é",
     ),
     (  # Fix UTF-8 † that was interpreted as ISO 8859-1
-        re.compile("â€ "),
+        compile("â€ "),
         r"† ",
     ),
 )
 
 ## WARNING unknown broken encoding
-unknownIso = (re.compile(r"\w*â€¨.*\r?\n"),)  # unknown â€¨ + surroundings
+unknownIso = (compile(r"\w*â€¨.*\r?\n"),)  # unknown â€¨ + surroundings
 
 
-def convert(markup):
+def convertBody(spipBody):
+    text = spipBody
     for spip, markdown in spipToMarkdown:
-        markup = spip.sub(markdown, markup)
+        text = spip.sub(markdown, text)
     for iso, utf in isoToUtf:
-        markup = iso.sub(utf, markup)
+        text = iso.sub(utf, text)
     for iso in unknownIso:
-        for match in iso.finditer(markup):
+        for match in iso.finditer(text):
             print(f"    UNKNOWN CHARACTER {match.group()}")
-    return markup
+    return text
 
 
-def convertMeta(markup):
-    for spip, metadata in spipToMetadata:
-        markup = spip.sub(metadata, markup)
+def convertMeta(spipMeta):
+    text = spipMeta
+    for spip, metadata in spipToText:
+        text = spip.sub(metadata, text)
     for iso, utf in isoToUtf:
-        markup = iso.sub(utf, markup)
+        text = iso.sub(utf, text)
     for iso in unknownIso:
-        for match in iso.finditer(markup):
+        for match in iso.finditer(text):
             print(f"    UNKNOWN CHARACTER {match.group()}")
-    return markup
+    return text
