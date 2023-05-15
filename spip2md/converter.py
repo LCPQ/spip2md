@@ -257,23 +257,25 @@ unknownIso = (compile(r"\w*â€¨.*\r?\n"),)  # unknown â€¨ + surroundings
 
 def convertBody(spipBody):
     text = spipBody
+    errors = []
     for spip, markdown in spipToMarkdown:
         text = spip.sub(markdown, text)
     for iso, utf in isoToUtf:
         text = iso.sub(utf, text)
     for iso in unknownIso:
         for match in iso.finditer(text):
-            print(f"    UNKNOWN CHARACTER {match.group()}")
-    return text
+            errors.append(match.group())
+    return text, errors
 
 
 def convertMeta(spipMeta):
     text = spipMeta
+    errors = []
     for spip, metadata in spipToText:
         text = spip.sub(metadata, text)
     for iso, utf in isoToUtf:
         text = iso.sub(utf, text)
     for iso in unknownIso:
         for match in iso.finditer(text):
-            print(f"    UNKNOWN CHARACTER {match.group()}")
-    return text
+            errors.append(match.group())
+    return text, errors

@@ -9,12 +9,12 @@ class Article:
     def __init__(self, article):
         self.id = article.id_article
         # self.surtitle = article.surtitre  # Probably unused
-        self.title = convertMeta(article.titre)
+        self.title, self.title_unknown = convertMeta(article.titre)
         self.subtitle = article.soustitre  # Probably unused
         # self.section = article.id_rubrique # TODO join
-        self.description = convertMeta(article.descriptif)
+        self.description, self.description_unknown = convertMeta(article.descriptif)
         self.caption = article.chapo  # Probably unused
-        self.text = convertBody(article.texte)  # Markdown
+        self.text, self.text_unknown = convertBody(article.texte)  # Markdown
         self.ps = article.ps  # Probably unused
         self.publicationDate = article.date
         self.draft = False if article.statut == "publie" else True
