@@ -62,7 +62,7 @@ for article in unknown_chars_articles:
     print(
         f"\n{BOLD}{nb}{RESET} unknown character{s} "
         + f"detected in article {BOLD}{article.id}{RESET}"
-        + f"\n{BOLD}·{RESET} "
+        + f"\n{BOLD}Title:{RESET} "
         + highlight_unknown_chars(article.title)
     )
     for text in unknown_chars_apparitions:

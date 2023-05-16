@@ -258,6 +258,7 @@ unknown_iso = (
     r"âˆ†",  # unknown â^†
 )
 
+
 # Define terminal escape sequences to stylize output, regex escaped
 RED: str = "\033[91m"
 BOLD: str = "\033[1m"
@@ -268,7 +269,7 @@ def convert_body(text: str) -> str:
     for spip, markdown in spip_to_markdown:
         text = spip.sub(markdown, text)
     for iso, utf in iso_to_utf:
-        text.replace(iso, utf)
+        text = text.replace(iso, utf)
     return text
 
 
@@ -276,7 +277,7 @@ def convert_meta(text: str) -> str:
     for spip, metadata in spip_to_text:
         text = spip.sub(metadata, text)
     for iso, utf in iso_to_utf:
-        text.replace(iso, utf)
+        text = text.replace(iso, utf)
     return text
 
 
@@ -289,11 +290,11 @@ def remove_unknown_chars(text: str) -> str:
 def highlight_unknown_chars(text: str) -> str:
     # Highlight in COLOR unknown chars in text
     for char in unknown_iso:
-        for match in finditer(char, text):
+        for match in finditer("(" + char + ")+", text):
             text = (
                 text[: match.start()]
                 + RED
-                + BOLD
+                # + BOLD
                 + match.group()
                 + RESET
                 + text[match.end() :]
