@@ -36,7 +36,7 @@ RESET: str = "\033[0m"
 # Articles that contains unknown chars
 unknown_chars_articles: list[Article] = []
 
-# Loop among first maxToExport articles & export them
+# Loop among first maxexport articles & export them
 for counter, article in Articles(maxexport):
     if (counter["exported"] - 1) % 100 == 0:
         print(
