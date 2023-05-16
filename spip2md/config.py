@@ -1,5 +1,9 @@
+from os.path import isfile
+
 from yaml import CLoader as Loader
 from yaml import load
+
+configPaths: tuple = ("spip2md.yml", "spip2md.yaml")
 
 
 class Configuration:
@@ -26,5 +30,9 @@ class Configuration:
                 self.defaultNbToExport = config["defaultNbToExport"]
 
 
-# config = Configuration("spip2md.yml")
 config = Configuration()
+
+for path in configPaths:
+    if isfile(path):
+        config = Configuration(path)
+        break
