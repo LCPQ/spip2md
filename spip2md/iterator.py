@@ -1,6 +1,6 @@
-from array import array
+from re import escape
 
-from converter import convertBody, convertMeta
+from converter import convertBody, convertMeta, unknownIso
 from database import *
 from slugify import slugify
 # from yaml import CDumper as Dumper
@@ -11,12 +11,12 @@ class Article:
     def __init__(self, article):
         self.id = article.id_article
         # self.surtitle = article.surtitre  # Probably unused
-        self.title, self.title_unknown = convertMeta(article.titre)
+        self.title = convertMeta(article.titre)
         self.subtitle = article.soustitre  # Probably unused
         # self.section = article.id_rubrique # TODO join
-        self.description, self.description_unknown = convertMeta(article.descriptif)
+        self.description = convertMeta(article.descriptif)
         self.caption = article.chapo  # Probably unused
-        self.text, self.text_unknown = convertBody(article.texte)  # Markdown
+        self.text = convertBody(article.texte)  # Markdown
         self.ps = article.ps  # Probably unused
         self.publicationDate = article.date
         self.draft = False if article.statut == "publie" else True
@@ -38,16 +38,16 @@ class Article:
         self.virtual = article.virtuel  # TODO Why ?
         self.microblog = article.microblog  # Probably unused
 
-    def get_slug(self):
+    def getSlug(self):
         return slugify(f"{self.id}-{self.title}")
 
-    def get_path(self):
-        return self.get_slug()
+    def getPath(self):
+        return self.getSlug()
 
-    def get_authors(self):
+    def getAuthors(self):
         return SpipAuteursLiens.select().where(SpipAuteursLiens.id_objet == self.id)
 
-    def get_frontmatter(self):
+    def getFrontmatter(self):
         return dump(
             {
                 "lang": self.lang,
@@ -58,14 +58,14 @@ class Article:
                 "lastmod": self.update,
                 "draft": self.draft,
                 "description": self.description,
-                "authors": [author.id_auteur for author in self.get_authors()],
+                "authors": [author.id_auteur for author in self.getAuthors()],
             },
             allow_unicode=True,
         )
 
-    def get_article(self):
+    def getArticle(self):
         # Build the final article text
-        article: str = "---\n" + self.get_frontmatter() + "---"
+        article: str = "---\n" + self.getFrontmatter() + "---"
         # If there is a caption, add the caption followed by a hr
         if len(self.caption) > 0:
             article += "\n\n" + self.caption + "\n\n***"
@@ -83,10 +83,34 @@ class Article:
             article += "\n\n# MICROBLOGGING\n\n" + self.microblog
         return article
 
+    def getUnknownChars(self):
+        errors: list = []
+        for text in (self.title, self.text):
+            for _, surrounding in unknownIso:
+                for match in surrounding.finditer(text):
+                    errors.append(match.group())
+        return errors
+
+
+def highlightUnknownChars(text):
+    # Define terminal escape sequences to stylize output, regex escaped
+    COLOR = "\033[91m" + "\033[1m"  # Red + Bold
+    RESET = "\033[0m"
+    # Highlight in COLOR unknown chars in text
+    for char, _ in unknownIso:
+        for match in char.finditer(text):
+            text = (
+                text[: match.start()]
+                + COLOR
+                + match.group()
+                + RESET
+                + text[match.end() :]
+            )
+    return text
+
 
 class Articles:
     exported: int = 0
-    unknownChars: list = []
 
     def __init__(self, maxToExport) -> None:
         # Query the DB to retrieve all articles sorted by publication date
@@ -103,9 +127,10 @@ class Articles:
 
     def __next__(self):
         if self.remaining() <= 0:
-            raise StopIteration()
+            raise StopIteration
         self.exported += 1
+        article = Article(self.articles[self.exported - 1])
         return (
             {"exported": self.exported, "remaining": self.remaining()},
-            Article(self.articles[self.exported - 1]),
+            article,
         )

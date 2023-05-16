@@ -253,32 +253,30 @@ isoToUtf = (
 
 ## WARNING unknown broken encoding
 unknownIso = (
-    compile(r"\w*â€¨.*\r?\n"),  # unknown â€¨ + surroundings
-    compile(r"\w*âˆ†.*\r?\n"),  # unknown â^† + surroundings
+    (  # unknown â€¨ + surroundings
+        compile(r"â€¨"),
+        compile(r"â€¨.*(?=\r?\n|$)"),
+    ),
+    (  # unknown â^† + surroundings
+        compile(r"âˆ†"),
+        compile(r"âˆ†.*(?=\r?\n|$)"),
+    ),
 )
 
 
 def convertBody(spipBody):
-    text = spipBody
-    errors = []
+    text: str = spipBody
     for spip, markdown in spipToMarkdown:
         text = spip.sub(markdown, text)
     for iso, utf in isoToUtf:
         text = iso.sub(utf, text)
-    for iso in unknownIso:
-        for match in iso.finditer(text):
-            errors.append(match.group())
-    return text, errors
+    return text
 
 
 def convertMeta(spipMeta):
-    text = spipMeta
-    errors = []
+    text: str = spipMeta
     for spip, metadata in spipToText:
         text = spip.sub(metadata, text)
     for iso, utf in isoToUtf:
         text = iso.sub(utf, text)
-    for iso in unknownIso:
-        for match in iso.finditer(text):
-            errors.append(match.group())
-    return text, errors
+    return text
