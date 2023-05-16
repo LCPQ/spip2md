@@ -1,4 +1,4 @@
-from re import escape
+from re import finditer
 
 from converter import convertBody, convertMeta, unknownIso
 from database import *
@@ -86,8 +86,8 @@ class Article:
     def getUnknownChars(self):
         errors: list = []
         for text in (self.title, self.text):
-            for _, surrounding in unknownIso:
-                for match in surrounding.finditer(text):
+            for char in unknownIso:
+                for match in finditer(char + r".*(?=\r?\n|$)", text):
                     errors.append(match.group())
         return errors
 
@@ -97,8 +97,8 @@ def highlightUnknownChars(text):
     COLOR = "\033[91m" + "\033[1m"  # Red + Bold
     RESET = "\033[0m"
     # Highlight in COLOR unknown chars in text
-    for char, _ in unknownIso:
-        for match in char.finditer(text):
+    for char in unknownIso:
+        for match in finditer(char, text):
             text = (
                 text[: match.start()]
                 + COLOR

@@ -161,106 +161,100 @@ spipToText = (
 isoToUtf = (
     # Broken encoding
     (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1
-        compile("â€™"),
+        "â€™",
         r"’",
     ),
     (  # Fix UTF-8 † that was interpreted as ISO 8859-1
-        compile("â€˜"),
+        "â€˜",
         r"‘",
     ),
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1
-        compile("eÌ\u0081"),
+        "eÌ\u0081",
         r"é",
     ),
     (  # Fix UTF-8 è that was interpreted as ISO 8859-1
-        compile("eÌ€"),
+        "eÌ€",
         r"è",
     ),
     (  # Fix UTF-8 ê that was interpreted as ISO 8859-1
-        compile("eÌ‚"),
+        "eÌ‚",
         r"ê",
     ),
     (  # Fix UTF-8 ê that was interpreted as ISO 8859-1
-        compile("oÌ‚"),
+        "oÌ‚",
         r"ô",
     ),
     (  # Fix UTF-8 î that was interpreted as ISO 8859-1
-        compile("iÌ‚"),
+        "iÌ‚",
         r"î",
     ),
     (  # Fix UTF-8 ï that was interpreted as ISO 8859-1
-        compile("iÌˆ"),
+        "iÌˆ",
         r"ï",
     ),
     (  # Fix UTF-8 ö that was interpreted as ISO 8859-1
-        compile("oÌˆ"),
+        "oÌˆ",
         r"ö",
     ),
     (  # Fix UTF-8 ö that was interpreted as ISO 8859-1
-        compile("uÌˆ"),
+        "uÌˆ",
         r"ü",
     ),
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1
-        compile("aÌ€"),
+        "aÌ€",
         r"à",
     ),
     (  # Fix UTF-8 … that was interpreted as ISO 8859-1
-        compile("â€¦"),
+        "â€¦",
         r"…",
     ),
     (  # Fix UTF-8 “ that was interpreted as ISO 8859-1
-        compile("â€œ"),
+        "â€œ",
         r"“",
     ),
     (  # Fix UTF-8 ” that was interpreted as ISO 8859-1
-        compile("â€\u009d"),
+        "â€\u009d",
         r"”",
     ),
     (  # Fix UTF-8 – that was interpreted as ISO 8859-1
-        compile("â€“"),
+        "â€“",
         r"–",
     ),
     (  # Fix UTF-8 – that was interpreted as ISO 8859-1
-        compile("â€”"),
+        "â€”",
         r"—",
     ),
     (  # Fix UTF-8 − that was interpreted as ISO 8859-1
-        compile("â€\u0090"),
+        "â€\u0090",
         r"−",
     ),
     (  # Fix UTF-8 • that was interpreted as ISO 8859-1
-        compile("â€¢"),
+        "â€¢",
         r"•",
     ),
     (  # Fix UTF-8 ç that was interpreted as ISO 8859-1
-        compile("Ã§"),
+        "Ã§",
         r"ç",
     ),
     (  # Fix UTF-8 í that was interpreted as ISO 8859-1
-        compile("iÌ\u0081"),
+        "iÌ\u0081",
         r"í",
     ),
     # WARNING not sure
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1
-        compile("eÌ "),
+        "eÌ ",
         r"é",
     ),
     (  # Fix UTF-8 † that was interpreted as ISO 8859-1
-        compile("â€ "),
+        "â€ ",
         r"† ",
     ),
 )
 
 ## WARNING unknown broken encoding
 unknownIso = (
-    (  # unknown â€¨ + surroundings
-        compile(r"â€¨"),
-        compile(r"â€¨.*(?=\r?\n|$)"),
-    ),
-    (  # unknown â^† + surroundings
-        compile(r"âˆ†"),
-        compile(r"âˆ†.*(?=\r?\n|$)"),
-    ),
+    r"â€¨",  # unknown â€¨ + surroundings
+    r"âˆ†",  # unknown â^† + surroundings
 )
 
 
@@ -269,7 +263,7 @@ def convertBody(spipBody):
     for spip, markdown in spipToMarkdown:
         text = spip.sub(markdown, text)
     for iso, utf in isoToUtf:
-        text = iso.sub(utf, text)
+        text.replace(iso, utf)
     return text
 
 
@@ -278,5 +272,5 @@ def convertMeta(spipMeta):
     for spip, metadata in spipToText:
         text = spip.sub(metadata, text)
     for iso, utf in isoToUtf:
-        text = iso.sub(utf, text)
+        text.replace(iso, utf)
     return text
