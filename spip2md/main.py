@@ -1,7 +1,8 @@
 #!python
 from config import config
 from database import db
-from iterator import Articles, highlightUnknownChars
+from articles import Articles
+from converter import highlightUnknownChars
 
 if __name__ != "__main__":
     exit()

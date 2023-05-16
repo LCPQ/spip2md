@@ -1,4 +1,4 @@
-from re import I, S, compile
+from re import I, S, compile, finditer
 
 # SPIP syntax to Markdown
 spipToMarkdown = (
@@ -273,4 +273,20 @@ def convertMeta(spipMeta):
         text = spip.sub(metadata, text)
     for iso, utf in isoToUtf:
         text.replace(iso, utf)
+    return text
+
+def highlightUnknownChars(text):
+    # Define terminal escape sequences to stylize output, regex escaped
+    COLOR = "\033[91m" + "\033[1m"  # Red + Bold
+    RESET = "\033[0m"
+    # Highlight in COLOR unknown chars in text
+    for char in unknownIso:
+        for match in finditer(char, text):
+            text = (
+                text[: match.start()]
+                + COLOR
+                + match.group()
+                + RESET
+                + text[match.end() :]
+            )
     return text

@@ -92,23 +92,6 @@ class Article:
         return errors
 
 
-def highlightUnknownChars(text):
-    # Define terminal escape sequences to stylize output, regex escaped
-    COLOR = "\033[91m" + "\033[1m"  # Red + Bold
-    RESET = "\033[0m"
-    # Highlight in COLOR unknown chars in text
-    for char in unknownIso:
-        for match in finditer(char, text):
-            text = (
-                text[: match.start()]
-                + COLOR
-                + match.group()
-                + RESET
-                + text[match.end() :]
-            )
-    return text
-
-
 class Articles:
     exported: int = 0
 
