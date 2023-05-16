@@ -1,3 +1,4 @@
+# pyright: basic
 from peewee import (SQL, BigAutoField, BigIntegerField, CharField,
                     CompositeKey, DateField, DateTimeField, FloatField,
                     IntegerField, Model, MySQLDatabase, TextField)

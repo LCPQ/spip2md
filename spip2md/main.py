@@ -1,4 +1,5 @@
 #!python
+# pyright: basic
 from articles import Article, Articles
 from config import config
 from converter import highlightUnknownChars

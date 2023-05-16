@@ -1,7 +1,8 @@
+# pyright: strict
 from re import I, S, compile, finditer
 
 # SPIP syntax to Markdown
-spipToMarkdown: tuple = (
+spipToMarkdown = (
     (  # horizontal rule
         compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", S | I),
         # r"---",
@@ -113,7 +114,7 @@ spipToMarkdown: tuple = (
     ),
 )
 
-spipToText: tuple = (
+spipToText = (
     (  # strong
         compile(r"\{\{ *(.*?) *\}\}", S | I),
         r"\1",
@@ -158,7 +159,7 @@ spipToText: tuple = (
     ),
 )
 
-isoToUtf: tuple = (
+isoToUtf = (
     # Broken encoding
     (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1
         "â€™",
@@ -252,7 +253,7 @@ isoToUtf: tuple = (
 )
 
 ## WARNING unknown broken encoding
-unknownIso: tuple = (
+unknownIso = (
     r"â€¨",  # unknown â€¨
     r"âˆ†",  # unknown â^†
 )
@@ -273,10 +274,12 @@ def convertMeta(text: str) -> str:
         text.replace(iso, utf)
     return text
 
+
 def removeUnknownChars(text: str) -> str:
     for char in unknownIso:
         text.replace(char, "")
     return text
+
 
 def highlightUnknownChars(text: str) -> str:
     # Define terminal escape sequences to stylize output, regex escaped

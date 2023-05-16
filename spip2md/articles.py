@@ -1,3 +1,4 @@
+# pyright: basic
 from re import finditer
 
 from converter import convertBody, convertMeta, unknownIso
@@ -9,36 +10,36 @@ from yaml import dump
 
 class Article:
     def __init__(self, article):
-        self.id = article.id_article
+        self.id: int = article.id_article
         # self.surtitle = article.surtitre  # Probably unused
-        self.title = convertMeta(article.titre)
-        self.subtitle = article.soustitre  # Probably unused
-        self.section_id = article.id_rubrique
-        self.description = convertMeta(article.descriptif)
-        self.caption = article.chapo  # Probably unused
-        self.text = convertBody(article.texte)  # Markdown
-        self.ps = article.ps  # Probably unused
-        self.publicationDate = article.date
-        self.draft = False if article.statut == "publie" else True
+        self.title: str = convertMeta(article.titre)
+        self.subtitle: str = article.soustitre  # Probably unused
+        self.section_id: int = article.id_rubrique
+        self.description: str = convertMeta(article.descriptif)
+        self.caption: str = article.chapo  # Probably unused
+        self.text: str = convertBody(article.texte)  # Markdown
+        self.ps: str = article.ps  # Probably unused
+        self.publicationDate: str = article.date
+        self.draft: bool = False if article.statut == "publie" else True
         # self.sector = article.id_secteur # TODO join
-        self.update = article.maj
+        self.update: str = article.maj
         # self.export = article.export  # USELESS
-        self.creationDate = article.date_redac
+        self.creationDate: str = article.date_redac
         # self.views = article.visites  # USELESS in static
-        self.referers = article.referers  # TODO Why ?
+        # self.referers = article.referers  # TODO Why ?
         # self.popularity = article.popularite  # USELESS in static
-        self.acceptForum = article.accepter_forum  # TODO Why ?
-        self.contentUpdate = article.date_modif  # Probably unused
-        self.lang = article.lang
-        self.choosenLang = article.langue_choisie  # TODO Why ?
+        # self.acceptForum = article.accepter_forum  # TODO Why ?
+        self.contentUpdate: str = article.date_modif  # Probably unused
+        self.lang: str = article.lang
+        self.choosenLang: str = article.langue_choisie  # TODO Why ?
         # self.translation = article.id_trad # TODO join
-        self.extra = article.extra  # Probably unused
+        self.extra: str = article.extra  # Probably unused
         # self.version = article.id_version  # USELESS
-        self.sitename = article.nom_site  # Probably useless
-        self.virtual = article.virtuel  # TODO Why ?
-        self.microblog = article.microblog  # Probably unused
+        self.sitename: str = article.nom_site  # Probably useless
+        self.virtual: str = article.virtuel  # TODO Why ?
+        self.microblog: str = article.microblog  # Probably unused
 
-    def getSection(self):
+    def getSection(self) -> str:
         return convertMeta(
             SpipRubriques.select()
             .where(SpipRubriques.id_rubrique == self.section_id)[0]
@@ -53,7 +54,7 @@ class Article:
     def getFilename(self) -> str:
         return "index.fr.md"
 
-    def getAuthors(self):
+    def getAuthors(self) -> tuple:
         return (
             SpipAuteurs.select()
             .join(
@@ -63,7 +64,7 @@ class Article:
             .where(SpipAuteursLiens.id_objet == self.id)
         )
 
-    def getFrontmatter(self):
+    def getFrontmatter(self) -> str:
         return dump(
             {
                 "lang": self.lang,
@@ -79,7 +80,7 @@ class Article:
             allow_unicode=True,
         )
 
-    def getArticle(self):
+    def getArticle(self) -> str:
         # Build the final article text
         article: str = "---\n" + self.getFrontmatter() + "---"
         # If there is a caption, add the caption followed by a hr
@@ -99,8 +100,8 @@ class Article:
             article += "\n\n# MICROBLOGGING\n\n" + self.microblog
         return article
 
-    def getUnknownChars(self) -> list:
-        errors: list = []
+    def getUnknownChars(self) -> list[str]:
+        errors: list[str] = []
         for text in (self.title, self.text):
             for char in unknownIso:
                 for match in finditer(char + r".*(?=\r?\n|$)", text):
@@ -111,7 +112,7 @@ class Article:
 class Articles:
     exported: int = 0
 
-    def __init__(self, maxToExport) -> None:
+    def __init__(self, maxToExport: int) -> None:
         # Query the DB to retrieve all articles sorted by publication date
         self.articles = (
             SpipArticles.select().order_by(SpipArticles.date.desc()).limit(maxToExport)
