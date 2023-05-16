@@ -1,8 +1,9 @@
 # pyright: strict
 from os.path import isfile
+from typing import Optional
 
-from yaml import CLoader as Loader
-from yaml import load
+# from yaml import CLoader as Loader
+from yaml import Loader, load
 
 config_paths = ("spip2md.yml", "spip2md.yaml")
 
@@ -15,7 +16,7 @@ class Configuration:
     output_dir = "output"
     default_export_nb = 1000
 
-    def __init__(self, config_file: str | None = None) -> None:
+    def __init__(self, config_file: Optional[str] = None) -> None:
         if config_file is not None:
             with open(config_file) as f:
                 config = load(f.read(), Loader=Loader)
