@@ -49,12 +49,10 @@ class Article:
         )
 
     def get_path(self) -> str:
-        return (
-            slugify(self.get_section()) + "/" + slugify(f"{self.id}-{self.title}") + "/"
-        )
+        return slugify(self.get_section()) + "/" + slugify(f"{self.title}") + "/"
 
     def get_filename(self) -> str:
-        return "index.fr.md"
+        return "index." + self.lang + ".md"
 
     def get_authors(self) -> tuple:
         return (

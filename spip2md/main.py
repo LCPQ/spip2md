@@ -60,9 +60,7 @@ for article in unknown_chars_articles:
     nb: int = len(unknown_chars_apparitions)
     s: str = "s" if nb > 1 else ""
     print(
-        f"\n{BOLD}{nb}{RESET} unknown character{s} "
-        + f"detected in article {BOLD}{article.id}{RESET}"
-        + f"\n{BOLD}Title:{RESET} "
+        f"\n{BOLD}{nb}{RESET} unknown character{s} in {BOLD}{article.lang}{RESET} "
         + highlight_unknown_chars(article.title)
     )
     for text in unknown_chars_apparitions:
