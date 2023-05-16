@@ -1,3 +1,5 @@
+from array import array
+
 from converter import convertBody, convertMeta
 from database import *
 from slugify import slugify
@@ -38,7 +40,7 @@ class Article:
 
     def get_slug(self):
         return slugify(f"{self.id}-{self.title}")
-    
+
     def get_path(self):
         return self.get_slug()
 
@@ -46,55 +48,45 @@ class Article:
         return SpipAuteursLiens.select().where(SpipAuteursLiens.id_objet == self.id)
 
     def get_frontmatter(self):
-        return "---\n{}---".format(
-            dump(
-                {
-                    "lang": self.lang,
-                    "title": self.title,
-                    # "subtitle": self.subtitle,
-                    "date": self.creationDate,
-                    "publishDate": self.publicationDate,
-                    "lastmod": self.update,
-                    "draft": self.draft,
-                    "description": self.description,
-                    "authors": [author.id_auteur for author in self.get_authors()],
-                },
-                allow_unicode=True,
-            )
-        )
-
-    # Contains things before the article like caption & titles
-    def get_starting(self):
-        return (
-            # f"{self.caption}\n" if len(self.caption) > 0 else "" + f"# {self.title}\n"
-            f"{self.caption}\n\n***\n"
-            if len(self.caption) > 0 and self.caption != " "
-            else ""
-        )
-
-    # Contains things after the article like ps & extra
-    def get_ending(self):
-        return (
-            f"# EXTRA\n\n{self.extra}"
-            if self.extra != None and len(self.extra) > 0
-            else "" + f"# POST-SCRIPTUM\n\n{self.ps}"
-            if len(self.ps) > 0
-            else "" + f"# MICROBLOGGING\n\n{self.microblog}"
-            if len(self.microblog) > 0
-            else ""
+        return dump(
+            {
+                "lang": self.lang,
+                "title": self.title,
+                # "subtitle": self.subtitle,
+                "date": self.creationDate,
+                "publishDate": self.publicationDate,
+                "lastmod": self.update,
+                "draft": self.draft,
+                "description": self.description,
+                "authors": [author.id_auteur for author in self.get_authors()],
+            },
+            allow_unicode=True,
         )
 
     def get_article(self):
-        return "{}\n{}\n{}\n{}".format(
-            self.get_frontmatter(),
-            self.get_starting(),
-            self.text,
-            self.get_ending(),
-        )
+        # Build the final article text
+        article: str = "---\n" + self.get_frontmatter() + "---"
+        # If there is a caption, add the caption followed by a hr
+        if len(self.caption) > 0:
+            article += "\n\n" + self.caption + "\n\n***"
+        # If there is a text, add the text preceded by two line breaks
+        if len(self.text) > 0:
+            article += "\n\n" + self.text
+        # Same with an "extra" section
+        if self.extra != None and len(self.extra) > 0:
+            article += "\n\n# EXTRA\n\n" + self.extra
+        # PS
+        if len(self.ps) > 0:
+            article += "\n\n# POST-SCRIPTUM\n\n" + self.ps
+        # Microblog
+        if len(self.microblog) > 0:
+            article += "\n\n# MICROBLOGGING\n\n" + self.microblog
+        return article
 
 
 class Articles:
     exported: int = 0
+    unknownChars: list = []
 
     def __init__(self, maxToExport) -> None:
         # Query the DB to retrieve all articles sorted by publication date
@@ -111,7 +103,7 @@ class Articles:
 
     def __next__(self):
         if self.remaining() <= 0:
-            raise StopIteration
+            raise StopIteration()
         self.exported += 1
         return (
             {"exported": self.exported, "remaining": self.remaining()},

@@ -252,7 +252,10 @@ isoToUtf = (
 )
 
 ## WARNING unknown broken encoding
-unknownIso = (compile(r"\w*â€¨.*\r?\n"),)  # unknown â€¨ + surroundings
+unknownIso = (
+    compile(r"\w*â€¨.*\r?\n"),  # unknown â€¨ + surroundings
+    compile(r"\w*âˆ†.*\r?\n"),  # unknown â^† + surroundings
+)
 
 
 def convertBody(spipBody):
