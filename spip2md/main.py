@@ -43,8 +43,10 @@ for counter, article in Articles(maxexport):
             f"\n{BOLD}Exporting {R}{counter['remaining']+1}{RESET}"
             + f"{BOLD} SPIP articles to Markdown & YAML files{RESET}\n"
         )
+    empty: str = "EMPTY " if len(article.text) < 1 else ""
     print(
-        f"{BOLD}{counter['exported']}.{RESET} " + highlight_unknown_chars(article.title)
+        f"{BOLD}{counter['exported']}. {empty}{RESET}"
+        + highlight_unknown_chars(article.title)
     )
     fullpath: str = config.output_dir + "/" + article.get_path()
     print(f"{BOLD}>{RESET} {fullpath}{article.get_filename()}")
