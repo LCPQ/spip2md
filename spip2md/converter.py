@@ -1,7 +1,7 @@
 from re import I, S, compile, finditer
 
 # SPIP syntax to Markdown
-spipToMarkdown = (
+spipToMarkdown: tuple = (
     (  # horizontal rule
         compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", S | I),
         # r"---",
@@ -113,7 +113,7 @@ spipToMarkdown = (
     ),
 )
 
-spipToText = (
+spipToText: tuple = (
     (  # strong
         compile(r"\{\{ *(.*?) *\}\}", S | I),
         r"\1",
@@ -158,7 +158,7 @@ spipToText = (
     ),
 )
 
-isoToUtf = (
+isoToUtf: tuple = (
     # Broken encoding
     (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1
         "â€™",
@@ -252,14 +252,13 @@ isoToUtf = (
 )
 
 ## WARNING unknown broken encoding
-unknownIso = (
-    r"â€¨",  # unknown â€¨ + surroundings
-    r"âˆ†",  # unknown â^† + surroundings
+unknownIso: tuple = (
+    r"â€¨",  # unknown â€¨
+    r"âˆ†",  # unknown â^†
 )
 
 
-def convertBody(spipBody):
-    text: str = spipBody
+def convertBody(text: str) -> str:
     for spip, markdown in spipToMarkdown:
         text = spip.sub(markdown, text)
     for iso, utf in isoToUtf:
@@ -267,18 +266,22 @@ def convertBody(spipBody):
     return text
 
 
-def convertMeta(spipMeta):
-    text: str = spipMeta
+def convertMeta(text: str) -> str:
     for spip, metadata in spipToText:
         text = spip.sub(metadata, text)
     for iso, utf in isoToUtf:
         text.replace(iso, utf)
     return text
 
-def highlightUnknownChars(text):
+def removeUnknownChars(text: str) -> str:
+    for char in unknownIso:
+        text.replace(char, "")
+    return text
+
+def highlightUnknownChars(text: str) -> str:
     # Define terminal escape sequences to stylize output, regex escaped
-    COLOR = "\033[91m" + "\033[1m"  # Red + Bold
-    RESET = "\033[0m"
+    COLOR: str = "\033[91m" + "\033[1m"  # Red + Bold
+    RESET: str = "\033[0m"
     # Highlight in COLOR unknown chars in text
     for char in unknownIso:
         for match in finditer(char, text):

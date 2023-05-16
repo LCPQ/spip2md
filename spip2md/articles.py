@@ -13,7 +13,7 @@ class Article:
         # self.surtitle = article.surtitre  # Probably unused
         self.title = convertMeta(article.titre)
         self.subtitle = article.soustitre  # Probably unused
-        # self.section = article.id_rubrique # TODO join
+        self.section_id = article.id_rubrique
         self.description = convertMeta(article.descriptif)
         self.caption = article.chapo  # Probably unused
         self.text = convertBody(article.texte)  # Markdown
@@ -38,14 +38,30 @@ class Article:
         self.virtual = article.virtuel  # TODO Why ?
         self.microblog = article.microblog  # Probably unused
 
-    def getSlug(self):
-        return slugify(f"{self.id}-{self.title}")
+    def getSection(self):
+        return convertMeta(
+            SpipRubriques.select()
+            .where(SpipRubriques.id_rubrique == self.section_id)[0]
+            .titre
+        )
 
-    def getPath(self):
-        return self.getSlug()
+    def getPath(self) -> str:
+        return (
+            slugify(self.getSection()) + "/" + slugify(f"{self.id}-{self.title}") + "/"
+        )
+
+    def getFilename(self) -> str:
+        return "index.fr.md"
 
     def getAuthors(self):
-        return SpipAuteursLiens.select().where(SpipAuteursLiens.id_objet == self.id)
+        return (
+            SpipAuteurs.select()
+            .join(
+                SpipAuteursLiens,
+                on=(SpipAuteurs.id_auteur == SpipAuteursLiens.id_auteur),
+            )
+            .where(SpipAuteursLiens.id_objet == self.id)
+        )
 
     def getFrontmatter(self):
         return dump(
@@ -58,7 +74,7 @@ class Article:
                 "lastmod": self.update,
                 "draft": self.draft,
                 "description": self.description,
-                "authors": [author.id_auteur for author in self.getAuthors()],
+                "authors": [author.nom for author in self.getAuthors()],
             },
             allow_unicode=True,
         )
@@ -83,7 +99,7 @@ class Article:
             article += "\n\n# MICROBLOGGING\n\n" + self.microblog
         return article
 
-    def getUnknownChars(self):
+    def getUnknownChars(self) -> list:
         errors: list = []
         for text in (self.title, self.text):
             for char in unknownIso:

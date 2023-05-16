@@ -1,14 +1,14 @@
 #!python
+from articles import Article, Articles
 from config import config
-from database import db
-from articles import Articles
 from converter import highlightUnknownChars
+from database import db
 
 if __name__ != "__main__":
     exit()
 
 import sys
-from os import mkdir
+from os import makedirs, mkdir
 from shutil import rmtree
 
 # Clean the output dir & create a new
@@ -32,7 +32,8 @@ B: str = "\033[94m"
 BOLD: str = "\033[1m"
 RESET: str = "\033[0m"
 
-unknownChars: dict = {}
+# Articles that contains unknown chars
+unknownCharsArticles: list[Article] = []
 
 # Loop among first maxToExport articles & export them
 for counter, article in Articles(maxToExport):
@@ -44,24 +45,26 @@ for counter, article in Articles(maxToExport):
     print(
         f"{BOLD}{counter['exported']}.{RESET} " + highlightUnknownChars(article.title)
     )
-    fullPath = config.outputDir + "/" + article.getPath()
-    print(f"{BOLD}>{RESET} {fullPath}/index.md")
-    mkdir(fullPath)
-    with open(fullPath + "/index.md", "w") as f:
+    fullPath: str = config.outputDir + "/" + article.getPath()
+    print(f"{BOLD}>{RESET} {fullPath}{article.getFilename()}")
+    makedirs(fullPath, exist_ok=True)
+    with open(fullPath + article.getFilename(), "w") as f:
         f.write(article.getArticle())
     # Store detected unknown characters
     if len(article.getUnknownChars()) > 0:
-        unknownChars[article.title] = article.getUnknownChars()
+        unknownCharsArticles.append(article)
 
-for title in unknownChars:
-    nb = len(unknownChars[title])
+for article in unknownCharsArticles:
+    unknownCharsApparitions: list = article.getUnknownChars()
+    nb: int = len(unknownCharsApparitions)
+    s: str = "s" if nb > 1 else ""
     print(
-        f"\n{BOLD}{nb} "
-        + f"unknown character{'s' if nb > 1 else ''} detected in{RESET} " +
-            highlightUnknownChars(title)
+        f"\n{BOLD}{nb}{RESET} unknown character{s} "
+        + f"detected in article {BOLD}{article.id}{RESET}"
+        + f"\n{BOLD}·{RESET} "
+        + highlightUnknownChars(article.title)
     )
-    for text in unknownChars[title]:
+    for text in unknownCharsApparitions:
         print(f"  {BOLD}…{RESET} " + highlightUnknownChars(text))
 
-# Close the database connection
-db.close()
+db.close()  # Close the database connection
