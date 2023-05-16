@@ -1,7 +1,18 @@
 # pyright: basic
-from peewee import (SQL, BigAutoField, BigIntegerField, CharField,
-                    CompositeKey, DateField, DateTimeField, FloatField,
-                    IntegerField, Model, MySQLDatabase, TextField)
+from peewee import (
+    SQL,
+    BigAutoField,
+    BigIntegerField,
+    CharField,
+    CompositeKey,
+    DateField,
+    DateTimeField,
+    FloatField,
+    IntegerField,
+    Model,
+    MySQLDatabase,
+    TextField,
+)
 
 # class UnknownField(object):
 #     def __init__(self, *_, **__):

@@ -1,23 +1,25 @@
 # pyright: basic
 from re import finditer
 
-from converter import convertBody, convertMeta, unknownIso
-from database import *
 from slugify import slugify
-# from yaml import CDumper as Dumper
 from yaml import dump
+
+from converter import convert_body, convert_meta, unknown_iso
+from database import SpipArticles, SpipAuteurs, SpipAuteursLiens, SpipRubriques
+
+# from yaml import CDumper as Dumper
 
 
 class Article:
     def __init__(self, article):
         self.id: int = article.id_article
         # self.surtitle = article.surtitre  # Probably unused
-        self.title: str = convertMeta(article.titre)
+        self.title: str = convert_meta(article.titre)
         self.subtitle: str = article.soustitre  # Probably unused
         self.section_id: int = article.id_rubrique
-        self.description: str = convertMeta(article.descriptif)
+        self.description: str = convert_meta(article.descriptif)
         self.caption: str = article.chapo  # Probably unused
-        self.text: str = convertBody(article.texte)  # Markdown
+        self.text: str = convert_body(article.texte)  # Markdown
         self.ps: str = article.ps  # Probably unused
         self.publicationDate: str = article.date
         self.draft: bool = False if article.statut == "publie" else True
@@ -39,22 +41,22 @@ class Article:
         self.virtual: str = article.virtuel  # TODO Why ?
         self.microblog: str = article.microblog  # Probably unused
 
-    def getSection(self) -> str:
-        return convertMeta(
+    def get_section(self) -> str:
+        return convert_meta(
             SpipRubriques.select()
             .where(SpipRubriques.id_rubrique == self.section_id)[0]
             .titre
         )
 
-    def getPath(self) -> str:
+    def get_path(self) -> str:
         return (
-            slugify(self.getSection()) + "/" + slugify(f"{self.id}-{self.title}") + "/"
+            slugify(self.get_section()) + "/" + slugify(f"{self.id}-{self.title}") + "/"
         )
 
-    def getFilename(self) -> str:
+    def get_filename(self) -> str:
         return "index.fr.md"
 
-    def getAuthors(self) -> tuple:
+    def get_authors(self) -> tuple:
         return (
             SpipAuteurs.select()
             .join(
@@ -64,7 +66,7 @@ class Article:
             .where(SpipAuteursLiens.id_objet == self.id)
         )
 
-    def getFrontmatter(self) -> str:
+    def get_frontmatter(self) -> str:
         return dump(
             {
                 "lang": self.lang,
@@ -75,14 +77,14 @@ class Article:
                 "lastmod": self.update,
                 "draft": self.draft,
                 "description": self.description,
-                "authors": [author.nom for author in self.getAuthors()],
+                "authors": [author.nom for author in self.get_authors()],
             },
             allow_unicode=True,
         )
 
-    def getArticle(self) -> str:
+    def get_article(self) -> str:
         # Build the final article text
-        article: str = "---\n" + self.getFrontmatter() + "---"
+        article: str = "---\n" + self.get_frontmatter() + "---"
         # If there is a caption, add the caption followed by a hr
         if len(self.caption) > 0:
             article += "\n\n" + self.caption + "\n\n***"
@@ -90,7 +92,7 @@ class Article:
         if len(self.text) > 0:
             article += "\n\n" + self.text
         # Same with an "extra" section
-        if self.extra != None and len(self.extra) > 0:
+        if self.extra is not None and len(self.extra) > 0:
             article += "\n\n# EXTRA\n\n" + self.extra
         # PS
         if len(self.ps) > 0:
@@ -100,10 +102,10 @@ class Article:
             article += "\n\n# MICROBLOGGING\n\n" + self.microblog
         return article
 
-    def getUnknownChars(self) -> list[str]:
+    def get_unknown_chars(self) -> list[str]:
         errors: list[str] = []
         for text in (self.title, self.text):
-            for char in unknownIso:
+            for char in unknown_iso:
                 for match in finditer(char + r".*(?=\r?\n|$)", text):
                     errors.append(match.group())
         return errors
@@ -112,10 +114,10 @@ class Article:
 class Articles:
     exported: int = 0
 
-    def __init__(self, maxToExport: int) -> None:
+    def __init__(self, maxexport: int) -> None:
         # Query the DB to retrieve all articles sorted by publication date
         self.articles = (
-            SpipArticles.select().order_by(SpipArticles.date.desc()).limit(maxToExport)
+            SpipArticles.select().order_by(SpipArticles.date.desc()).limit(maxexport)
         )
         self.toExport: int = len(self.articles)
 

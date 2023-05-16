@@ -2,7 +2,7 @@
 from re import I, S, compile, finditer
 
 # SPIP syntax to Markdown
-spipToMarkdown = (
+spip_to_markdown = (
     (  # horizontal rule
         compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", S | I),
         # r"---",
@@ -114,7 +114,7 @@ spipToMarkdown = (
     ),
 )
 
-spipToText = (
+spip_to_text = (
     (  # strong
         compile(r"\{\{ *(.*?) *\}\}", S | I),
         r"\1",
@@ -159,7 +159,7 @@ spipToText = (
     ),
 )
 
-isoToUtf = (
+iso_to_utf = (
     # Broken encoding
     (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1
         "â€™",
@@ -253,44 +253,47 @@ isoToUtf = (
 )
 
 ## WARNING unknown broken encoding
-unknownIso = (
+unknown_iso = (
     r"â€¨",  # unknown â€¨
     r"âˆ†",  # unknown â^†
 )
 
+# Define terminal escape sequences to stylize output, regex escaped
+RED: str = "\033[91m"
+BOLD: str = "\033[1m"
+RESET: str = "\033[0m"
 
-def convertBody(text: str) -> str:
-    for spip, markdown in spipToMarkdown:
+
+def convert_body(text: str) -> str:
+    for spip, markdown in spip_to_markdown:
         text = spip.sub(markdown, text)
-    for iso, utf in isoToUtf:
+    for iso, utf in iso_to_utf:
         text.replace(iso, utf)
     return text
 
 
-def convertMeta(text: str) -> str:
-    for spip, metadata in spipToText:
+def convert_meta(text: str) -> str:
+    for spip, metadata in spip_to_text:
         text = spip.sub(metadata, text)
-    for iso, utf in isoToUtf:
+    for iso, utf in iso_to_utf:
         text.replace(iso, utf)
     return text
 
 
-def removeUnknownChars(text: str) -> str:
-    for char in unknownIso:
+def remove_unknown_chars(text: str) -> str:
+    for char in unknown_iso:
         text.replace(char, "")
     return text
 
 
-def highlightUnknownChars(text: str) -> str:
-    # Define terminal escape sequences to stylize output, regex escaped
-    COLOR: str = "\033[91m" + "\033[1m"  # Red + Bold
-    RESET: str = "\033[0m"
+def highlight_unknown_chars(text: str) -> str:
     # Highlight in COLOR unknown chars in text
-    for char in unknownIso:
+    for char in unknown_iso:
         for match in finditer(char, text):
             text = (
                 text[: match.start()]
-                + COLOR
+                + RED
+                + BOLD
                 + match.group()
                 + RESET
                 + text[match.end() :]

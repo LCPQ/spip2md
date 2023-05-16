@@ -4,36 +4,36 @@ from os.path import isfile
 from yaml import CLoader as Loader
 from yaml import load
 
-configPaths = ("spip2md.yml", "spip2md.yaml")
+config_paths = ("spip2md.yml", "spip2md.yaml")
 
 
 class Configuration:
     db = "spip"
-    dbHost = "localhost"
-    dbUser = "spip"
-    dbPass = "password"
-    outputDir = "output"
-    defaultNbToExport = 1000
+    db_host = "localhost"
+    db_user = "spip"
+    db_pass = "password"
+    output_dir = "output"
+    default_export_nb = 1000
 
-    def __init__(self, configFile: str | None = None) -> None:
-        if configFile != None:
-            with open(configFile) as f:
+    def __init__(self, config_file: str | None = None) -> None:
+        if config_file is not None:
+            with open(config_file) as f:
                 config = load(f.read(), Loader=Loader)
             if "db" in config:
                 self.db = config["db"]
-            if "dbUser" in config:
-                self.dbUser = config["dbUser"]
-            if "dbPass" in config:
-                self.dbPass = config["dbPass"]
-            if "outputDir" in config:
-                self.outputDir = config["outputDir"]
-            if "defaultNbToExport" in config:
-                self.defaultNbToExport = config["defaultNbToExport"]
+            if "db_user" in config:
+                self.db_user = config["db_user"]
+            if "db_pass" in config:
+                self.db_pass = config["db_pass"]
+            if "output_dir" in config:
+                self.output_dir = config["output_dir"]
+            if "default_export_nb" in config:
+                self.default_export_nb = config["default_export_nb"]
 
 
 config = Configuration()
 
-for path in configPaths:
+for path in config_paths:
     if isfile(path):
         config = Configuration(path)
         break
