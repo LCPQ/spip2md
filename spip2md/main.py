@@ -38,7 +38,7 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
     for section, counter in Sections():
         # Print the name of the exported section & number of remaining sections
         print(
-            f"{BOLD}{counter.count}. {RESET}"
+            f"{BOLD}{counter.count + 1}. {RESET}"
             + highlight_unknown_chars(section.title, R, RESET),
             end="",
         )
@@ -65,7 +65,7 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
                 s: str = "s" if counter.remaining() > 1 else ""
                 print(
                     f"  {BOLD}Exporting {R}{counter.remaining()}{RESET}"
-                    + f"{BOLD} SPIP article{s}{RESET} to Markdown & YAML files\n"
+                    + f"{BOLD} SPIP article{s}{RESET} to Markdown & YAML files"
                 )
             # Print the title of the article being exported
             print(
@@ -87,7 +87,7 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
             # Print the outputted file’s path when finished exporting the article
             print(f"  {BOLD}Article>{RESET} {articlepath}")
         # Print the outputted file’s path when finished exporting the section
-        print(f"\n{BOLD}Section>{RESET} {sectionpath}\n")
+        print(f"{BOLD}Section>{RESET} {sectionpath}\n")
 
     # Loop through each article that contains an unknown character
     for article in unknown_chars_articles:
