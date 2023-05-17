@@ -82,6 +82,7 @@ class Article:
                 "spip_id_article": self.id,
                 "spip_id_rubrique": self.section_id,
                 "spip_id_secteur": self.sector_id,
+                "spip_chapo": self.caption,
             },
             allow_unicode=True,
         )
@@ -89,12 +90,12 @@ class Article:
     def get_article(self) -> str:
         # Build the final article text
         article: str = "---\n" + self.get_frontmatter() + "---"
-        # Add the title as a Markdown h1
-        if len(self.title) > 0:
-            article += "\n\n# " + self.title
         # If there is a caption, add the caption followed by a hr
         if len(self.caption) > 0:
             article += "\n\n" + self.caption + "\n\n***"
+        # Add the title as a Markdown h1
+        if len(self.title) > 0:
+            article += "\n\n# " + self.title
         # If there is a text, add the text preceded by two line breaks
         if len(self.text) > 0:
             article += "\n\n" + self.text
