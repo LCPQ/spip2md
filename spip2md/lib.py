@@ -137,14 +137,17 @@ class Section:
         self.depth: int = section.profondeur
         self.agenda: int = section.agenda
 
+    def get_articles(self, limit: int):
+        return Articles(limit)
+
 
 class Articles:
     exported: int = 0
 
-    def __init__(self, maxexport: int) -> None:
+    def __init__(self, limit: int) -> None:
         # Query the DB to retrieve all articles sorted by publication date
         self.articles = (
-            SpipArticles.select().order_by(SpipArticles.date.desc()).limit(maxexport)
+            SpipArticles.select().order_by(SpipArticles.date.desc()).limit(limit)
         )
         self.toExport: int = len(self.articles)
 
@@ -162,4 +165,34 @@ class Articles:
         return (
             {"exported": self.exported, "remaining": self.remaining()},
             article,
+        )
+
+
+class Sections:
+    exported: int = 0
+
+    def __init__(self, limit: int = 0) -> None:
+        # Query the DB to retrieve all articles sorted by publication date
+        if limit > 0:
+            self.articles = (
+                SpipArticles.select().order_by(SpipArticles.date.desc()).limit(limit)
+            )
+        else:
+            self.articles = SpipArticles.select().order_by(SpipArticles.date.desc())
+        self.toExport: int = len(self.articles)
+
+    def remaining(self):
+        return self.toExport - self.exported
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.remaining() <= 0:
+            raise StopIteration
+        self.exported += 1
+        section = Section(self.articles[self.exported - 1])
+        return (
+            {"exported": self.exported, "remaining": self.remaining()},
+            section,
         )
