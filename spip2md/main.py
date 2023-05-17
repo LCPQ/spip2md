@@ -1,5 +1,5 @@
 #!python
-# pyright: basic
+# pyright: strict
 import sys
 from os import makedirs, mkdir
 from shutil import rmtree
@@ -9,7 +9,7 @@ from config import config
 from converter import highlight_unknown_chars
 from database import db
 
-if __name__ != "__main__":
+if __name__ == "__main__":
     # Clean the output dir & create a new
     rmtree(config.output_dir, True)
     mkdir(config.output_dir)
@@ -34,7 +34,7 @@ RESET: str = "\033[0m"
 # Articles that contains unknown chars
 unknown_chars_articles: list[Article] = []
 
-if __name__ != "__main__":
+if __name__ == "__main__":
     # Loop among first maxexport articles & export them
     for counter, article in Articles(maxexport):
         if (counter["exported"] - 1) % 100 == 0:
@@ -57,7 +57,7 @@ if __name__ != "__main__":
             unknown_chars_articles.append(article)
 
     for article in unknown_chars_articles:
-        unknown_chars_apparitions: list = article.get_unknown_chars()
+        unknown_chars_apparitions: list[str] = article.get_unknown_chars()
         nb: int = len(unknown_chars_apparitions)
         s: str = "s" if nb > 1 else ""
         print(

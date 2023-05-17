@@ -14,12 +14,12 @@ from peewee import (
     TextField,
 )
 
+db = MySQLDatabase(None)
+
+
 # class UnknownField(object):
 #     def __init__(self, *_, **__):
 #         pass
-
-
-db = MySQLDatabase(None)
 
 
 class BaseModel(Model):
