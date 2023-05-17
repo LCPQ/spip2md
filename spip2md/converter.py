@@ -258,12 +258,6 @@ unknown_iso = (
 )
 
 
-# Define terminal escape sequences to stylize output, regex escaped
-RED: str = "\033[91m"
-BOLD: str = "\033[1m"
-RESET: str = "\033[0m"
-
-
 def convert_body(text: str) -> str:
     for spip, markdown in spip_to_markdown:
         text = spip.sub(markdown, text)
@@ -286,16 +280,11 @@ def remove_unknown_chars(text: str) -> str:
     return text
 
 
-def highlight_unknown_chars(text: str) -> str:
-    # Highlight in COLOR unknown chars in text
+def highlight_unknown_chars(text: str, pre: str, post: str) -> str:
+    # Add pre before unknown char and post after unknown char
     for char in unknown_iso:
         for match in finditer("(" + char + ")+", text):
             text = (
-                text[: match.start()]
-                + RED
-                # + BOLD
-                + match.group()
-                + RESET
-                + text[match.end() :]
+                text[: match.start()] + pre + match.group() + post + text[match.end() :]
             )
     return text

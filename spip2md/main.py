@@ -9,21 +9,6 @@ from config import config
 from converter import highlight_unknown_chars
 from database import db
 
-if __name__ == "__main__":
-    # Clean the output dir & create a new
-    rmtree(config.output_dir, True)
-    mkdir(config.output_dir)
-
-# Connect to the MySQL database with Peewee ORM
-db.init(config.db, host=config.db_host, user=config.db_user, password=config.db_pass)
-db.connect()
-
-# Define max nb of articles to export based on first CLI param
-if len(sys.argv) > 1:
-    maxexport = int(sys.argv[1])
-else:
-    maxexport = config.default_export_nb
-
 # Define terminal escape sequences to stylize output
 R: str = "\033[91m"
 G: str = "\033[92m"
@@ -31,10 +16,24 @@ B: str = "\033[94m"
 BOLD: str = "\033[1m"
 RESET: str = "\033[0m"
 
-# Articles that contains unknown chars
-unknown_chars_articles: list[Article] = []
+# Connect to the MySQL database with Peewee ORM
+db.init(config.db, host=config.db_host, user=config.db_user, password=config.db_pass)
+db.connect()
 
 if __name__ == "__main__":
+    # Define max nb of articles to export based on first CLI param
+    if len(sys.argv) > 1:
+        maxexport = int(sys.argv[1])
+    else:
+        maxexport = config.default_export_nb
+
+    # Clean the output dir & create a new
+    rmtree(config.output_dir, True)
+    mkdir(config.output_dir)
+
+    # Articles that contains unknown chars
+    unknown_chars_articles: list[Article] = []
+
     # Loop among first maxexport articles & export them
     for counter, article in Articles(maxexport):
         if (counter["exported"] - 1) % 100 == 0:
@@ -45,7 +44,7 @@ if __name__ == "__main__":
         empty: str = "EMPTY " if len(article.text) < 1 else ""
         print(
             f"{BOLD}{counter['exported']}. {empty}{RESET}"
-            + highlight_unknown_chars(article.title)
+            + highlight_unknown_chars(article.title, R, RESET)
         )
         fullpath: str = config.output_dir + "/" + article.get_path()
         print(f"{BOLD}>{RESET} {fullpath}{article.get_filename()}")
@@ -62,9 +61,9 @@ if __name__ == "__main__":
         s: str = "s" if nb > 1 else ""
         print(
             f"\n{BOLD}{nb}{RESET} unknown character{s} in {BOLD}{article.lang}{RESET} "
-            + highlight_unknown_chars(article.title)
+            + highlight_unknown_chars(article.title, R, RESET)
         )
         for text in unknown_chars_apparitions:
-            print(f"  {BOLD}…{RESET} " + highlight_unknown_chars(text))
+            print(f"  {BOLD}…{RESET} " + highlight_unknown_chars(text, R, RESET))
 
-        db.close()  # Close the database connection
+    db.close()  # Close the database connection
