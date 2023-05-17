@@ -1,20 +1,18 @@
 #!python
 # pyright: basic
+import sys
+from os import makedirs, mkdir
+from shutil import rmtree
+
 from articles import Article, Articles
 from config import config
 from converter import highlight_unknown_chars
 from database import db
 
 if __name__ != "__main__":
-    exit()
-
-import sys
-from os import makedirs, mkdir
-from shutil import rmtree
-
-# Clean the output dir & create a new
-rmtree(config.output_dir, True)
-mkdir(config.output_dir)
+    # Clean the output dir & create a new
+    rmtree(config.output_dir, True)
+    mkdir(config.output_dir)
 
 # Connect to the MySQL database with Peewee ORM
 db.init(config.db, host=config.db_host, user=config.db_user, password=config.db_pass)
@@ -36,36 +34,37 @@ RESET: str = "\033[0m"
 # Articles that contains unknown chars
 unknown_chars_articles: list[Article] = []
 
-# Loop among first maxexport articles & export them
-for counter, article in Articles(maxexport):
-    if (counter["exported"] - 1) % 100 == 0:
+if __name__ != "__main__":
+    # Loop among first maxexport articles & export them
+    for counter, article in Articles(maxexport):
+        if (counter["exported"] - 1) % 100 == 0:
+            print(
+                f"\n{BOLD}Exporting {R}{counter['remaining']+1}{RESET}"
+                + f"{BOLD} SPIP articles to Markdown & YAML files{RESET}\n"
+            )
+        empty: str = "EMPTY " if len(article.text) < 1 else ""
         print(
-            f"\n{BOLD}Exporting {R}{counter['remaining']+1}{RESET}"
-            + f"{BOLD} SPIP articles to Markdown & YAML files{RESET}\n"
+            f"{BOLD}{counter['exported']}. {empty}{RESET}"
+            + highlight_unknown_chars(article.title)
         )
-    empty: str = "EMPTY " if len(article.text) < 1 else ""
-    print(
-        f"{BOLD}{counter['exported']}. {empty}{RESET}"
-        + highlight_unknown_chars(article.title)
-    )
-    fullpath: str = config.output_dir + "/" + article.get_path()
-    print(f"{BOLD}>{RESET} {fullpath}{article.get_filename()}")
-    makedirs(fullpath, exist_ok=True)
-    with open(fullpath + article.get_filename(), "w") as f:
-        f.write(article.get_article())
-    # Store detected unknown characters
-    if len(article.get_unknown_chars()) > 0:
-        unknown_chars_articles.append(article)
+        fullpath: str = config.output_dir + "/" + article.get_path()
+        print(f"{BOLD}>{RESET} {fullpath}{article.get_filename()}")
+        makedirs(fullpath, exist_ok=True)
+        with open(fullpath + article.get_filename(), "w") as f:
+            f.write(article.get_article())
+        # Store detected unknown characters
+        if len(article.get_unknown_chars()) > 0:
+            unknown_chars_articles.append(article)
 
-for article in unknown_chars_articles:
-    unknown_chars_apparitions: list = article.get_unknown_chars()
-    nb: int = len(unknown_chars_apparitions)
-    s: str = "s" if nb > 1 else ""
-    print(
-        f"\n{BOLD}{nb}{RESET} unknown character{s} in {BOLD}{article.lang}{RESET} "
-        + highlight_unknown_chars(article.title)
-    )
-    for text in unknown_chars_apparitions:
-        print(f"  {BOLD}…{RESET} " + highlight_unknown_chars(text))
+    for article in unknown_chars_articles:
+        unknown_chars_apparitions: list = article.get_unknown_chars()
+        nb: int = len(unknown_chars_apparitions)
+        s: str = "s" if nb > 1 else ""
+        print(
+            f"\n{BOLD}{nb}{RESET} unknown character{s} in {BOLD}{article.lang}{RESET} "
+            + highlight_unknown_chars(article.title)
+        )
+        for text in unknown_chars_apparitions:
+            print(f"  {BOLD}…{RESET} " + highlight_unknown_chars(text))
 
-db.close()  # Close the database connection
+        db.close()  # Close the database connection
