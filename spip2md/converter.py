@@ -14,8 +14,7 @@ spip_to_markdown = (
     ),
     (  # heading
         compile(r"\{\{\{ *(.*?) *\}\}\}", S | I),
-        r"# \1",
-        # r"## \1",
+        r"## \1",  # Translate SPIP headings to h2
     ),
     (  # strong
         compile(r"\{\{ *(.*?) *\}\}", S | I),
