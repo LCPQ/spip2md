@@ -9,29 +9,92 @@ from database import SpipArticles, SpipAuteurs, SpipAuteursLiens, SpipRubriques
 
 # from yaml import CDumper as Dumper
 
+FILETYPE: str = "md"
 
-class Article:
-    def __init__(self, article):
+
+class Item:
+    id: int
+
+    def __init__(self, item) -> None:
+        self.title: str = convert_meta(item.titre)
+        self.section_id: int = item.id_rubrique
+        self.description: str = convert_meta(item.descriptif)
+        self.text: str = convert_body(item.texte)  # Markdown
+        self.publication: str = item.date
+        self.draft: bool = item.statut == "publie"
+        self.sector_id: int = item.id_secteur
+        self.update: str = item.maj
+        self.lang: str = item.lang
+        self.set_lang: bool = item.langue_choisie  # TODO Why ?
+        self.translation_key: int = item.id_trad
+        self.extra: str = item.extra  # Probably unused
+
+    def get_slug(self, date: bool = False) -> str:
+        return slugify(f"{self.publication if date else ''}-{self.title}")
+
+    def get_filename(self) -> str:
+        return "index" + "." + self.lang + "." + FILETYPE
+
+    def get_frontmatter(self) -> str:
+        return dump(
+            {
+                "lang": self.lang,
+                "translationKey": self.translation_key,
+                "title": self.title,
+                "publishDate": self.publication,
+                "lastmod": self.update,
+                "draft": self.draft,
+                "description": self.description,
+                # Debugging
+                "spip_id": self.id,
+                "spip_id_secteur": self.sector_id,
+            },
+            allow_unicode=True,
+        )
+
+    def get_content(self) -> str:
+        # Build the final article text
+        article: str = "---\n" + self.get_frontmatter() + "---"
+        # If there is a caption, add the caption followed by a hr
+        if hasattr(self, "caption") and len(self.caption) > 0:
+            article += "\n\n" + self.caption + "\n\n***"
+        # Add the title as a Markdown h1
+        if len(self.title) > 0:
+            article += "\n\n# " + self.title
+        # If there is a text, add the text preceded by two line breaks
+        if len(self.text) > 0:
+            article += "\n\n" + self.text
+        # Same with an "extra" section
+        if self.extra is not None and len(self.extra) > 0:
+            article += "\n\n# EXTRA\n\n" + self.extra
+        # PS
+        if hasattr(self, "ps") and len(self.ps) > 0:
+            article += "\n\n# POST-SCRIPTUM\n\n" + self.ps
+        # Microblog
+        if hasattr(self, "microblog") and len(self.microblog) > 0:
+            article += "\n\n# MICROBLOGGING\n\n" + self.microblog
+        return article
+
+    def get_unknown_chars(self) -> list[str]:
+        errors: list[str] = []
+        for text in (self.title, self.text):
+            for char in unknown_iso:
+                for match in finditer(r".{0-20}" + char + r".*(?=\r?\n|$)", text):
+                    errors.append(match.group())
+        return errors
+
+
+class Article(Item):
+    def __init__(self, article) -> None:
+        super().__init__(article)
         self.id: int = article.id_article
         self.surtitle: str = article.surtitre  # Probably unused
-        self.title: str = convert_meta(article.titre)
         self.subtitle: str = article.soustitre  # Probably unused
-        self.section_id: int = article.id_rubrique
-        self.description: str = convert_meta(article.descriptif)
         self.caption: str = article.chapo  # Probably unused
-        self.text: str = convert_body(article.texte)  # Markdown
         self.ps: str = article.ps  # Probably unused
-        self.publication: str = article.date
-        self.draft: bool = False if article.statut == "publie" else True
-        self.sector_id: int = article.id_secteur
-        self.update: str = article.maj
         self.update_2: str = article.date_modif  # Probably unused duplicate of maj
         self.creation: str = article.date_redac
         self.forum: bool = article.accepter_forum  # TODO Why ?
-        self.lang: str = article.lang
-        self.set_lang: bool = article.langue_choisie  # TODO Why ?
-        self.translation_key: int = article.id_trad
-        self.extra: str = article.extra  # Probably unused
         self.sitename: str = article.nom_site  # Probably useless
         self.virtual: str = article.virtuel  # TODO Why ?
         self.microblog: str = article.microblog  # Probably unused
@@ -40,19 +103,6 @@ class Article:
         # self.referers: int = article.referers  # USELESS in static
         # self.popularity: float = article.popularite  # USELESS in static
         # self.version = article.id_version  # USELESS
-
-    def get_section(self) -> str:
-        return convert_meta(
-            SpipRubriques.select()
-            .where(SpipRubriques.id_rubrique == self.section_id)[0]
-            .titre
-        )
-
-    def get_path(self) -> str:
-        return slugify(self.get_section()) + "/" + slugify(f"{self.title}") + "/"
-
-    def get_filename(self) -> str:
-        return "index." + self.lang + ".md"
 
     def get_authors(self) -> tuple:
         return (
@@ -87,112 +137,79 @@ class Article:
             allow_unicode=True,
         )
 
-    def get_article(self) -> str:
-        # Build the final article text
-        article: str = "---\n" + self.get_frontmatter() + "---"
-        # If there is a caption, add the caption followed by a hr
-        if len(self.caption) > 0:
-            article += "\n\n" + self.caption + "\n\n***"
-        # Add the title as a Markdown h1
-        if len(self.title) > 0:
-            article += "\n\n# " + self.title
-        # If there is a text, add the text preceded by two line breaks
-        if len(self.text) > 0:
-            article += "\n\n" + self.text
-        # Same with an "extra" section
-        if self.extra is not None and len(self.extra) > 0:
-            article += "\n\n# EXTRA\n\n" + self.extra
-        # PS
-        if len(self.ps) > 0:
-            article += "\n\n# POST-SCRIPTUM\n\n" + self.ps
-        # Microblog
-        if len(self.microblog) > 0:
-            article += "\n\n# MICROBLOGGING\n\n" + self.microblog
-        return article
 
-    def get_unknown_chars(self) -> list[str]:
-        errors: list[str] = []
-        for text in (self.title, self.text):
-            for char in unknown_iso:
-                for match in finditer(char + r".*(?=\r?\n|$)", text):
-                    errors.append(match.group())
-        return errors
-
-
-class Section:
+class Section(Item):
     def __init__(self, section) -> None:
+        super().__init__(section)
         self.id: int = section.id_rubrique
         self.parent_id: int = section.id_parent
-        self.title: str = convert_meta(section.titre)
-        self.description: str = convert_meta(section.descriptif)
-        self.text: str = convert_body(section.texte)  # Markdown
-        self.sector_id: int = section.id_secteur
-        self.update: str = section.maj
-        self.publication: str = section.date
-        self.draft: bool = False if section.statut == "publie" else True
-        self.lang: str = section.lang
-        self.lang_set: bool = False if section.langue_choisie == "oui" else True
-        self.extra: str = section.extra  # Probably unused
-        self.translation_key: int = section.id_trad
         self.depth: int = section.profondeur
         self.agenda: int = section.agenda
 
-    def get_articles(self, limit: int):
-        return Articles(limit)
+    def get_articles(self, limit: int = 0):
+        return Articles(self.id, limit)
 
 
-class Articles:
-    exported: int = 0
+class LimitCounter:
+    count: int
+    LIMIT: int
 
     def __init__(self, limit: int) -> None:
-        # Query the DB to retrieve all articles sorted by publication date
-        self.articles = (
-            SpipArticles.select().order_by(SpipArticles.date.desc()).limit(limit)
-        )
-        self.toExport: int = len(self.articles)
+        self.count = -1
+        self.LIMIT = limit
 
-    def remaining(self):
-        return self.toExport - self.exported
+    def remaining(self) -> int:
+        return self.LIMIT - self.count
+
+    def step(self) -> int:
+        self.count += 1
+        if self.remaining() <= 0:
+            raise StopIteration
+        return self.count
+
+
+class Items:
+    items: list
+
+    def __init__(self) -> None:
+        # Set a counter caped at the number of retrieved items
+        self.count = LimitCounter(len(self.items))
 
     def __iter__(self):
         return self
 
-    def __next__(self):
-        if self.remaining() <= 0:
-            raise StopIteration
-        self.exported += 1
-        article = Article(self.articles[self.exported - 1])
-        return (
-            {"exported": self.exported, "remaining": self.remaining()},
-            article,
-        )
+    def __len__(self) -> int:
+        return self.count.LIMIT
 
 
-class Sections:
-    exported: int = 0
-
-    def __init__(self, limit: int = 0) -> None:
+class Articles(Items):
+    def __init__(self, section_id: int, limit: int = 0) -> None:
         # Query the DB to retrieve all articles sorted by publication date
         if limit > 0:
-            self.articles = (
-                SpipArticles.select().order_by(SpipArticles.date.desc()).limit(limit)
+            self.items = (
+                SpipArticles.select()
+                .where(SpipArticles.id_rubrique == section_id)
+                .order_by(SpipArticles.date.desc())
+                .limit(limit)
             )
         else:
-            self.articles = SpipArticles.select().order_by(SpipArticles.date.desc())
-        self.toExport: int = len(self.articles)
-
-    def remaining(self):
-        return self.toExport - self.exported
-
-    def __iter__(self):
-        return self
+            self.items = SpipArticles.select().order_by(SpipArticles.date.desc())
+        super().__init__()
 
     def __next__(self):
-        if self.remaining() <= 0:
-            raise StopIteration
-        self.exported += 1
-        section = Section(self.articles[self.exported - 1])
-        return (
-            {"exported": self.exported, "remaining": self.remaining()},
-            section,
-        )
+        return (Article(self.items[self.count.step()]), self.count)
+
+
+class Sections(Items):
+    def __init__(self, limit: int = 0) -> None:
+        # Query the DB to retrieve all sections sorted by publication date
+        if limit > 0:
+            self.items = (
+                SpipRubriques.select().order_by(SpipRubriques.date.desc()).limit(limit)
+            )
+        else:
+            self.items = SpipRubriques.select().order_by(SpipRubriques.date.desc())
+        super().__init__()
+
+    def __next__(self):
+        return (Section(self.items[self.count.step()]), self.count)
