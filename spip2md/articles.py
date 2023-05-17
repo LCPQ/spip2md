@@ -25,9 +25,9 @@ class Article:
         self.draft: bool = False if article.statut == "publie" else True
         self.sector_id: int = article.id_secteur
         self.update: str = article.maj
+        self.update_2: str = article.date_modif  # Probably unused duplicate of maj
         self.creation: str = article.date_redac
         self.forum: bool = article.accepter_forum  # TODO Why ?
-        self.update: str = article.date_modif  # Probably unused
         self.lang: str = article.lang
         self.set_lang: bool = article.langue_choisie  # TODO Why ?
         self.translation_key: int = article.id_trad
@@ -117,6 +117,25 @@ class Article:
                 for match in finditer(char + r".*(?=\r?\n|$)", text):
                     errors.append(match.group())
         return errors
+
+
+class Section:
+    def __init__(self, section) -> None:
+        self.id: int = section.id_rubrique
+        self.parent_id: int = section.id_parent
+        self.title: str = convert_meta(section.titre)
+        self.description: str = convert_meta(section.descriptif)
+        self.text: str = convert_body(section.texte)  # Markdown
+        self.sector_id: int = section.id_secteur
+        self.update: str = section.maj
+        self.publication: str = section.date
+        self.draft: bool = False if section.statut == "publie" else True
+        self.lang: str = section.lang
+        self.lang_set: bool = False if section.langue_choisie == "oui" else True
+        self.extra: str = section.extra  # Probably unused
+        self.translation_key: int = section.id_trad
+        self.depth: int = section.profondeur
+        self.agenda: int = section.agenda
 
 
 class Articles:
