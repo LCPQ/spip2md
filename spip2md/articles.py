@@ -13,7 +13,7 @@ from database import SpipArticles, SpipAuteurs, SpipAuteursLiens, SpipRubriques
 class Article:
     def __init__(self, article):
         self.id: int = article.id_article
-        # self.surtitle = article.surtitre  # Probably unused
+        self.surtitle: str = article.surtitre  # Probably unused
         self.title: str = convert_meta(article.titre)
         self.subtitle: str = article.soustitre  # Probably unused
         self.section_id: int = article.id_rubrique
@@ -21,25 +21,25 @@ class Article:
         self.caption: str = article.chapo  # Probably unused
         self.text: str = convert_body(article.texte)  # Markdown
         self.ps: str = article.ps  # Probably unused
-        self.publicationDate: str = article.date
+        self.publication: str = article.date
         self.draft: bool = False if article.statut == "publie" else True
-        # self.sector = article.id_secteur # TODO join
+        self.sector_id: int = article.id_secteur
         self.update: str = article.maj
-        # self.export = article.export  # USELESS
-        self.creationDate: str = article.date_redac
-        # self.views = article.visites  # USELESS in static
-        # self.referers = article.referers  # TODO Why ?
-        # self.popularity = article.popularite  # USELESS in static
-        # self.acceptForum = article.accepter_forum  # TODO Why ?
-        self.contentUpdate: str = article.date_modif  # Probably unused
+        self.creation: str = article.date_redac
+        self.forum: bool = article.accepter_forum  # TODO Why ?
+        self.update: str = article.date_modif  # Probably unused
         self.lang: str = article.lang
-        self.choosenLang: str = article.langue_choisie  # TODO Why ?
-        # self.translation = article.id_trad # TODO join
+        self.set_lang: bool = article.langue_choisie  # TODO Why ?
+        self.translation_key: int = article.id_trad
         self.extra: str = article.extra  # Probably unused
-        # self.version = article.id_version  # USELESS
         self.sitename: str = article.nom_site  # Probably useless
         self.virtual: str = article.virtuel  # TODO Why ?
         self.microblog: str = article.microblog  # Probably unused
+        # self.export = article.export  # USELESS
+        # self.views: int = article.visites  # USELESS in static
+        # self.referers: int = article.referers  # USELESS in static
+        # self.popularity: float = article.popularite  # USELESS in static
+        # self.version = article.id_version  # USELESS
 
     def get_section(self) -> str:
         return convert_meta(
@@ -68,14 +68,20 @@ class Article:
         return dump(
             {
                 "lang": self.lang,
+                "translationKey": self.translation_key,
                 "title": self.title,
-                # "subtitle": self.subtitle,
-                "date": self.creationDate,
-                "publishDate": self.publicationDate,
+                "surtitle": self.surtitle,
+                "subtitle": self.subtitle,
+                "date": self.creation,
+                "publishDate": self.publication,
                 "lastmod": self.update,
                 "draft": self.draft,
                 "description": self.description,
                 "authors": [author.nom for author in self.get_authors()],
+                # Debugging
+                "spip_id_article": self.id,
+                "spip_id_rubrique": self.section_id,
+                "spip_id_secteur": self.sector_id,
             },
             allow_unicode=True,
         )
