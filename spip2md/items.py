@@ -15,7 +15,7 @@ FILETYPE: str = "md"
 class Item:
     id: int
 
-    def __init__(self, item) -> None:
+    def __init__(self, item: SpipArticles | SpipRubriques) -> None:
         self.title: str = convert_meta(item.titre)
         self.section_id: int = item.id_rubrique
         self.description: str = convert_meta(item.descriptif)
@@ -74,7 +74,7 @@ class Item:
 
 
 class Article(Item):
-    def __init__(self, article) -> None:
+    def __init__(self, article: SpipArticles) -> None:
         super().__init__(article)
         self.id: int = article.id_article
         self.surtitle: str = convert_meta(article.surtitre)  # Probably unused
@@ -93,7 +93,7 @@ class Article(Item):
         # self.popularity: float = article.popularite  # USELESS in static
         # self.version = article.id_version  # USELESS
 
-    def get_authors(self) -> tuple:
+    def get_authors(self) -> list[SpipAuteurs]:
         return (
             SpipAuteurs.select()
             .join(
@@ -103,7 +103,7 @@ class Article(Item):
             .where(SpipAuteursLiens.id_objet == self.id)
         )
 
-    def get_frontmatter(self) -> str:
+    def get_frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         return super().get_frontmatter(
             {
                 "surtitle": self.surtitle,
@@ -114,7 +114,10 @@ class Article(Item):
                 "spip_id_rubrique": self.section_id,
                 "spip_id_secteur": self.sector_id,
                 "spip_chapo": self.caption,
-            },
+            }
+            | append
+            if append is not None
+            else {},
         )
 
     def get_body(self) -> str:
@@ -132,7 +135,7 @@ class Article(Item):
 
 
 class Section(Item):
-    def __init__(self, section) -> None:
+    def __init__(self, section: SpipRubriques) -> None:
         super().__init__(section)
         self.id: int = section.id_rubrique
         self.parent_id: int = section.id_parent
@@ -165,7 +168,7 @@ class LimitCounter:
 
 
 class Iterator:
-    items: list
+    items: list[Any]
 
     def __init__(self) -> None:
         # Set a counter caped at the number of retrieved items
