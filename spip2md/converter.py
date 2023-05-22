@@ -288,3 +288,11 @@ def highlight_unknown_chars(text: str, pre: str, post: str) -> str:
                 text[: match.start()] + pre + match.group() + post + text[match.end() :]
             )
     return text
+
+
+def get_unknown_chars(text: str) -> list[str]:
+    errors: list[str] = []
+    for char in unknown_iso:
+        for match in finditer(r".{0-20}" + char + r".*(?=\r?\n|$)", text):
+            errors.append(match.group())
+    return errors

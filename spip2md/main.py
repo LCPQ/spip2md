@@ -5,9 +5,9 @@ from shutil import rmtree
 from sys import argv
 
 from config import config
-from converter import highlight_unknown_chars
+from converter import get_unknown_chars, highlight_unknown_chars
 from database import db
-from lib import Article, Sections
+from items import Article, Sections
 
 # Define terminal escape sequences to stylize output
 R: str = "\033[91m"
@@ -22,10 +22,10 @@ db.connect()
 
 if __name__ == "__main__":  # Following is executed only if script is directly executed
     # Define max nb of articles to export based on first CLI argument
-    if len(argv) > 1:
-        maxexport = int(argv[1])
+    if len(argv) >= 2:
+        toexport = int(argv[1])
     else:
-        maxexport = config.default_export_nb
+        toexport = config.default_export_max
 
     # Clear the output dir & create a new
     rmtree(config.output_dir, True)
@@ -36,6 +36,10 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
 
     # Loop among first maxexport articles & export them
     for section, counter in Sections():
+        # Define articles of the sections, limited by toexport
+        if toexport <= 0:
+            break
+        articles = section.get_articles(toexport)
         # Print the name of the exported section & number of remaining sections
         print(
             f"{BOLD}{counter.count + 1}. {RESET}"
@@ -44,11 +48,16 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
         )
         if counter.remaining() > 2:
             print(
-                f"   {BOLD}{R}{counter.remaining()-1}{RESET} {BOLD}sections left"
+                f"   {BOLD}{B}{counter.remaining()-1}{RESET} {BOLD}sections left"
                 + RESET,
+                end="",
             )
-        else:
-            print()
+        if toexport > 1:
+            print(
+                f"   {BOLD}Export limit is in {R}{toexport}{RESET} articles{RESET}",
+                end="",
+            )
+        print()
         # Define the section’s path (directory) & create directory(ies) if needed
         sectiondir: str = config.output_dir + "/" + section.get_slug()
         makedirs(sectiondir, exist_ok=True)
@@ -57,21 +66,19 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
         with open(sectionpath, "w") as f:
             f.write(section.get_content())
         # Loop over section’s articles
-        articles = section.get_articles(maxexport)
-        maxexport -= len(articles)
         for article, counter in articles:
             # Print the remaining number of articles to export every 100 articles
             if counter.count % 100 == 0:
                 s: str = "s" if counter.remaining() > 1 else ""
                 print(
-                    f"  {BOLD}Exporting {R}{counter.remaining()}{RESET}"
+                    f"  {BOLD}Exporting {G}{counter.remaining()}{RESET}"
                     + f"{BOLD} SPIP article{s}{RESET} to Markdown & YAML files"
                 )
             # Print the title of the article being exported
             print(
                 f"  {BOLD}{counter.count + 1}. "
                 + ("EMPTY " if len(article.text) < 1 else "")
-                + RESET
+                + f"{article.lang} {RESET}"
                 + highlight_unknown_chars(article.title, R, RESET)
             )
             # Define the full article path & create directory(ies) if needed
@@ -81,19 +88,22 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
             articlepath: str = articledir + "/" + article.get_filename()
             with open(articlepath, "w") as f:
                 f.write(article.get_content())
-            # Store detected unknown characters
-            if len(article.get_unknown_chars()) > 0:
+            # Store articles with unknown characters
+            print(f"UNKNOWN CHARS {get_unknown_chars(article.text)}")
+            if len(get_unknown_chars(article.text)) > 0:
                 unknown_chars_articles.append(article)
             # Print the outputted file’s path when finished exporting the article
-            print(f"  {BOLD}Article>{RESET} {articlepath}")
+            print(f"  {BOLD}{G}-->{RESET} {articlepath}")
         # Print the outputted file’s path when finished exporting the section
-        print(f"{BOLD}Section>{RESET} {sectionpath}\n")
+        print(f"{BOLD}{B}-->{RESET} {sectionpath}\n")
+        # Decrement export limit with length of exported section
+        toexport -= len(articles)
 
     # Loop through each article that contains an unknown character
     for article in unknown_chars_articles:
         # Print the title of the article in which there is unknown characters
         # & the number of them
-        unknown_chars_apparitions: list[str] = article.get_unknown_chars()
+        unknown_chars_apparitions: list[str] = get_unknown_chars(article.text)
         nb: int = len(unknown_chars_apparitions)
         s: str = "s" if nb > 1 else ""
         print(

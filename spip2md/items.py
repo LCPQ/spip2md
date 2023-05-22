@@ -1,10 +1,10 @@
 # pyright: basic
-from re import finditer
+from typing import Any, Optional
 
 from slugify import slugify
 from yaml import dump
 
-from converter import convert_body, convert_meta, unknown_iso
+from converter import convert_body, convert_meta
 from database import SpipArticles, SpipAuteurs, SpipAuteursLiens, SpipRubriques
 
 # from yaml import CDumper as Dumper
@@ -35,7 +35,7 @@ class Item:
     def get_filename(self) -> str:
         return "index" + "." + self.lang + "." + FILETYPE
 
-    def get_frontmatter(self) -> str:
+    def get_frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         return dump(
             {
                 "lang": self.lang,
@@ -48,40 +48,29 @@ class Item:
                 # Debugging
                 "spip_id": self.id,
                 "spip_id_secteur": self.sector_id,
-            },
+            }
+            | append
+            if append is not None
+            else {},
             allow_unicode=True,
         )
 
-    def get_content(self) -> str:
-        # Build the final article text
-        article: str = "---\n" + self.get_frontmatter() + "---"
-        # If there is a caption, add the caption followed by a hr
-        if hasattr(self, "caption") and len(self.caption) > 0:
-            article += "\n\n" + self.caption + "\n\n***"
+    def get_body(self) -> str:
+        body: str = ""
         # Add the title as a Markdown h1
         if len(self.title) > 0:
-            article += "\n\n# " + self.title
+            body += "\n\n# " + self.title
         # If there is a text, add the text preceded by two line breaks
         if len(self.text) > 0:
-            article += "\n\n" + self.text
+            body += "\n\n" + self.text
         # Same with an "extra" section
         if self.extra is not None and len(self.extra) > 0:
-            article += "\n\n# EXTRA\n\n" + self.extra
-        # PS
-        if hasattr(self, "ps") and len(self.ps) > 0:
-            article += "\n\n# POST-SCRIPTUM\n\n" + self.ps
-        # Microblog
-        if hasattr(self, "microblog") and len(self.microblog) > 0:
-            article += "\n\n# MICROBLOGGING\n\n" + self.microblog
-        return article
+            body += "\n\n# EXTRA\n\n" + self.extra
+        return body
 
-    def get_unknown_chars(self) -> list[str]:
-        errors: list[str] = []
-        for text in (self.title, self.text):
-            for char in unknown_iso:
-                for match in finditer(r".{0-20}" + char + r".*(?=\r?\n|$)", text):
-                    errors.append(match.group())
-        return errors
+    def get_content(self) -> str:
+        # Return the final article text
+        return "---\n" + self.get_frontmatter() + "---" + self.get_body()
 
 
 class Article(Item):
@@ -115,27 +104,31 @@ class Article(Item):
         )
 
     def get_frontmatter(self) -> str:
-        return dump(
+        return super().get_frontmatter(
             {
-                "lang": self.lang,
-                "translationKey": self.translation_key,
-                "title": self.title,
                 "surtitle": self.surtitle,
                 "subtitle": self.subtitle,
                 "date": self.creation,
-                "publishDate": self.publication,
-                "lastmod": self.update,
-                "draft": self.draft,
-                "description": self.description,
                 "authors": [author.nom for author in self.get_authors()],
                 # Debugging
-                "spip_id_article": self.id,
                 "spip_id_rubrique": self.section_id,
                 "spip_id_secteur": self.sector_id,
                 "spip_chapo": self.caption,
             },
-            allow_unicode=True,
         )
+
+    def get_body(self) -> str:
+        body: str = super().get_body()
+        # If there is a caption, add the caption followed by a hr
+        if hasattr(self, "caption") and len(self.caption) > 0:
+            body += "\n\n" + self.caption + "\n\n***"
+        # PS
+        if hasattr(self, "ps") and len(self.ps) > 0:
+            body += "\n\n# POST-SCRIPTUM\n\n" + self.ps
+        # Microblog
+        if hasattr(self, "microblog") and len(self.microblog) > 0:
+            body += "\n\n# MICROBLOGGING\n\n" + self.microblog
+        return body
 
 
 class Section(Item):
@@ -145,6 +138,9 @@ class Section(Item):
         self.parent_id: int = section.id_parent
         self.depth: int = section.profondeur
         self.agenda: int = section.agenda
+
+    def get_filename(self) -> str:
+        return "_" + super().get_filename()
 
     def get_articles(self, limit: int = 0):
         return Articles(self.id, limit)
@@ -168,7 +164,7 @@ class LimitCounter:
         return self.count
 
 
-class Items:
+class Iterator:
     items: list
 
     def __init__(self) -> None:
@@ -182,7 +178,7 @@ class Items:
         return self.count.LIMIT
 
 
-class Articles(Items):
+class Articles(Iterator):
     def __init__(self, section_id: int, limit: int = 0) -> None:
         # Query the DB to retrieve all articles sorted by publication date
         if limit > 0:
@@ -193,14 +189,18 @@ class Articles(Items):
                 .limit(limit)
             )
         else:
-            self.items = SpipArticles.select().order_by(SpipArticles.date.desc())
+            self.items = (
+                SpipArticles.select()
+                .where(SpipArticles.id_rubrique == section_id)
+                .order_by(SpipArticles.date.desc())
+            )
         super().__init__()
 
     def __next__(self):
         return (Article(self.items[self.count.step()]), self.count)
 
 
-class Sections(Items):
+class Sections(Iterator):
     def __init__(self, limit: int = 0) -> None:
         # Query the DB to retrieve all sections sorted by publication date
         if limit > 0:

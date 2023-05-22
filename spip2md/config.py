@@ -14,7 +14,7 @@ class Configuration:
     db_user = "spip"
     db_pass = "password"
     output_dir = "output"
-    default_export_nb = 1000
+    default_export_max = 1000
 
     def __init__(self, config_file: Optional[str] = None) -> None:
         if config_file is not None:
@@ -29,7 +29,7 @@ class Configuration:
             if "output_dir" in config:
                 self.output_dir = config["output_dir"]
             if "default_export_nb" in config:
-                self.default_export_nb = config["default_export_nb"]
+                self.default_export_max = config["default_export_max"]
 
 
 config = Configuration()
