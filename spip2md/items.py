@@ -1,15 +1,20 @@
-# pyright: basic
+# pyright: strict
 from typing import Any, Optional
 
 from slugify import slugify
 from yaml import dump
 
 from converter import convert_body, convert_meta
-from database import SpipArticles, SpipAuteurs, SpipAuteursLiens, SpipRubriques
+from database import (
+    SpipArticles,
+    SpipAuteurs,
+    SpipAuteursLiens,
+    SpipDocuments,
+    SpipDocumentsLiens,
+    SpipRubriques,
+)
 
-# from yaml import CDumper as Dumper
-
-FILETYPE: str = "md"
+EXPORTTYPE: str = "md"
 
 
 class Item:
@@ -30,10 +35,10 @@ class Item:
         self.extra: str = convert_body(item.extra)  # Probably unused
 
     def get_slug(self, date: bool = False) -> str:
-        return slugify(f"{self.publication if date else ''}-{self.title}")
+        return slugify((self.publication + "-" if date else "") + self.title)
 
     def get_filename(self) -> str:
-        return "index" + "." + self.lang + "." + FILETYPE
+        return "index" + "." + self.lang + "." + EXPORTTYPE
 
     def get_frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         return dump(
@@ -149,13 +154,27 @@ class Section(Item):
         return Articles(self.id, limit)
 
 
-class LimitCounter:
-    count: int
-    LIMIT: int
+class Document:
+    def __init__(self, document: SpipDocuments) -> None:
+        self.id: int = document.id_document
+        self.thumbnail_id: int = document.id_vignette
+        self.title: str = document.titre
+        self.date: str = document.date
+        self.description: str = document.descriptif
+        self.file: str = document.fichier
+        self.draft: bool = item.statut == "publie"
+        self.creation: str = item.date
+        self.publication: str = item.date_publication
+        self.update: str = item.maj
 
+    def get_slug(self, date: bool = False) -> str:
+        return slugify((self.publication + "-" if date else "") + self.title)
+
+
+class LimitCounter:
     def __init__(self, limit: int) -> None:
-        self.count = -1
-        self.LIMIT = limit
+        self.count: int = -1
+        self.LIMIT: int = limit
 
     def remaining(self) -> int:
         return self.LIMIT - self.count
@@ -216,3 +235,20 @@ class Sections(Iterator):
 
     def __next__(self):
         return (Section(self.items[self.count.step()]), self.count)
+
+
+class Documents(Iterator):
+    def __init__(self, object_id: int) -> None:
+        # Query the DB to retrieve all documents related to object of id object_id
+        self.items = (
+            SpipDocuments.select()
+            .join(
+                SpipDocumentsLiens,
+                on=(SpipDocuments.id_document == SpipDocumentsLiens.id_document),
+            )
+            .order_by(SpipArticles.date.desc())
+        )
+        super().__init__()
+
+    def __next__(self):
+        return (Document(self.items[self.count.step()]), self.count)
