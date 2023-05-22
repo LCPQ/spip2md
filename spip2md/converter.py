@@ -236,6 +236,22 @@ iso_to_utf = (
         "Ã§",
         r"ç",
     ),
+    (  # Fix UTF-8 « that was interpreted as ISO 8859-1
+        "Â«",
+        r"«",
+    ),
+    (  # Fix UTF-8 » that was interpreted as ISO 8859-1
+        "Â»",
+        r"»",
+    ),
+    (  # Fix UTF-8 ° that was interpreted as ISO 8859-1
+        "Â°",
+        r"°",
+    ),
+    (  # Fix UTF-8 nbsp that was interpreted as ISO 8859-1
+        "Â ",
+        r" ",
+    ),
     (  # Fix UTF-8 í that was interpreted as ISO 8859-1
         "iÌ\u0081",
         r"í",
@@ -290,9 +306,14 @@ def highlight_unknown_chars(text: str, pre: str, post: str) -> str:
     return text
 
 
-def get_unknown_chars(text: str) -> list[str]:
+def get_unknown_chars(text: str, context_length: int = 20) -> list[str]:
     errors: list[str] = []
+    context: str = r".{0," + str(context_length) + r"}"
     for char in unknown_iso:
-        for match in finditer(r".{0-20}" + char + r".*(?=\r?\n|$)", text):
+        matches = finditer(
+            context + r"(?=" + char + r")" + char + r".*?(?=\r?\n|$)",
+            text,
+        )
+        for match in matches:
             errors.append(match.group())
     return errors

@@ -89,7 +89,6 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
             with open(articlepath, "w") as f:
                 f.write(article.get_content())
             # Store articles with unknown characters
-            print(f"UNKNOWN CHARS {get_unknown_chars(article.text)}")
             if len(get_unknown_chars(article.text)) > 0:
                 unknown_chars_articles.append(article)
             # Print the outputted file’s path when finished exporting the article
@@ -112,6 +111,6 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
         )
         # Print the context in which the unknown characters are found
         for text in unknown_chars_apparitions:
-            print(f"  {BOLD}…{RESET} " + highlight_unknown_chars(text, R, RESET))
+            print(f"  {BOLD}…{RESET} " + highlight_unknown_chars(text, R, RESET) + " …")
 
     db.close()  # Close the connection with the database
