@@ -8,6 +8,12 @@ from yaml import Loader, load
 config_paths = ("spip2md.yml", "spip2md.yaml")
 
 
+def config_file() -> Optional[str]:
+    for path in config_paths:
+        if isfile(path):
+            return path
+
+
 class Configuration:
     db = "spip"
     db_host = "localhost"
@@ -15,6 +21,7 @@ class Configuration:
     db_pass = "password"
     output_dir = "output"
     default_export_max = 1000
+    data_dir = "data"
 
     def __init__(self, config_file: Optional[str] = None) -> None:
         if config_file is not None:
@@ -30,11 +37,8 @@ class Configuration:
                 self.output_dir = config["output_dir"]
             if "default_export_nb" in config:
                 self.default_export_max = config["default_export_max"]
+            if "data_dir" in config:
+                self.data_dir = config["data_dir"]
 
 
-config = Configuration()
-
-for path in config_paths:
-    if isfile(path):
-        config = Configuration(path)
-        break
+config = Configuration(config_file())

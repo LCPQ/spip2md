@@ -156,6 +156,8 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Data directory
+data/
 
 # Big database files
 database/
@@ -163,3 +165,7 @@ database/
 # Outputted Markdown files
 markdown/
 output/
+
+# YAML Configuration
+spip2md.yml
+spip2md.yaml
