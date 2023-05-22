@@ -30,7 +30,7 @@ class Item:
         self.sector_id: int = item.id_secteur
         self.update: str = item.maj
         self.lang: str = item.lang
-        self.set_lang: bool = item.langue_choisie  # TODO Why ?
+        self.set_lang: bool = item.langue_choisie == "oui"  # TODO Why ?
         self.translation_key: int = item.id_trad
         self.extra: str = convert_body(item.extra)  # Probably unused
 
@@ -88,7 +88,7 @@ class Article(Item):
         self.ps: str = convert_body(article.ps)  # Probably unused
         self.update_2: str = article.date_modif  # Probably unused duplicate of maj
         self.creation: str = article.date_redac
-        self.forum: bool = article.accepter_forum  # TODO Why ?
+        self.forum: bool = article.accepter_forum == "oui"  # TODO Why ?
         self.sitename: str = article.nom_site  # Probably useless
         self.virtual: str = article.virtuel  # TODO Why ?
         self.microblog: str = article.microblog  # Probably unused
@@ -162,10 +162,10 @@ class Document:
         self.date: str = document.date
         self.description: str = document.descriptif
         self.file: str = document.fichier
-        self.draft: bool = item.statut == "publie"
-        self.creation: str = item.date
-        self.publication: str = item.date_publication
-        self.update: str = item.maj
+        self.draft: bool = document.statut == "publie"
+        self.creation: str = document.date
+        self.publication: str = document.date_publication
+        self.update: str = document.maj
 
     def get_slug(self, date: bool = False) -> str:
         return slugify((self.publication + "-" if date else "") + self.title)
@@ -246,6 +246,7 @@ class Documents(Iterator):
                 SpipDocumentsLiens,
                 on=(SpipDocuments.id_document == SpipDocumentsLiens.id_document),
             )
+            .where(SpipDocumentsLiens.id_objet == object_id)
             .order_by(SpipArticles.date.desc())
         )
         super().__init__()

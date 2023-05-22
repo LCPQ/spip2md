@@ -1,4 +1,5 @@
 # pyright: basic
+# type: ignore
 from peewee import (
     SQL,
     BigAutoField,
