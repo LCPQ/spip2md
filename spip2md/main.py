@@ -106,6 +106,7 @@ if __name__ == "__main__":  # Only if script is directly executed
                 + f"{article.lang} "
             )
             highlight(article.title, *unknown_chars(article.title))
+            print()
             # Define the full article path & create directory(ies) if needed
             articledir: str = sectiondir + "/" + article.get_slug()
             makedirs(articledir, exist_ok=True)
@@ -118,23 +119,37 @@ if __name__ == "__main__":  # Only if script is directly executed
                 unknown_chars_articles.append(article)
             # Loop over article’s related files (images …)
             for document, counter in Documents(article.id):
+                if counter.count % 100 == 0:
+                    s: str = "s" if counter.remaining() > 1 else ""
+                    print("    Exporting", end="")
+                    style(f" {counter.remaining()}", BO, B)
+                    style(f" file{s}")
+                    print(" in this article")
                 # Print the name of the file with a counter
                 style(f"    {counter.count + 1}. {document.media} ")
-                highlight(article.title, *unknown_chars(article.title))
+                print(f" {document.title}")
+                # highlight(document.title, *unknown_chars(document.title))
                 # Copy the document from it’s SPIP location to the new location
-                copyfile(config.data_dir + "/" + document.file, document.get_slug())
-                # Print the outputted file’s path when copied the file
-                style("    -->", BO, B)
-                print(f" {articledir}/{document.get_slug()}")
+                try:
+                    copyfile(config.data_dir + "/" + document.file, document.get_slug())
+                except FileNotFoundError:
+                    style("    NOT FOUND", BO, R)
+                    print(f" {document.file}")
+                else:
+                    # Print the outputted file’s path when copied the file
+                    style("\n    --> ACTUALLY FOUND", BO, B)
+                    print(f" {articledir}/{document.get_slug()}")
             # Print the outputted file’s path when finished exporting the article
             style("  --> ", BO, Y)
             print(articlepath)
         # Print the outputted file’s path when finished exporting the section
-        style("  --> ", BO, G)
+        style("--> ", BO, G)
         print(sectionpath)
         print()
         # Decrement export limit with length of exported section
         toexport -= len(articles)
+
+    print()  # Break line
 
     # Loop through each article that contains an unknown character
     for article in unknown_chars_articles:
@@ -143,14 +158,16 @@ if __name__ == "__main__":  # Only if script is directly executed
         unknown_chars_apparitions: list[str] = get_unknown_chars(article.text)
         nb: int = len(unknown_chars_apparitions)
         s: str = "s" if nb > 1 else ""
-        style(f"\n{nb}")
-        print(f" unknown character{s} in")
+        style(f"{nb}")
+        print(f" unknown character{s} in", end="")
         style(f" {article.lang} ")
         highlight(article.title, *unknown_chars(article.title))
+        print() # Break line
         # Print the context in which the unknown characters are found
         for text in unknown_chars_apparitions:
             style("  … ")
             highlight(text, *unknown_chars(text))
-            style("  … ")
+            style(" … \n")
+        print() # Break line
 
     db.close()  # Close the connection with the database

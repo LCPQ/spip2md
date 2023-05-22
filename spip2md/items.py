@@ -248,7 +248,6 @@ class Documents(Iterator):
                 on=(SpipDocuments.id_document == SpipDocumentsLiens.id_document),
             )
             .where(SpipDocumentsLiens.id_objet == object_id)
-            .order_by(SpipArticles.date.desc())
         )
         super().__init__()
 
