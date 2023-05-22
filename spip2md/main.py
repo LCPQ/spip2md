@@ -1,26 +1,56 @@
 #!python
 # pyright: strict
 from os import makedirs, mkdir
-from shutil import rmtree
+from shutil import copyfile, rmtree
 from sys import argv
 
 from config import config
-from converter import get_unknown_chars, highlight_unknown_chars
+from converter import get_unknown_chars, unknown_chars
 from database import db
-from items import Article, Sections
+from items import Article, Documents, Sections
 
-# Define terminal escape sequences to stylize output
-R: str = "\033[91m"
-G: str = "\033[92m"
-B: str = "\033[94m"
-BOLD: str = "\033[1m"
-RESET: str = "\033[0m"
+
+# Print a stylized string, without trailing newline
+def style(string: str, *args: int) -> None:
+    esc = "\033["  # Terminal escape sequence, needs to be closed by "m"
+    if len(args) == 0:
+        params: str = "1;"  # Defaults to bold
+    else:
+        params: str = ""
+    for a in args:
+        params += str(a) + ";"
+    print(esc + params[:-1] + "m" + string + esc + "0m", end="")
+
+
+# Define styles
+BO = 1  # Bold
+IT = 3  # Italic
+UN = 4  # Underline
+# Define colors
+R = 91  # Red
+G = 92  # Green
+Y = 93  # Yellow
+B = 94  # Blue
+C0 = 95  # Color
+C1 = 96  # Color
+C2 = 96  # Color
+
+
+# Print a string, highlighting every substring starting at start_stop[x][0] …
+def highlight(string: str, *start_stop: tuple[int, int]) -> None:
+    previous_stop = 0
+    for start, stop in start_stop:
+        print(string[previous_stop:start], end="")
+        style(string[start:stop], BO, R)
+        previous_stop = stop
+    print(string[previous_stop:], end="")
+
 
 # Connect to the MySQL database with Peewee ORM
 db.init(config.db, host=config.db_host, user=config.db_user, password=config.db_pass)
 db.connect()
 
-if __name__ == "__main__":  # Following is executed only if script is directly executed
+if __name__ == "__main__":  # Only if script is directly executed
     # Define max nb of articles to export based on first CLI argument
     if len(argv) >= 2:
         toexport = int(argv[1])
@@ -41,22 +71,16 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
             break
         articles = section.get_articles(toexport)
         # Print the name of the exported section & number of remaining sections
-        print(
-            f"{BOLD}{counter.count + 1}. {RESET}"
-            + highlight_unknown_chars(section.title, R, RESET),
-            end="",
-        )
+        style(f"{counter.count + 1}. ", BO)
+        highlight(section.title, *unknown_chars(section.title))
         if counter.remaining() > 2:
-            print(
-                f"   {BOLD}{B}{counter.remaining()-1}{RESET} {BOLD}sections left"
-                + RESET,
-                end="",
-            )
+            style(f"   {counter.remaining()-1}", BO, G)
+            style(" sections")
+            print(" left to export", end="")
         if toexport > 1:
-            print(
-                f"   {BOLD}Export limit is in {R}{toexport}{RESET} articles{RESET}",
-                end="",
-            )
+            style(f"   {toexport}", BO, Y)
+            style(" articles")
+            print(" left before export limit", end="")
         print()
         # Define the section’s path (directory) & create directory(ies) if needed
         sectiondir: str = config.output_dir + "/" + section.get_slug()
@@ -70,17 +94,18 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
             # Print the remaining number of articles to export every 100 articles
             if counter.count % 100 == 0:
                 s: str = "s" if counter.remaining() > 1 else ""
-                print(
-                    f"  {BOLD}Exporting {G}{counter.remaining()}{RESET}"
-                    + f"{BOLD} SPIP article{s}{RESET} to Markdown & YAML files"
-                )
+                print("  Exporting", end="")
+                style(f" {counter.remaining()}", BO, Y)
+                print(" SPIP", end="")
+                style(f" article{s}")
+                print(" to Markdown & YAML files")
             # Print the title of the article being exported
-            print(
-                f"  {BOLD}{counter.count + 1}. "
+            style(
+                f"  {counter.count + 1}. "
                 + ("EMPTY " if len(article.text) < 1 else "")
-                + f"{article.lang} {RESET}"
-                + highlight_unknown_chars(article.title, R, RESET)
+                + f"{article.lang} "
             )
+            highlight(article.title, *unknown_chars(article.title))
             # Define the full article path & create directory(ies) if needed
             articledir: str = sectiondir + "/" + article.get_slug()
             makedirs(articledir, exist_ok=True)
@@ -91,10 +116,23 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
             # Store articles with unknown characters
             if len(get_unknown_chars(article.text)) > 0:
                 unknown_chars_articles.append(article)
+            # Loop over article’s related files (images …)
+            for document, counter in Documents(article.id):
+                # Print the name of the file with a counter
+                style(f"    {counter.count + 1}. {document.media} ")
+                highlight(article.title, *unknown_chars(article.title))
+                # Copy the document from it’s SPIP location to the new location
+                copyfile(config.data_dir + "/" + document.file, document.get_slug())
+                # Print the outputted file’s path when copied the file
+                style("    -->", BO, B)
+                print(f" {articledir}/{document.get_slug()}")
             # Print the outputted file’s path when finished exporting the article
-            print(f"  {BOLD}{G}-->{RESET} {articlepath}")
+            style("  --> ", BO, Y)
+            print(articlepath)
         # Print the outputted file’s path when finished exporting the section
-        print(f"{BOLD}{B}-->{RESET} {sectionpath}\n")
+        style("  --> ", BO, G)
+        print(sectionpath)
+        print()
         # Decrement export limit with length of exported section
         toexport -= len(articles)
 
@@ -105,16 +143,14 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
         unknown_chars_apparitions: list[str] = get_unknown_chars(article.text)
         nb: int = len(unknown_chars_apparitions)
         s: str = "s" if nb > 1 else ""
-        print(
-            f"\n{BOLD}{nb}{RESET} unknown character{s} in {BOLD}{article.lang}{RESET} "
-            + highlight_unknown_chars(article.title, R, RESET)
-        )
+        style(f"\n{nb}")
+        print(f" unknown character{s} in")
+        style(f" {article.lang} ")
+        highlight(article.title, *unknown_chars(article.title))
         # Print the context in which the unknown characters are found
         for text in unknown_chars_apparitions:
-            print(
-                f"  {BOLD}…{RESET} "
-                + highlight_unknown_chars(text, R, RESET)
-                + f" {BOLD}…{RESET}"
-            )
+            style("  … ")
+            highlight(text, *unknown_chars(text))
+            style("  … ")
 
     db.close()  # Close the connection with the database

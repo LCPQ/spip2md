@@ -166,6 +166,7 @@ class Document:
         self.creation: str = document.date
         self.publication: str = document.date_publication
         self.update: str = document.maj
+        self.media: str = document.media
 
     def get_slug(self, date: bool = False) -> str:
         return slugify((self.publication + "-" if date else "") + self.title)

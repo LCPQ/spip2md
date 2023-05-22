@@ -275,6 +275,7 @@ unknown_iso = (
 )
 
 
+# Apply spip_to_markdown conversions to a text
 def convert_body(text: Optional[str]) -> str:
     if text is None:
         return ""
@@ -285,6 +286,7 @@ def convert_body(text: Optional[str]) -> str:
     return text
 
 
+# Apply spip_to_text conversions to a text
 def convert_meta(text: Optional[str]) -> str:
     if text is None:
         return ""
@@ -295,22 +297,23 @@ def convert_meta(text: Optional[str]) -> str:
     return text
 
 
+# Replace unknown chars with empty strings (delete them)
 def remove_unknown_chars(text: str) -> str:
     for char in unknown_iso:
         text.replace(char, "")
     return text
 
 
-def highlight_unknown_chars(text: str, pre: str, post: str) -> str:
-    # Add pre before unknown char and post after unknown char
+# Return a list of tuples giving the start and end of unknown substring in text
+def unknown_chars(text: str) -> list[tuple[int, int]]:
+    positions: list[tuple[int, int]] = []
     for char in unknown_iso:
         for match in finditer("(" + char + ")+", text):
-            text = (
-                text[: match.start()] + pre + match.group() + post + text[match.end() :]
-            )
-    return text
+            positions.append((match.start(), match.end()))
+    return positions
 
 
+# Return strings with unknown chards found in text, surrounded by context_length chars
 def get_unknown_chars(text: str, context_length: int = 20) -> list[str]:
     errors: list[str] = []
     context: str = r".{0," + str(context_length) + r"}"
