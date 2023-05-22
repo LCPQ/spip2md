@@ -111,6 +111,10 @@ if __name__ == "__main__":  # Following is executed only if script is directly e
         )
         # Print the context in which the unknown characters are found
         for text in unknown_chars_apparitions:
-            print(f"  {BOLD}…{RESET} " + highlight_unknown_chars(text, R, RESET) + " …")
+            print(
+                f"  {BOLD}…{RESET} "
+                + highlight_unknown_chars(text, R, RESET)
+                + f" {BOLD}…{RESET}"
+            )
 
     db.close()  # Close the connection with the database

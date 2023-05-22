@@ -27,7 +27,7 @@ class Item:
         self.lang: str = item.lang
         self.set_lang: bool = item.langue_choisie  # TODO Why ?
         self.translation_key: int = item.id_trad
-        self.extra: str = item.extra  # Probably unused
+        self.extra: str = convert_body(item.extra)  # Probably unused
 
     def get_slug(self, date: bool = False) -> str:
         return slugify(f"{self.publication if date else ''}-{self.title}")
@@ -64,7 +64,7 @@ class Item:
         if len(self.text) > 0:
             body += "\n\n" + self.text
         # Same with an "extra" section
-        if self.extra is not None and len(self.extra) > 0:
+        if len(self.extra) > 0:
             body += "\n\n# EXTRA\n\n" + self.extra
         return body
 
@@ -77,10 +77,10 @@ class Article(Item):
     def __init__(self, article) -> None:
         super().__init__(article)
         self.id: int = article.id_article
-        self.surtitle: str = article.surtitre  # Probably unused
-        self.subtitle: str = article.soustitre  # Probably unused
-        self.caption: str = article.chapo  # Probably unused
-        self.ps: str = article.ps  # Probably unused
+        self.surtitle: str = convert_meta(article.surtitre)  # Probably unused
+        self.subtitle: str = convert_meta(article.soustitre)  # Probably unused
+        self.caption: str = convert_body(article.chapo)  # Probably unused
+        self.ps: str = convert_body(article.ps)  # Probably unused
         self.update_2: str = article.date_modif  # Probably unused duplicate of maj
         self.creation: str = article.date_redac
         self.forum: bool = article.accepter_forum  # TODO Why ?

@@ -1,5 +1,6 @@
 # pyright: strict
 from re import I, S, compile, finditer
+from typing import Optional
 
 # SPIP syntax to Markdown
 spip_to_markdown = (
@@ -274,7 +275,9 @@ unknown_iso = (
 )
 
 
-def convert_body(text: str) -> str:
+def convert_body(text: Optional[str]) -> str:
+    if text is None:
+        return ""
     for spip, markdown in spip_to_markdown:
         text = spip.sub(markdown, text)
     for iso, utf in iso_to_utf:
@@ -282,7 +285,9 @@ def convert_body(text: str) -> str:
     return text
 
 
-def convert_meta(text: str) -> str:
+def convert_meta(text: Optional[str]) -> str:
+    if text is None:
+        return ""
     for spip, metadata in spip_to_text:
         text = spip.sub(metadata, text)
     for iso, utf in iso_to_utf:
