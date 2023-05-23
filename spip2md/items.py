@@ -18,6 +18,74 @@ from database import (
 EXPORTTYPE: str = "md"
 
 
+class LimitCounter:
+    def __init__(self, limit: int) -> None:
+        self.count: int = -1
+        self.LIMIT: int = limit
+
+    def remaining(self) -> int:
+        return self.LIMIT - self.count
+
+    def step(self) -> int:
+        self.count += 1
+        if self.remaining() <= 0:
+            raise StopIteration
+        return self.count
+
+
+class Iterator:
+    items: list[Any]
+
+    def __init__(self) -> None:
+        # Set a counter caped at the number of retrieved items
+        self.count = LimitCounter(len(self.items))
+
+    def __iter__(self):
+        return self
+
+    def __len__(self) -> int:
+        return self.count.LIMIT
+
+
+class Document:
+    def __init__(self, document: SpipDocuments) -> None:
+        self.id: int = document.id_document
+        self.thumbnail_id: int = document.id_vignette
+        self.title: str = convert_meta(document.titre)
+        self.date: str = document.date
+        self.description: str = convert_meta(document.descriptif)
+        self.file: str = document.fichier
+        self.draft: bool = document.statut == "publie"
+        self.creation: str = document.date
+        self.publication: str = document.date_publication
+        self.update: str = document.maj
+        self.media: str = document.media
+
+    def get_slug(self, date: bool = False) -> str:
+        name_type = splitext(basename(self.file))
+        return (
+            slugify((self.publication + "-" if date else "") + name_type[0])
+            + name_type[1]
+        )
+
+
+class Documents(Iterator):
+    def __init__(self, object_id: int) -> None:
+        # Query the DB to retrieve all documents related to object of id object_id
+        self.items = (
+            SpipDocuments.select()
+            .join(
+                SpipDocumentsLiens,
+                on=(SpipDocuments.id_document == SpipDocumentsLiens.id_document),
+            )
+            .where(SpipDocumentsLiens.id_objet == object_id)
+        )
+        super().__init__()
+
+    def __next__(self):
+        return (Document(self.items[self.count.step()]), self.count)
+
+
 class Item:
     id: int
 
@@ -25,7 +93,7 @@ class Item:
         self.title: str = convert_meta(item.titre)
         self.section_id: int = item.id_rubrique
         self.description: str = convert_meta(item.descriptif)
-        self.text: str = convert_body(item.texte)  # Markdown
+        self.text: str = convert_body(item.texte)  # Convert SPIP to Markdown
         self.publication: str = item.date
         self.draft: bool = item.statut == "publie"
         self.sector_id: int = item.id_secteur
@@ -68,7 +136,13 @@ class Item:
             body += "\n\n# " + self.title
         # If there is a text, add the text preceded by two line breaks
         if len(self.text) > 0:
-            body += "\n\n" + self.text
+            # Convert images & files links
+            text: str = convert_documents(
+                self.text,
+                [(d.id, d.title, d.get_slug()) for d, _ in self.get_documents()],
+            )
+            # Remove remaining HTML after & append to body
+            body += "\n\n" + remove_tags(text)
         # Same with an "extra" section
         if len(self.extra) > 0:
             body += "\n\n# EXTRA\n\n" + self.extra
@@ -77,6 +151,9 @@ class Item:
     def get_content(self) -> str:
         # Return the final article text
         return "---\n" + self.get_frontmatter() + "---" + self.get_body()
+
+    def get_documents(self) -> Documents:
+        return Documents(self.id)
 
 
 class Article(Item):
@@ -98,12 +175,6 @@ class Article(Item):
         # self.referers: int = article.referers  # USELESS in static
         # self.popularity: float = article.popularite  # USELESS in static
         # self.version = article.id_version  # USELESS
-        # Convert images & files links
-        self.text = convert_documents(
-            self.text, [(d.id, d.title, d.get_slug()) for d, _ in self.get_documents()]
-        )
-        # Remove remaining HTML after
-        self.text = remove_tags(self.text)
 
     def get_authors(self) -> list[SpipAuteurs]:
         return (
@@ -145,9 +216,6 @@ class Article(Item):
             body += "\n\n# MICROBLOGGING\n\n" + self.microblog
         return body
 
-    def get_documents(self):
-        return Documents(self.id)
-
 
 class Section(Item):
     def __init__(self, section: SpipRubriques) -> None:
@@ -162,57 +230,6 @@ class Section(Item):
 
     def get_articles(self, limit: int = 0):
         return Articles(self.id, limit)
-
-
-class Document:
-    def __init__(self, document: SpipDocuments) -> None:
-        self.id: int = document.id_document
-        self.thumbnail_id: int = document.id_vignette
-        self.title: str = convert_meta(document.titre)
-        self.date: str = document.date
-        self.description: str = convert_meta(document.descriptif)
-        self.file: str = document.fichier
-        self.draft: bool = document.statut == "publie"
-        self.creation: str = document.date
-        self.publication: str = document.date_publication
-        self.update: str = document.maj
-        self.media: str = document.media
-
-    def get_slug(self, date: bool = False) -> str:
-        name_type = splitext(basename(self.file))
-        return (
-            slugify((self.publication + "-" if date else "") + name_type[0])
-            + name_type[1]
-        )
-
-
-class LimitCounter:
-    def __init__(self, limit: int) -> None:
-        self.count: int = -1
-        self.LIMIT: int = limit
-
-    def remaining(self) -> int:
-        return self.LIMIT - self.count
-
-    def step(self) -> int:
-        self.count += 1
-        if self.remaining() <= 0:
-            raise StopIteration
-        return self.count
-
-
-class Iterator:
-    items: list[Any]
-
-    def __init__(self) -> None:
-        # Set a counter caped at the number of retrieved items
-        self.count = LimitCounter(len(self.items))
-
-    def __iter__(self):
-        return self
-
-    def __len__(self) -> int:
-        return self.count.LIMIT
 
 
 class Articles(Iterator):
@@ -250,20 +267,3 @@ class Sections(Iterator):
 
     def __next__(self):
         return (Section(self.items[self.count.step()]), self.count)
-
-
-class Documents(Iterator):
-    def __init__(self, object_id: int) -> None:
-        # Query the DB to retrieve all documents related to object of id object_id
-        self.items = (
-            SpipDocuments.select()
-            .join(
-                SpipDocumentsLiens,
-                on=(SpipDocuments.id_document == SpipDocumentsLiens.id_document),
-            )
-            .where(SpipDocumentsLiens.id_objet == object_id)
-        )
-        super().__init__()
-
-    def __next__(self):
-        return (Document(self.items[self.count.step()]), self.count)

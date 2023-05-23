@@ -8,7 +8,7 @@ from sys import argv
 from config import config
 from converter import get_unknown_chars, unknown_chars
 from database import db
-from items import Article, Documents, Sections
+from items import Article, Sections
 
 
 # Print a stylized string, without trailing newline
