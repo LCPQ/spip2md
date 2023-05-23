@@ -18,33 +18,29 @@ from database import (
 EXPORTTYPE: str = "md"
 
 
-class LimitCounter:
-    def __init__(self, limit: int) -> None:
-        self.count: int = -1
-        self.LIMIT: int = limit
-
-    def remaining(self) -> int:
-        return self.LIMIT - self.count
-
-    def step(self) -> int:
-        self.count += 1
-        if self.remaining() <= 0:
-            raise StopIteration
-        return self.count
-
-
 class Iterator:
     items: list[Any]
 
     def __init__(self) -> None:
-        # Set a counter caped at the number of retrieved items
-        self.count = LimitCounter(len(self.items))
+        # Set the limit at the number of retrieved items
+        self.LIMIT: int = len(self.items)
+        # Start before the first element
+        self.count: int = -1
 
     def __iter__(self):
         return self
 
     def __len__(self) -> int:
-        return self.count.LIMIT
+        return self.LIMIT
+
+    def remaining(self) -> int:
+        return self.LIMIT - self.count
+
+    def __next__(self) -> Any:
+        self.count += 1
+        if self.remaining() <= 0:
+            raise StopIteration
+        return self.items[self.count]
 
 
 class Document:
@@ -72,7 +68,7 @@ class Document:
 class Documents(Iterator):
     def __init__(self, object_id: int) -> None:
         # Query the DB to retrieve all documents related to object of id object_id
-        self.items = (
+        items = (
             SpipDocuments.select()
             .join(
                 SpipDocumentsLiens,
@@ -80,16 +76,14 @@ class Documents(Iterator):
             )
             .where(SpipDocumentsLiens.id_objet == object_id)
         )
+        self.items: list[Document] = [Document(i) for i in items]
         super().__init__()
-
-    def __next__(self):
-        return (Document(self.items[self.count.step()]), self.count)
 
 
 class Item:
     id: int
 
-    def __init__(self, item: SpipArticles | SpipRubriques) -> None:
+    def __init__(self, item: SpipArticles | SpipRubriques):
         self.title: str = convert_meta(item.titre)
         self.section_id: int = item.id_rubrique
         self.description: str = convert_meta(item.descriptif)
@@ -139,7 +133,7 @@ class Item:
             # Convert images & files links
             text: str = convert_documents(
                 self.text,
-                [(d.id, d.title, d.get_slug()) for d, _ in self.get_documents()],
+                [(d.id, d.title, d.get_slug()) for d in self.get_documents()],
             )
             # Remove remaining HTML after & append to body
             body += "\n\n" + remove_tags(text)
@@ -157,7 +151,7 @@ class Item:
 
 
 class Article(Item):
-    def __init__(self, article: SpipArticles) -> None:
+    def __init__(self, article: SpipArticles):
         super().__init__(article)
         self.id: int = article.id_article
         self.surtitle: str = convert_meta(article.surtitre)  # Probably unused
@@ -218,7 +212,7 @@ class Article(Item):
 
 
 class Section(Item):
-    def __init__(self, section: SpipRubriques) -> None:
+    def __init__(self, section: SpipRubriques):
         super().__init__(section)
         self.id: int = section.id_rubrique
         self.parent_id: int = section.id_parent
@@ -233,37 +227,33 @@ class Section(Item):
 
 
 class Articles(Iterator):
-    def __init__(self, section_id: int, limit: int = 0) -> None:
+    def __init__(self, section_id: int, limit: int = 0):
         # Query the DB to retrieve all articles sorted by publication date
         if limit > 0:
-            self.items = (
+            items = (
                 SpipArticles.select()
                 .where(SpipArticles.id_rubrique == section_id)
                 .order_by(SpipArticles.date.desc())
                 .limit(limit)
             )
         else:
-            self.items = (
+            items = (
                 SpipArticles.select()
                 .where(SpipArticles.id_rubrique == section_id)
                 .order_by(SpipArticles.date.desc())
             )
+        self.items: list[Article] = [Article(i) for i in items]
         super().__init__()
-
-    def __next__(self):
-        return (Article(self.items[self.count.step()]), self.count)
 
 
 class Sections(Iterator):
-    def __init__(self, limit: int = 0) -> None:
+    def __init__(self, limit: int = 0):
         # Query the DB to retrieve all sections sorted by publication date
         if limit > 0:
-            self.items = (
+            items = (
                 SpipRubriques.select().order_by(SpipRubriques.date.desc()).limit(limit)
             )
         else:
-            self.items = SpipRubriques.select().order_by(SpipRubriques.date.desc())
+            items = SpipRubriques.select().order_by(SpipRubriques.date.desc())
+        self.items: list[Section] = [Section(i) for i in items]
         super().__init__()
-
-    def __next__(self):
-        return (Section(self.items[self.count.step()]), self.count)
