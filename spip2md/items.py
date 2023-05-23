@@ -5,7 +5,7 @@ from typing import Any, Optional
 from slugify import slugify
 from yaml import dump
 
-from converter import convert_body, convert_meta
+from converter import convert_body, convert_documents, convert_meta, remove_tags
 from database import (
     SpipArticles,
     SpipAuteurs,
@@ -98,6 +98,12 @@ class Article(Item):
         # self.referers: int = article.referers  # USELESS in static
         # self.popularity: float = article.popularite  # USELESS in static
         # self.version = article.id_version  # USELESS
+        # Convert images & files links
+        self.text = convert_documents(
+            self.text, [(d.id, d.title, d.get_slug()) for d, _ in self.get_documents()]
+        )
+        # Remove remaining HTML after
+        self.text = remove_tags(self.text)
 
     def get_authors(self) -> list[SpipAuteurs]:
         return (
@@ -138,6 +144,9 @@ class Article(Item):
         if hasattr(self, "microblog") and len(self.microblog) > 0:
             body += "\n\n# MICROBLOGGING\n\n" + self.microblog
         return body
+
+    def get_documents(self):
+        return Documents(self.id)
 
 
 class Section(Item):

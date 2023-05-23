@@ -119,7 +119,7 @@ if __name__ == "__main__":  # Only if script is directly executed
             if len(get_unknown_chars(article.text)) > 0:
                 unknown_chars_articles.append(article)
             # Loop over article’s related files (images …)
-            for document, counter in Documents(article.id):
+            for document, counter in article.get_documents():
                 if counter.count % 100 == 0:
                     s: str = "s" if counter.remaining() > 1 else ""
                     print("    Exporting", end="")

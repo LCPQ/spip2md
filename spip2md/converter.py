@@ -1,5 +1,5 @@
 # pyright: strict
-from re import I, S, compile, finditer
+from re import I, S, compile, finditer, sub
 from typing import Optional
 
 # SPIP syntax to Markdown
@@ -18,16 +18,16 @@ spip_to_markdown = (
         r"## \1",  # Translate SPIP headings to h2
     ),
     (  # strong
-        compile(r"\{\{ *(.*?) *\}\}", S | I),
-        r"**\1**",
+        compile(r"\{\{ *(.*?) *\}\} ?", S | I),
+        r"**\1** ",
     ),
     (  # html strong
         compile(r"<strong> *(.*?) *</strong>", S | I),
         r"**\1**",
     ),
     (  # emphasis
-        compile(r"\{ *(.*?) *\}", S | I),
-        r"*\1*",
+        compile(r"\{ *(.*?) *\} ?", S | I),
+        r"*\1* ",
     ),
     (  # html emphasis
         compile(r"<i> *(.*?) *<\/i>", S | I),
@@ -43,10 +43,6 @@ spip_to_markdown = (
     (  # anchor
         compile(r"\[ *(.*?) *-> *(.*?) *\]", S | I),
         r"[\1](\2)",
-    ),
-    (  # document anchor
-        compile(r"<(?:doc|emb)(.*?)(\|.*?)*>", S | I),
-        r"[document](\1)",
     ),
     (  # wikilink
         compile(r"\[\? *(.*?) *\]", S | I),
@@ -74,7 +70,7 @@ spip_to_markdown = (
     ),
     (  # table-metadata
         compile(r"(\r?\n)\|\|(.*?)\|(.*?)\|\|", S | I),
-        r"",
+        r"",  # Remove it
     ),
     (  # quote
         compile(
@@ -97,21 +93,14 @@ spip_to_markdown = (
         ),
         "```\n\\1\n\n```",
     ),
-    (  # Keep only the first language in multi-language blocks
+    (  # WARNING Keep only the first language in multi-language blocks
         compile(
             r"<multi>\s*(?:\[.{2,4}\])?\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
             S | I,
         ),
         r"\1",
     ),
-    (  # WARNING remove every html tag
-        compile(r"<\/?.*?> *", S | I),
-        r"",
-    ),
 )
-
-## Match SPIP images
-spip_image = compile(r"<(?:img|image)(.*?)(\|.*?)*>", S | I)
 
 spip_to_text = (
     (  # strong
@@ -148,15 +137,18 @@ spip_to_text = (
         compile(r"<\/?.*?> *", S | I),
         r"",
     ),
-    (  # beginning with angle bracket(s)
+    (  # Remove beginning with angle bracket(s)
         compile(r"^>+ +", S | I),
         r"",
     ),
-    (  # beginning with a number followed by a dot
+    (  # Remove beginning with a number followed by a dot
         compile(r"^\d+\. +", S | I),
         r"",
     ),
 )
+
+# HTML tag WARNING can be used to remove them all
+html_tag = compile(r"<\/?.*?> *", S | I)
 
 # Broken ISO encoding to proper UTF-8
 iso_to_utf = (
@@ -300,11 +292,37 @@ def convert_meta(text: Optional[str]) -> str:
     return text
 
 
+# Replace images & documents in SPIP text with Markdown links with human-readable names
+def convert_documents(text: str, documents: list[tuple[int, str, str]]) -> str:
+    for id, name, slug in documents:
+        text = sub(
+            r"<(?:img|image)" + str(id) + r"(\|.*?)*>",
+            f"![{name}]({slug})",
+            text,
+        )
+        text = sub(
+            r"<(?:doc|emb)" + str(id) + r"(\|.*?)*>",
+            f"[{name}]({slug})",
+            text,
+        )
+        text = sub(
+            r"\[(.*?)\]\((?:doc|emb)" + str(id) + r"(\|.*?)*\)",
+            f"[\\1]({slug})",
+            text,
+        )
+    return text
+
+
 # Replace unknown chars with empty strings (delete them)
 def remove_unknown_chars(text: str) -> str:
     for char in unknown_iso:
         text.replace(char, "")
     return text
+
+
+# Replace HTML tags chars with empty strings (delete them)
+def remove_tags(text: str) -> str:
+    return html_tag.sub("", text)
 
 
 # Return a list of tuples giving the start and end of unknown substring in text
