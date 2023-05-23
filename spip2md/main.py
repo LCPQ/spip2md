@@ -1,6 +1,6 @@
 #!python
 # pyright: strict
-from os import makedirs, mkdir
+from os import makedirs
 from os.path import expanduser
 from shutil import copyfile, rmtree
 from sys import argv
@@ -58,9 +58,10 @@ if __name__ == "__main__":  # Only if script is directly executed
     else:
         toexport = config.default_export_max
 
-    # Clear the output dir & create a new
-    rmtree(config.output_dir, True)
-    mkdir(config.output_dir)
+    if config.clear_output:
+        # Clear the output dir & create a new
+        rmtree(config.output_dir, True)
+    makedirs(config.output_dir, exist_ok=True)
 
     # Articles that contains unknown chars
     unknown_chars_articles: list[Article] = []
