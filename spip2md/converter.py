@@ -44,10 +44,6 @@ spip_to_markdown = (
         compile(r"\[ *(.*?) *-> *(.*?) *\]", S | I),
         r"[\1](\2)",
     ),
-    (  # image
-        compile(r"<(?:img|image)(.*?)(\|.*?)*>", S | I),
-        r"![image](\1)",
-    ),
     (  # document anchor
         compile(r"<(?:doc|emb)(.*?)(\|.*?)*>", S | I),
         r"[document](\1)",
@@ -114,6 +110,9 @@ spip_to_markdown = (
     ),
 )
 
+## Match SPIP images
+spip_image = compile(r"<(?:img|image)(.*?)(\|.*?)*>", S | I)
+
 spip_to_text = (
     (  # strong
         compile(r"\{\{ *(.*?) *\}\}", S | I),
@@ -159,8 +158,8 @@ spip_to_text = (
     ),
 )
 
+# Broken ISO encoding to proper UTF-8
 iso_to_utf = (
-    # Broken encoding
     (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1
         "â€™",
         r"’",
@@ -272,7 +271,7 @@ iso_to_utf = (
     ),
 )
 
-## WARNING unknown broken encoding
+# WARNING unknown broken encoding
 unknown_iso = (
     r"â€¨",  # unknown â€¨
     r"âˆ†",  # unknown â^†
