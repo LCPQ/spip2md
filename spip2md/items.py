@@ -1,4 +1,5 @@
 # pyright: strict
+from os.path import basename, splitext
 from typing import Any, Optional
 
 from slugify import slugify
@@ -158,9 +159,9 @@ class Document:
     def __init__(self, document: SpipDocuments) -> None:
         self.id: int = document.id_document
         self.thumbnail_id: int = document.id_vignette
-        self.title: str = document.titre
+        self.title: str = convert_meta(document.titre)
         self.date: str = document.date
-        self.description: str = document.descriptif
+        self.description: str = convert_meta(document.descriptif)
         self.file: str = document.fichier
         self.draft: bool = document.statut == "publie"
         self.creation: str = document.date
@@ -169,7 +170,11 @@ class Document:
         self.media: str = document.media
 
     def get_slug(self, date: bool = False) -> str:
-        return slugify((self.publication + "-" if date else "") + self.title)
+        name_type = splitext(basename(self.file))
+        return (
+            slugify((self.publication + "-" if date else "") + name_type[0])
+            + name_type[1]
+        )
 
 
 class LimitCounter:

@@ -1,6 +1,7 @@
 #!python
 # pyright: strict
 from os import makedirs, mkdir
+from os.path import expanduser
 from shutil import copyfile, rmtree
 from sys import argv
 
@@ -123,21 +124,25 @@ if __name__ == "__main__":  # Only if script is directly executed
                     s: str = "s" if counter.remaining() > 1 else ""
                     print("    Exporting", end="")
                     style(f" {counter.remaining()}", BO, B)
-                    style(f" file{s}")
+                    style(f" document{s}")
                     print(" in this article")
                 # Print the name of the file with a counter
                 style(f"    {counter.count + 1}. {document.media} ")
-                print(f" {document.title}")
-                # highlight(document.title, *unknown_chars(document.title))
+                if len(document.title) > 0:
+                    highlight(document.title + " ", *unknown_chars(document.title))
+                style("at ")
+                print(document.file)
+                # Define document path
+                documentpath: str = expanduser(config.data_dir + "/" + document.file)
                 # Copy the document from it’s SPIP location to the new location
                 try:
-                    copyfile(config.data_dir + "/" + document.file, document.get_slug())
+                    copyfile(documentpath, articledir + "/" + document.get_slug())
                 except FileNotFoundError:
-                    style("    NOT FOUND", BO, R)
-                    print(f" {document.file}")
+                    style("    NOT FOUND: ", BO, R)
+                    print(documentpath)
                 else:
                     # Print the outputted file’s path when copied the file
-                    style("\n    --> ACTUALLY FOUND", BO, B)
+                    style("    -->", BO, B)
                     print(f" {articledir}/{document.get_slug()}")
             # Print the outputted file’s path when finished exporting the article
             style("  --> ", BO, Y)
@@ -162,12 +167,12 @@ if __name__ == "__main__":  # Only if script is directly executed
         print(f" unknown character{s} in", end="")
         style(f" {article.lang} ")
         highlight(article.title, *unknown_chars(article.title))
-        print() # Break line
+        print()  # Break line
         # Print the context in which the unknown characters are found
         for text in unknown_chars_apparitions:
             style("  … ")
             highlight(text, *unknown_chars(text))
             style(" … \n")
-        print() # Break line
+        print()  # Break line
 
     db.close()  # Close the connection with the database
