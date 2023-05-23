@@ -265,8 +265,9 @@ iso_to_utf = (
 
 # WARNING unknown broken encoding
 unknown_iso = (
-    r"â€¨",  # unknown â€¨
-    r"âˆ†",  # unknown â^†
+    r"â€¨",
+    r"âˆ†",
+    r"Ã»",
 )
 
 

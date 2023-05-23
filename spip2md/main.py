@@ -73,9 +73,8 @@ def write_section(index: int, total: int, section: Section) -> str:
     # Print the name of the exported section & number of remaining sections
     style(f"{index + 1}. ", BO)
     highlight(section.title, *unknown_chars(section.title))
-    style(f"   {total-index-1}", BO, G)
-    style(f" section{s(total-index)}")
-    print(" left to export")
+    style(f" {total-index-1}", BO, G)
+    style(f" section{s(total-index)} left")
     # Define the section’s path (directory) & create directory(ies) if needed
     sectiondir: str = config.output_dir + "/" + section.get_slug()
     makedirs(sectiondir, exist_ok=True)
@@ -83,6 +82,9 @@ def write_section(index: int, total: int, section: Section) -> str:
     sectionpath: str = sectiondir + "/" + section.get_filename()
     with open(sectionpath, "w") as f:
         f.write(section.get_content())
+    # Print export location when finished exporting
+    style(" -> ", BO, G)
+    print(sectionpath)
     # Return the first "limit" articles of section
     return sectiondir
 
@@ -112,7 +114,7 @@ def write_article(index: int, total: int, article: Article, sectiondir: str) -> 
     with open(articlepath, "w") as f:
         f.write(article.get_content())
     # Print export location when finished exporting
-    style(" -> ", BO, G)
+    style(" -> ", BO, B)
     print(articlepath)
     return articledir
 
@@ -222,6 +224,7 @@ if __name__ == "__main__":
         # Break line when finished exporting the section
         print()
 
+    print()  # Break line
     # Loop through each article that contains an unknown character
     for article in unknown_chars_articles:
         warn_unknown_chars(article)
