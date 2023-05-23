@@ -237,6 +237,10 @@ iso_to_utf = (
         "Ã§",
         r"ç",
     ),
+    (  # Fix UTF-8 î that was interpreted as ISO 8859-1
+        "Ã®",
+        r"î",
+    ),
     (  # Fix UTF-8 « that was interpreted as ISO 8859-1
         "Â«",
         r"«",
