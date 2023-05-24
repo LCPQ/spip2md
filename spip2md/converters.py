@@ -48,6 +48,10 @@ SPIP_TO_MARKDOWN = (
         compile(r"<(doc|document|emb)([0-9]+)(\|.*?)*>", S | I),
         r"[](\1\2)",
     ),
+    (  # internal links
+        compile(r"<(art|article)([0-9]+)(\|.*?)*>", S | I),
+        r"[](\1\2)",
+    ),
     (  # anchor
         compile(r"\[ *(.*?) *-> *(.*?) *\]", S | I),
         r"[\1](\2)",
@@ -214,6 +218,10 @@ ISO_TO_UTF = (
         "Â°",
         r"°",
     ),
+    (  # Fix UTF-8 û that was interpreted as ISO 8859-1
+        "Ã»",
+        r"û",
+    ),
     (  # Fix UTF-8 nbsp that was interpreted as ISO 8859-1
         "Â ",
         r" ",
@@ -241,7 +249,6 @@ ISO_TO_UTF = (
 UNKNOWN_ISO = (
     r"â€¨",
     r"âˆ†",
-    r"Ã»",
 )
 
 
@@ -298,12 +305,12 @@ def unknown_chars(text: str) -> list[tuple[int, int]]:
 
 
 # Return strings with unknown chards found in text, surrounded by context_length chars
-def unknown_chars_context(text: str, context_length: int = 20) -> list[str]:
+def unknown_chars_context(text: str, context_length: int = 24) -> list[str]:
     errors: list[str] = []
     context: str = r".{0," + str(context_length) + r"}"
     for char in UNKNOWN_ISO:
         matches = finditer(
-            context + r"(?=" + char + r")" + char + r".*?(?=\r?\n|$)",
+            context + r"(?=" + char + r")" + char + context,
             text,
         )
         for match in matches:

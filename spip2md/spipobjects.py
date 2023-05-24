@@ -15,15 +15,6 @@ from database import (
     SpipRubriques,
 )
 
-EXPORTTYPE: str = "md"
-
-ARTICLE_LINK = compile(r"<(art|article)([0-9]+)(\|.*?)*>", S | I)
-
-
-def link_articles(text: str):
-    for match in ARTICLE_LINK.findall(text):
-        article = Article.select().where(Article.id_article == match[0])
-
 
 class Document(SpipDocuments):
     class Meta:
@@ -41,6 +32,9 @@ class Document(SpipDocuments):
             slugify((self.date_publication + "-" if date else "") + name_type[0])
             + name_type[1]
         )
+
+
+EXPORTTYPE: str = "md"
 
 
 class Article(SpipArticles):
@@ -73,6 +67,8 @@ class Article(SpipArticles):
         )
         for d in documents:
             self.texte = link_document(self.texte, d.id_document, d.titre, d.slug())
+        # Internal (articles) links
+        self.text = link_articles(self.texte)
         return documents
 
     def slug(self, date: bool = False) -> str:
@@ -154,6 +150,22 @@ def get_articles(section_id: int, limit: int = 10**6) -> ModelSelect:
     )
 
 
+ARTICLE_LINK = compile(r"\[(.*?)]\((?:art|article)([0-9]+)\)", I)
+
+
+def link_articles(text: str):
+    for match in ARTICLE_LINK.finditer(text):
+        article = Article.get(Article.id_article == match.group(2))
+        if len(match.group(1)) > 0:
+            title: str = match.group(1)
+        else:
+            title: str = article.titre
+        text = text.replace(
+            match.group(0), f"[{title}]({article.slug()}/{article.filename()})"
+        )
+    return text
+
+
 class Rubrique(SpipRubriques):
     class Meta:
         table_name: str = "spip_rubriques"
@@ -178,6 +190,8 @@ class Rubrique(SpipRubriques):
         )
         for d in documents:
             self.texte = link_document(self.texte, d.id_document, d.titre, d.slug())
+        # Internal (articles) links
+        self.text = link_articles(self.texte)
         return documents
 
     def slug(self, date: bool = False) -> str:

@@ -164,7 +164,7 @@ database/
 
 # Outputted Markdown files
 markdown/
-output/
+out*/
 
 # YAML Configuration
 spip2md.yml
