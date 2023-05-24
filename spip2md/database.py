@@ -30,7 +30,7 @@ class BaseModel(Model):
 class SpipArticles(BaseModel):
     accepter_forum: str = CharField(constraints=[SQL("DEFAULT ''")])
     chapo: str = TextField()
-    date: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
     date_modif: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
     date_redac: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
     descriptif: str = TextField()
@@ -512,7 +512,7 @@ class SpipResultats(BaseModel):
 
 class SpipRubriques(BaseModel):
     agenda: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    date: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
     date_tmp: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
     descriptif: str = TextField()
     extra: str = TextField(null=True)
