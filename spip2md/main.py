@@ -16,19 +16,6 @@ from spipobjects import (
     get_sections,
 )
 
-
-# Print a stylized string, without trailing newline
-def style(string: str, *args: int) -> None:
-    esc = "\033["  # Terminal escape sequence, needs to be closed by "m"
-    if len(args) == 0:
-        params: str = "1;"  # Defaults to bold
-    else:
-        params: str = ""
-    for a in args:
-        params += str(a) + ";"
-    print(esc + params[:-1] + "m" + string + esc + "0m", end="")
-
-
 # Define styles
 BO = 1  # Bold
 IT = 3  # Italic
@@ -41,6 +28,18 @@ B = 94  # Blue
 C0 = 95  # Color
 C1 = 96  # Color
 C2 = 96  # Color
+
+
+# Print a stylized string, without trailing newline
+def style(string: str, *args: int) -> None:
+    esc = "\033["  # Terminal escape sequence, needs to be closed by "m"
+    if len(args) == 0:
+        params: str = "1;"  # Defaults to bold
+    else:
+        params: str = ""
+    for a in args:
+        params += str(a) + ";"
+    print(esc + params[:-1] + "m" + string + esc + "0m", end="")
 
 
 # Print a string, highlighting every substring starting at start_stop[x][0] …
@@ -62,11 +61,6 @@ def s(nb: int) -> str:
 def indent(nb: int = 1) -> None:
     for _ in range(nb):
         print("  ", end="")
-
-
-# Connect to the MySQL database with Peewee ORM
-DB.init(config.db, host=config.db_host, user=config.db_user, password=config.db_pass)
-DB.connect()
 
 
 # Output information about ongoing export & write section to output destination
@@ -177,6 +171,11 @@ def warn_unknown_chars(article: Article) -> None:
         highlight(text, *unknown_chars(text))
         style(" … \n")
     print()  # Break line
+
+
+# Connect to the MySQL database with Peewee ORM
+DB.init(config.db, host=config.db_host, user=config.db_user, password=config.db_pass)
+DB.connect()
 
 
 # Main loop to execute only if script is directly executed
