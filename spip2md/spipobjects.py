@@ -99,7 +99,7 @@ class Article(SpipArticles):
         # If there is a text, add the text preceded by two line breaks
         if len(self.texte) > 0:
             # Remove remaining HTML after & append to body
-            body += "\n\n"
+            body += "\n\n" + self.texte
         # Same with an "extra" section
         if len(self.extra) > 0:
             body += "\n\n# EXTRA\n\n" + self.extra
@@ -173,7 +173,7 @@ class Rubrique(SpipRubriques):
         # If there is a text, add the text preceded by two line breaks
         if len(self.texte) > 0:
             # Remove remaining HTML after & append to body
-            body += "\n\n"
+            body += "\n\n" + self.texte
         # Same with an "extra" section
         if len(self.extra) > 0:
             body += "\n\n# EXTRA\n\n" + self.extra
