@@ -146,7 +146,7 @@ class Rubrique(SpipRubriques):
         return slugify((self.date + "-" if date else "") + self.titre)
 
     def filename(self) -> str:
-        return "index" + "." + self.lang + "." + EXPORTTYPE
+        return "_index" + "." + self.lang + "." + EXPORTTYPE
 
     def frontmatter(self) -> str:
         return dump(
