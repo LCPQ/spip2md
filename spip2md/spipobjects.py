@@ -221,7 +221,7 @@ class Rubrique(SpipRubriques):
     def body(self) -> str:
         body: str = ""
         # Add the title as a Markdown h1
-        if len(self.titre) > 0:
+        if len(self.titre) > 0 and config.prepend_h1:
             body += "\n\n# " + self.titre
         # If there is a text, add the text preceded by two line breaks
         if len(self.texte) > 0:
