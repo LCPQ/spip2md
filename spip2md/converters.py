@@ -231,6 +231,10 @@ ISO_TO_UTF = (
         "â€ ",
         r"† ",
     ),
+    (  # Remove Windows style line feed
+        "\r",
+        r"",
+    ),
 )
 
 # WARNING unknown broken encoding
@@ -256,32 +260,31 @@ def convert(text: Optional[str], clean_meta: bool = False) -> str:
 
 
 # Replace images & files links in Markdown with real slugs of the actually linked files
-def link_documents(text: str, documents: list[tuple[int, str, str]]) -> str:
-    for id, name, slug in documents:
-        # Replace images that dont have a title written in text
-        text = sub(
-            r"\[]\((?:img|image)" + str(id) + r"(\|.*?)*\)",
-            f"![{name}]({slug})",
-            text,
-        )
-        # Replace images that dont have a title written in text
-        text = sub(
-            r"\[]\((?:doc|document|emb)" + str(id) + r"(\|.*?)*\)",
-            f"[{name}]({slug})",
-            text,
-        )
-        # Replace images that already had a title in Markdown style link
-        text = sub(
-            r"\[(.+?)\]\((?:img|image)" + str(id) + r"(\|.*?)*\)",
-            f"![\\1]({slug})",
-            text,
-        )
-        # Replace documents that already had a title in Markdown style link
-        text = sub(
-            r"\[(.+?)\]\((?:doc|document|emb)" + str(id) + r"(\|.*?)*\)",
-            f"[\\1]({slug})",
-            text,
-        )
+def link_document(text: str, id: int, name: str, slug: str) -> str:
+    # Replace images that dont have a title written in text
+    text = sub(
+        r"!\[]\((?:img|image)" + str(id) + r"(\|.*?)*\)",
+        f"![{name}]({slug})",
+        text,
+    )
+    # Replace images that dont have a title written in text
+    text = sub(
+        r"\[]\((?:doc|document|emb)" + str(id) + r"(\|.*?)*\)",
+        f"[{name}]({slug})",
+        text,
+    )
+    # Replace images that already had a title in Markdown style link
+    text = sub(
+        r"!\[(.+?)\]\((?:img|image)" + str(id) + r"(\|.*?)*\)",
+        f"![\\1]({slug})",
+        text,
+    )
+    # Replace documents that already had a title in Markdown style link
+    text = sub(
+        r"\[(.+?)\]\((?:doc|document|emb)" + str(id) + r"(\|.*?)*\)",
+        f"[\\1]({slug})",
+        text,
+    )
     return text
 
 

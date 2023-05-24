@@ -4,7 +4,7 @@ from peewee import ModelSelect
 from slugify import slugify
 from yaml import dump
 
-from converters import convert
+from converters import convert, link_document
 from database import (
     SpipArticles,
     SpipAuteurs,
@@ -15,12 +15,6 @@ from database import (
 )
 
 EXPORTTYPE: str = "md"
-
-# Convert images & files links
-# text: str = convert_documents(
-#     self.texte,
-#     [(d.id, d.titre, d.slug()) for d in self.documents()],
-# )
 
 
 class Document(SpipDocuments):
@@ -59,6 +53,19 @@ class Article(SpipArticles):
         self.caption: str = convert(self.chapo)  # Probably unused
         self.ps: str = convert(self.ps)  # Probably unused
         self.accepter_forum: str = "true" if self.accepter_forum == "oui" else "false"
+
+    def documents(self) -> ModelSelect:
+        documents = (
+            Document.select()
+            .join(
+                SpipDocumentsLiens,
+                on=(Document.id_document == SpipDocumentsLiens.id_document),
+            )
+            .where(SpipDocumentsLiens.id_objet == self.id_article)
+        )
+        for d in documents:
+            self.texte = link_document(self.texte, d.id_document, d.titre, d.slug())
+        return documents
 
     def slug(self, date: bool = False) -> str:
         return slugify((self.date + "-" if date else "") + self.titre)
@@ -129,6 +136,16 @@ class Article(SpipArticles):
         )
 
 
+# Query the DB to retrieve all articles sorted by publication date
+def get_articles(section_id: int, limit: int = 10**6) -> ModelSelect:
+    return (
+        Article.select()
+        .where(Article.id_rubrique == section_id)
+        .order_by(Article.date.desc())
+        .limit(limit)
+    )
+
+
 class Rubrique(SpipRubriques):
     class Meta:
         table_name: str = "spip_rubriques"
@@ -141,6 +158,19 @@ class Rubrique(SpipRubriques):
         self.statut: str = "false" if self.statut == "publie" else "true"
         self.langue_choisie: str = "false" if self.langue_choisie == "oui" else "true"
         self.extra: str = convert(self.extra)  # Probably unused
+
+    def documents(self) -> ModelSelect:
+        documents = (
+            Document.select()
+            .join(
+                SpipDocumentsLiens,
+                on=(Document.id_document == SpipDocumentsLiens.id_document),
+            )
+            .where(SpipDocumentsLiens.id_objet == self.id_rubrique)
+        )
+        for d in documents:
+            self.texte = link_document(self.texte, d.id_document, d.titre, d.slug())
+        return documents
 
     def slug(self, date: bool = False) -> str:
         return slugify((self.date + "-" if date else "") + self.titre)
@@ -187,26 +217,3 @@ class Rubrique(SpipRubriques):
 # Query the DB to retrieve all sections sorted by publication date
 def get_sections(limit: int = 10**6) -> ModelSelect:
     return Rubrique.select().order_by(Rubrique.date.desc()).limit(limit)
-
-
-# Query the DB to retrieve all articles sorted by publication date
-def get_articles(section_id: int, limit: int = 10**6) -> ModelSelect:
-    return (
-        Article.select()
-        .where(Article.id_rubrique == section_id)
-        .order_by(Article.date.desc())
-        .limit(limit)
-    )
-
-
-# Query the DB to retrieve all documents related to object of id object_id
-def get_documents(object_id: int, limit: int = 10**6) -> ModelSelect:
-    return (
-        Document.select()
-        .join(
-            SpipDocumentsLiens,
-            on=(Document.id_document == SpipDocumentsLiens.id_document),
-        )
-        .where(SpipDocumentsLiens.id_objet == object_id)
-        .limit(limit)
-    )

@@ -12,7 +12,6 @@ from spipobjects import (
     Document,
     Rubrique,
     get_articles,
-    get_documents,
     get_sections,
 )
 
@@ -205,25 +204,28 @@ if __name__ == "__main__":
 
     # Loop among sections & export them
     for i, section in enumerate(sections):
-        # Write the section & store its articles
+        # Get section’s documents & link them
+        documents = section.documents()
+        # Write the section and store its output directory
         sectiondir = write_section(i, nb_sections_export, section)
-        # Loop over section’s related files (images …)
-        documents = get_documents(section.id_rubrique)
+        # Loop over section’s related documents (images …)
         for i, document in enumerate(documents):
             write_document(i, len(documents), document, sectiondir)
         # Loop over section’s articles
         articles = get_articles(section.id_rubrique, (max_articles_export))
         for i, article in enumerate(articles):
+            # Get article’s documents & link them
+            documents = article.documents()
+            # Write the article and store its output directory
             articledir = write_article(i, len(articles), article, sectiondir)
             # Add article to unknown_chars_articles if needed
             if has_unknown_chars(article):
                 unknown_chars_articles.append(article)
             # Decrement export limit
             max_articles_export -= 1
-            # Loop over article’s related files (images …)
-            documents = get_documents(article.id_article)
+            # Loop over article’s related documents (images …)
             for i, document in enumerate(documents):
-                write_document(i, len(documents), document, sectiondir, 2)
+                write_document(i, len(documents), document, articledir, 2)
         # Break line when finished exporting the section
         print()
 
