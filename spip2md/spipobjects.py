@@ -51,9 +51,9 @@ class Article(SpipArticles):
         self.langue_choisie: str = "false" if self.langue_choisie == "oui" else "true"
         self.extra: str = convert(self.extra)  # Probably unused
         # Article specific
-        self.surtitle: str = convert(self.surtitre, True)  # Probably unused
-        self.subtitle: str = convert(self.soustitre, True)  # Probably unused
-        self.caption: str = convert(self.chapo)  # Probably unused
+        self.surtitre: str = convert(self.surtitre, True)  # Probably unused
+        self.soustitre: str = convert(self.soustitre, True)  # Probably unused
+        self.chapo: str = convert(self.chapo)  # Probably unused
         self.ps: str = convert(self.ps)  # Probably unused
         self.accepter_forum: str = "true" if self.accepter_forum == "oui" else "false"
 
@@ -92,13 +92,13 @@ class Article(SpipArticles):
                 "spip_id": self.id_article,
                 "spip_id_secteur": self.id_secteur,
                 # Article specific
-                "surtitle": self.surtitle,
-                "subtitle": self.subtitle,
+                "summary": self.chapo,
+                "surtitle": self.surtitre,
+                "subtitle": self.soustitre,
                 "date": self.date_redac,
                 "authors": [author.nom for author in self.authors()],
                 # Debugging
                 "spip_id_rubrique": self.id_rubrique,
-                "spip_chapo": self.caption,
             },
             allow_unicode=True,
         )
