@@ -1,4 +1,5 @@
 from os.path import basename, splitext
+from re import I, S, compile
 
 from peewee import ModelSelect
 from slugify import slugify
@@ -15,6 +16,13 @@ from database import (
 )
 
 EXPORTTYPE: str = "md"
+
+ARTICLE_LINK = compile(r"<(art|article)([0-9]+)(\|.*?)*>", S | I)
+
+
+def link_articles(text: str):
+    for match in ARTICLE_LINK.findall(text):
+        article = Article.select().where(Article.id_article == match[0])
 
 
 class Document(SpipDocuments):
