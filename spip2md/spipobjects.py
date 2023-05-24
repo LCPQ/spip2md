@@ -191,7 +191,7 @@ class Rubrique(SpipRubriques):
         for d in documents:
             self.texte = link_document(self.texte, d.id_document, d.titre, d.slug())
         # Internal (articles) links
-        self.text = link_articles(self.texte)
+        self.texte = link_articles(self.texte)
         return documents
 
     def slug(self, date: bool = False) -> str:
