@@ -1,18 +1,19 @@
 #!python
-# pyright: strict
 from os import makedirs
 from os.path import expanduser
 from shutil import copyfile, rmtree
 from sys import argv
 
 from config import config
-from converter import get_unknown_chars, unknown_chars
-from database import db
-from items import (
+from converters import unknown_chars, unknown_chars_context
+from database import DB
+from spipobjects import (
     Article,
     Document,
-    Section,
-    Sections,
+    Rubrique,
+    get_articles,
+    get_documents,
+    get_sections,
 )
 
 
@@ -64,26 +65,27 @@ def indent(nb: int = 1) -> None:
 
 
 # Connect to the MySQL database with Peewee ORM
-db.init(config.db, host=config.db_host, user=config.db_user, password=config.db_pass)
-db.connect()
+DB.init(config.db, host=config.db_host, user=config.db_user, password=config.db_pass)
+DB.connect()
 
 
 # Output information about ongoing export & write section to output destination
-def write_section(index: int, total: int, section: Section) -> str:
+def write_section(index: int, total: int, section: Rubrique) -> str:
+    color = G  # Associate sections to green
     # Print the name of the exported section & number of remaining sections
     style(f"{index + 1}. ", BO)
-    highlight(section.title, *unknown_chars(section.title))
-    style(f" {total-index-1}", BO, G)
+    highlight(section.titre, *unknown_chars(section.titre))
+    style(f" {total-index-1}", BO, color)
     style(f" section{s(total-index)} left")
     # Define the section’s path (directory) & create directory(ies) if needed
-    sectiondir: str = config.output_dir + "/" + section.get_slug()
+    sectiondir: str = config.output_dir + "/" + section.slug()
     makedirs(sectiondir, exist_ok=True)
     # Define the section filename & write the index at that filename
-    sectionpath: str = sectiondir + "/" + section.get_filename()
+    sectionpath: str = sectiondir + "/" + section.filename()
     with open(sectionpath, "w") as f:
-        f.write(section.get_content())
+        f.write(section.content())
     # Print export location when finished exporting
-    style(" -> ", BO, G)
+    style(" -> ", BO, color)
     print(sectionpath)
     # Return the first "limit" articles of section
     return sectiondir
@@ -91,30 +93,31 @@ def write_section(index: int, total: int, section: Section) -> str:
 
 # Output information about ongoing export & write article to output destination
 def write_article(index: int, total: int, article: Article, sectiondir: str) -> str:
+    color = Y  # Associate articles to yellow
     # Print the remaining number of articles to export every 100 articles
     if index % 100 == 0:
         indent()
         print("Exporting", end="")
-        style(f" {total-index}", BO, Y)
+        style(f" {total-index}", BO, color)
         print(" SPIP", end="")
         style(f" article{s(total-index)}")
         print(" to Markdown & YAML files")
     # Print the title of the article being exported
     style(
         f"  {index + 1}. "
-        + ("EMPTY " if len(article.text) < 1 else "")
+        + ("EMPTY " if len(article.texte) < 1 else "")
         + f"{article.lang} "
     )
-    highlight(article.title, *unknown_chars(article.title))
+    highlight(article.titre, *unknown_chars(article.titre))
     # Define the full article path & create directory(ies) if needed
-    articledir: str = sectiondir + "/" + article.get_slug()
+    articledir: str = sectiondir + "/" + article.slug()
     makedirs(articledir, exist_ok=True)
     # Define the article filename & write the article at the filename
-    articlepath: str = articledir + "/" + article.get_filename()
+    articlepath: str = articledir + "/" + article.filename()
     with open(articlepath, "w") as f:
-        f.write(article.get_content())
+        f.write(article.content())
     # Print export location when finished exporting
-    style(" -> ", BO, B)
+    style(" -> ", BO, color)
     print(articlepath)
     return articledir
 
@@ -123,34 +126,35 @@ def write_article(index: int, total: int, article: Article, sectiondir: str) -> 
 def write_document(
     index: int, total: int, document: Document, objectdir: str, indent_depth: int = 1
 ) -> None:
+    color = B  # Associate documents to blue
     if index % 100 == 0:
         indent(indent_depth)
         print("Exporting", end="")
-        style(f" {total-index}", BO, B)
+        style(f" {total-index}", BO, color)
         style(f" document{s(total-index)}\n")
     # Print the name of the file with a counter
     indent(indent_depth)
     style(f"{index + 1}. {document.media} ")
-    if len(document.title) > 0:
-        highlight(document.title + " ", *unknown_chars(document.title))
+    if len(document.titre) > 0:
+        highlight(document.titre + " ", *unknown_chars(document.titre))
     style("at ")
-    print(document.file, end="")
+    print(document.fichier, end="")
     # Define document path
-    documentpath: str = expanduser(config.data_dir + "/" + document.file)
+    documentpath: str = expanduser(config.data_dir + "/" + document.fichier)
     # Copy the document from it’s SPIP location to the new location
     try:
-        copyfile(documentpath, objectdir + "/" + document.get_slug())
+        copyfile(documentpath, objectdir + "/" + document.slug())
     except FileNotFoundError:
         style(" -> NOT FOUND!\n", BO, R)
     else:
         # Print the outputted file’s path when copied the file
-        style(" ->", BO, B)
-        print(f" {objectdir}/{document.get_slug()}")
+        style(" ->", BO, color)
+        print(f" {objectdir}/{document.slug()}")
 
 
 # Return true if an article field contains an unknown character
 def has_unknown_chars(article: Article) -> bool:
-    if len(get_unknown_chars(article.text)) > 0:
+    if len(unknown_chars_context(article.texte)) > 0:
         return True
     return False
 
@@ -159,13 +163,13 @@ def has_unknown_chars(article: Article) -> bool:
 def warn_unknown_chars(article: Article) -> None:
     # Print the title of the article in which there is unknown characters
     # & the number of them
-    unknown_chars_apparitions: list[str] = get_unknown_chars(article.text)
+    unknown_chars_apparitions: list[str] = unknown_chars_context(article.texte)
     nb: int = len(unknown_chars_apparitions)
     s: str = "s" if nb > 1 else ""
     style(f"{nb}")
     print(f" unknown character{s} in", end="")
     style(f" {article.lang} ")
-    highlight(article.title, *unknown_chars(article.title))
+    highlight(article.titre, *unknown_chars(article.titre))
     print()  # Break line
     # Print the context in which the unknown characters are found
     for text in unknown_chars_apparitions:
@@ -197,7 +201,7 @@ if __name__ == "__main__":
     unknown_chars_articles: list[Article] = []
 
     # Get sections with an eventual maximum
-    sections = Sections(max_sections_export)
+    sections = get_sections(max_sections_export)
     nb_sections_export: int = len(sections)
 
     # Loop among sections & export them
@@ -205,11 +209,11 @@ if __name__ == "__main__":
         # Write the section & store its articles
         sectiondir = write_section(i, nb_sections_export, section)
         # Loop over section’s related files (images …)
-        documents = section.get_documents()
+        documents = get_documents(section.id_rubrique)
         for i, document in enumerate(documents):
             write_document(i, len(documents), document, sectiondir)
         # Loop over section’s articles
-        articles = section.get_articles(max_articles_export)
+        articles = get_articles(section.id_rubrique, (max_articles_export))
         for i, article in enumerate(articles):
             articledir = write_article(i, len(articles), article, sectiondir)
             # Add article to unknown_chars_articles if needed
@@ -218,7 +222,7 @@ if __name__ == "__main__":
             # Decrement export limit
             max_articles_export -= 1
             # Loop over article’s related files (images …)
-            documents = section.get_documents()
+            documents = get_documents(article.id_article)
             for i, document in enumerate(documents):
                 write_document(i, len(documents), document, sectiondir, 2)
         # Break line when finished exporting the section
@@ -229,4 +233,4 @@ if __name__ == "__main__":
     for article in unknown_chars_articles:
         warn_unknown_chars(article)
 
-    db.close()  # Close the connection with the database
+    DB.close()  # Close the connection with the database

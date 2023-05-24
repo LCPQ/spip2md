@@ -1,4 +1,3 @@
-# pyright: basic
 # type: ignore
 from peewee import (
     SQL,
@@ -15,7 +14,7 @@ from peewee import (
     TextField,
 )
 
-db = MySQLDatabase(None)
+DB = MySQLDatabase(None)
 
 
 # class UnknownField(object):
@@ -25,7 +24,7 @@ db = MySQLDatabase(None)
 
 class BaseModel(Model):
     class Meta:
-        database: MySQLDatabase = db
+        database: MySQLDatabase = DB
 
 
 class SpipArticles(BaseModel):

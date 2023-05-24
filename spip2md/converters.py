@@ -3,7 +3,7 @@ from re import I, S, compile, finditer, sub
 from typing import Optional
 
 # SPIP syntax to Markdown
-spip_to_markdown = (
+SPIP_TO_MARKDOWN = (
     (  # horizontal rule
         compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", S | I),
         # r"---",
@@ -39,6 +39,14 @@ spip_to_markdown = (
             S | I,
         ),
         r"~\1~",
+    ),
+    (  # images
+        compile(r"<(img|image)([0-9]+)(\|.*?)*>", S | I),
+        r"![](\1\2)",
+    ),
+    (  # documents & embeds
+        compile(r"<(doc|document|emb)([0-9]+)(\|.*?)*>", S | I),
+        r"[](\1\2)",
     ),
     (  # anchor
         compile(r"\[ *(.*?) *-> *(.*?) *\]", S | I),
@@ -100,58 +108,20 @@ spip_to_markdown = (
         ),
         r"\1",
     ),
-)
-
-spip_to_text = (
-    (  # strong
-        compile(r"\{\{ *(.*?) *\}\}", S | I),
-        r"\1",
-    ),
-    (  # html strong
-        compile(r"<strong> *(.*?) *</strong>", S | I),
-        r"\1",
-    ),
-    (  # emphasis
-        compile(r"\{ *(.*?) *\}", S | I),
-        r"\1",
-    ),
-    (  # html emphasis
-        compile(r"<i> *(.*?) *<\/i>", S | I),
-        r"\1",
-    ),
-    (  # strikethrough
-        compile(
-            r"<del>\s*(.*?)\s*(?:(\r?\n){2,}|<\/del>)",
-            S | I,
-        ),
-        r"\1",
-    ),
-    (  # Keep only the first language in multi-language blocks
-        compile(
-            r"<multi>\s*(?:\[.{2,4}\])?\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
-            S | I,
-        ),
-        r"\1",
-    ),
-    (  # remove every html tag
-        compile(r"<\/?.*?> *", S | I),
-        r"",
-    ),
-    (  # Remove beginning with angle bracket(s)
-        compile(r"^>+ +", S | I),
-        r"",
-    ),
-    (  # Remove beginning with a number followed by a dot
-        compile(r"^\d+\. +", S | I),
+    (  # WARNING remove every html tag
+        compile(r"<\/?.*?>\s*", S | I),
         r"",
     ),
 )
 
-# HTML tag WARNING can be used to remove them all
-html_tag = compile(r"<\/?.*?> *", S | I)
+# Further cleaning for metadata texts such as titles or descriptions
+SPIP_META_BLOAT = (
+    compile(r"^>+ +", S | I),  # Remove beginning with angle bracket(s)
+    compile(r"^\d+\. +", S | I),  # Remove beginning with a number followed by a dot
+)
 
 # Broken ISO encoding to proper UTF-8
-iso_to_utf = (
+ISO_TO_UTF = (
     (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1
         "â€™",
         r"’",
@@ -264,82 +234,71 @@ iso_to_utf = (
 )
 
 # WARNING unknown broken encoding
-unknown_iso = (
+UNKNOWN_ISO = (
     r"â€¨",
     r"âˆ†",
     r"Ã»",
 )
 
 
-# Apply spip_to_markdown conversions to a text
-def convert_body(text: Optional[str]) -> str:
+# Apply SPIP to Markdown & ISO to UTF conversions to a text, & eventually clean meta
+def convert(text: Optional[str], clean_meta: bool = False) -> str:
     if text is None:
         return ""
-    for spip, markdown in spip_to_markdown:
+    for spip, markdown in SPIP_TO_MARKDOWN:
         text = spip.sub(markdown, text)
-    for iso, utf in iso_to_utf:
+    if clean_meta:
+        for bloat in SPIP_META_BLOAT:
+            text = bloat.sub("", text)
+    for iso, utf in ISO_TO_UTF:
         text = text.replace(iso, utf)
     return text
 
 
-# Apply spip_to_text conversions to a text
-def convert_meta(text: Optional[str]) -> str:
-    if text is None:
-        return ""
-    for spip, metadata in spip_to_text:
-        text = spip.sub(metadata, text)
-    for iso, utf in iso_to_utf:
-        text = text.replace(iso, utf)
-    return text
-
-
-# Replace images & documents in SPIP text with Markdown links with human-readable names
-def convert_documents(text: str, documents: list[tuple[int, str, str]]) -> str:
+# Replace images & files links in Markdown with real slugs of the actually linked files
+def link_documents(text: str, documents: list[tuple[int, str, str]]) -> str:
     for id, name, slug in documents:
+        # Replace images that dont have a title written in text
         text = sub(
-            r"<(?:img|image)" + str(id) + r"(\|.*?)*>",
+            r"\[]\((?:img|image)" + str(id) + r"(\|.*?)*\)",
             f"![{name}]({slug})",
             text,
         )
+        # Replace images that dont have a title written in text
         text = sub(
-            r"<(?:doc|emb)" + str(id) + r"(\|.*?)*>",
+            r"\[]\((?:doc|document|emb)" + str(id) + r"(\|.*?)*\)",
             f"[{name}]({slug})",
             text,
         )
+        # Replace images that already had a title in Markdown style link
         text = sub(
-            r"\[(.*?)\]\((?:doc|emb)" + str(id) + r"(\|.*?)*\)",
+            r"\[(.+?)\]\((?:img|image)" + str(id) + r"(\|.*?)*\)",
+            f"![\\1]({slug})",
+            text,
+        )
+        # Replace documents that already had a title in Markdown style link
+        text = sub(
+            r"\[(.+?)\]\((?:doc|document|emb)" + str(id) + r"(\|.*?)*\)",
             f"[\\1]({slug})",
             text,
         )
     return text
 
 
-# Replace unknown chars with empty strings (delete them)
-def remove_unknown_chars(text: str) -> str:
-    for char in unknown_iso:
-        text.replace(char, "")
-    return text
-
-
-# Replace HTML tags chars with empty strings (delete them)
-def remove_tags(text: str) -> str:
-    return html_tag.sub("", text)
-
-
 # Return a list of tuples giving the start and end of unknown substring in text
 def unknown_chars(text: str) -> list[tuple[int, int]]:
     positions: list[tuple[int, int]] = []
-    for char in unknown_iso:
+    for char in UNKNOWN_ISO:
         for match in finditer("(" + char + ")+", text):
             positions.append((match.start(), match.end()))
     return positions
 
 
 # Return strings with unknown chards found in text, surrounded by context_length chars
-def get_unknown_chars(text: str, context_length: int = 20) -> list[str]:
+def unknown_chars_context(text: str, context_length: int = 20) -> list[str]:
     errors: list[str] = []
     context: str = r".{0," + str(context_length) + r"}"
-    for char in unknown_iso:
+    for char in UNKNOWN_ISO:
         matches = finditer(
             context + r"(?=" + char + r")" + char + r".*?(?=\r?\n|$)",
             text,
