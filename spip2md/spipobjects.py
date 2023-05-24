@@ -1,10 +1,11 @@
 from os.path import basename, splitext
-from re import I, S, compile
+from re import I, compile
 
 from peewee import ModelSelect
 from slugify import slugify
 from yaml import dump
 
+from config import config
 from converters import convert, link_document
 from database import (
     SpipArticles,
@@ -105,7 +106,7 @@ class Article(SpipArticles):
     def body(self) -> str:
         body: str = ""
         # Add the title as a Markdown h1
-        if len(self.titre) > 0:
+        if len(self.titre) > 0 and config.prepend_h1:
             body += "\n\n# " + self.titre
         # If there is a text, add the text preceded by two line breaks
         if len(self.texte) > 0:
