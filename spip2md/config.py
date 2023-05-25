@@ -4,11 +4,11 @@ from typing import Optional
 
 from yaml import Loader, load
 
-config_paths = ("spip2md.yml", "spip2md.yaml")
+CONFIG_PATHS = ("spip2md.yml", "spip2md.yaml")
 
 
 def config_file() -> Optional[str]:
-    for path in config_paths:
+    for path in CONFIG_PATHS:
         if isfile(path):
             return path
 
@@ -34,14 +34,13 @@ class Configuration:
             # Assign configuration for each attribute in config file
             for attr in config:
                 # If attribute is a dir, ensure that ~ is converted to home path
-                if type(attr) == "string" and "dir" in attr:
+                if "dir" in attr:
                     directory = expanduser(config[attr])
                     # Ensure that directory ends with a slash
-                    directory = (
-                        directory if directory.last() == "/" else directory + "/"
-                    )
+                    directory = directory if directory[:-1] == "/" else directory + "/"
                     setattr(self, attr, directory)
-                setattr(self, attr, config[attr])
+                else:
+                    setattr(self, attr, config[attr])
 
 
-config = Configuration(config_file())
+CFG = Configuration(config_file())

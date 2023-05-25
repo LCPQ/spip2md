@@ -4,11 +4,11 @@ from re import finditer
 from shutil import copyfile
 from typing import Any, Optional
 
-from peewee import BigAutoField, DateTimeField, Model, ModelSelect
+from peewee import BigAutoField, DateTimeField, ModelSelect
 from slugify import slugify
 from yaml import dump
 
-from config import config
+from config import CFG
 from converters import convert, link_document, unknown_chars
 from database import (
     SpipArticles,
@@ -18,22 +18,20 @@ from database import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
-from styling import BLUE, BOLD, GREEN, YELLOW, highlight, indent, ss, style
+from styling import BLUE, BOLD, GREEN, RED, YELLOW, highlight, indent, ss, style
 
 
 class SpipWritable:
-    class Meta:
-        table_name: str
-
     term_color: int
     texte: str
     lang: str
     titre: str
 
     def filename(self, date: bool = False) -> str:
-        raise NotImplementedError("Subclasses need to implement filename()")
+        raise NotImplementedError(
+            f"Subclasses need to implement filename(), date: {date}"
+        )
 
-    # Output information about file that will be exported
     def begin_message(
         self, index: int, limit: int, depth: int = 0, step: int = 100
     ) -> None:
@@ -42,23 +40,31 @@ class SpipWritable:
             indent(depth)
             print("Exporting", end="")
             style(f" {limit-index}", BOLD, self.term_color)
-            print(f" element{ss(limit-index)} from", end="")
-            style(f" {self.Meta.table_name}")
+            if hasattr(self, "profondeur"):
+                print(f" level {self.profondeur}", end="")
+            style(f" {type(self).__name__}{ss(limit-index)}\n")
         # Print the counter & title of the object being exported
         indent(depth)
         style(f"{index + 1}. ")
-        highlight(self.titre, *unknown_chars(self.titre))
+        if len(self.titre) > 0:
+            highlight(self.titre, *unknown_chars(self.titre))
+        else:
+            print("NO NAME", end="")
         # + ("EMPTY " if len(self.texte) < 1 else "")
         # + f"{self.lang} "
 
     # Write object to output destination
-    def write(self, export_dir: str) -> None:
-        raise NotImplementedError("Subclasses need to implement write()")
+    def write(self, parent_dir: str) -> str:
+        raise NotImplementedError(
+            f"Subclasses need to implement write(), export dir: {parent_dir}"
+        )
 
     # Output information about file that was just exported
-    def end_message(self, export_dir: str):
+    def end_message(self, message: str | Exception):
         style(" -> ", BOLD, self.term_color)
-        print(export_dir + self.filename())
+        if message is Exception:
+            style("ERROR ", BOLD, RED)
+        print(message)
 
 
 class Document(SpipWritable, SpipDocuments):
@@ -82,12 +88,13 @@ class Document(SpipWritable, SpipDocuments):
         )
 
     # Write document to output destination
-    def write(self, export_dir: str) -> None:
+    def write(self, parent_dir: str) -> str:
+        # Define file source and destination
+        src: str = CFG.data_dir + self.fichier
+        dest: str = parent_dir + self.filename()
         # Copy the document from it’s SPIP location to the new location
-        try:
-            copyfile(config.data_dir + self.fichier, export_dir + self.filename())
-        except FileNotFoundError:
-            raise FileNotFoundError(" -> NOT FOUND!\n") from None
+        copyfile(src, dest)
+        return dest
 
 
 class SpipObject(SpipWritable):
@@ -112,7 +119,7 @@ class SpipObject(SpipWritable):
     # Convert SPIP style internal links for images & other files into Markdown style
     def link_documents(self, documents: ModelSelect) -> None:
         for d in documents:
-            self.texte = link_document(self.texte, d.id_document, d.titre, d.slug())
+            self.texte = link_document(self.texte, d.id_document, d.titre, d.filename())
 
     # Output related documents & link them in the text by the way
     def documents(self, link_documents: bool = True) -> ModelSelect:
@@ -137,7 +144,7 @@ class SpipObject(SpipWritable):
             else:
                 title: str = article.titre
             self.texte = self.texte.replace(
-                match.group(0), f"[{title}]({article.slug()}/{article.filename()})"
+                match.group(0), f"[{title}]({article.dir_slug()}/{article.filename()})"
             )
 
     # Output related articles
@@ -157,7 +164,7 @@ class SpipObject(SpipWritable):
 
     # Get filename of this object
     def filename(self) -> str:
-        return self.prefix + "." + self.lang + "." + config.export_filetype
+        return self.prefix + "." + self.lang + "." + CFG.export_filetype
 
     # Get the YAML frontmatter string
     def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
@@ -183,7 +190,7 @@ class SpipObject(SpipWritable):
         # Start the content with frontmatter
         body: str = "---\n" + self.frontmatter() + "---"
         # Add the title as a Markdown h1
-        if len(self.titre) > 0 and config.prepend_h1:
+        if len(self.titre) > 0 and CFG.prepend_h1:
             body += "\n\n# " + self.titre
         # If there is a text, add the text preceded by two line breaks
         if len(self.texte) > 0:
@@ -195,9 +202,17 @@ class SpipObject(SpipWritable):
         return body
 
     # Write object to output destination
-    def write(self, export_dir: str) -> None:
-        with open(export_dir + self.filename(), "w") as f:
+    def write(self, parent_dir: str) -> str:
+        # Define actual export directory
+        directory: str = self.dir_slug() + parent_dir
+        # Make a directory for this object if there isn’t
+        makedirs(directory, exist_ok=True)
+        # Define actual export path
+        path: str = directory + self.filename()
+        # Write the content of this object into a file named as self.filename()
+        with open(path, "w") as f:
             f.write(self.content())
+        return path
 
 
 class Article(SpipObject, SpipArticles):
@@ -213,7 +228,7 @@ class Article(SpipObject, SpipArticles):
         self.ps: str = convert(self.ps)  # Probably unused
         self.accepter_forum: str = "true" if self.accepter_forum == "oui" else "false"
         # ID
-        self.id = self.id_article
+        self.object_id = self.id_article
         # Terminal output color
         self.term_color = YELLOW
 
@@ -264,7 +279,7 @@ class Rubrique(SpipObject, SpipRubriques):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # ID
-        self.id = self.id_rubrique
+        self.object_id = self.id_rubrique
         # File prefix
         self.prefix = "_index"
         # Terminal output color
@@ -281,9 +296,36 @@ class Rubrique(SpipObject, SpipRubriques):
         else:
             return dump(super().frontmatter(meta), allow_unicode=True)
 
-    def write_tree(self):
+    def write_tree(self, parent_dir: str, index: int, total: int):
+        self.begin_message(index, total, int(self.profondeur))
+        # Get this section’s articles documents
+        articles = self.articles()
+        documents = self.documents()
+        # Write this section
+        self.link_articles()
+        export_path: str = self.write(parent_dir)
+        self.end_message(export_path)
+
+        # Write this section’s articles and documents
+        def write_loop(objects: ModelSelect):
+            total = len(objects)
+            for i, obj in enumerate(objects):
+                obj.begin_message(i, total, self.profondeur + 1)
+                try:
+                    export_path: str = obj.write(parent_dir)
+                    obj.end_message(export_path)
+                except Exception as err:
+                    obj.end_message(err)
+
+        write_loop(articles)
+        write_loop(documents)
+
+        # Get all child section of self
         child_sections = (
             Rubrique.select()
             .where(Rubrique.id_parent == self.id_rubrique)
             .order_by(Rubrique.date.desc())
         )
+        # Do the same for subsections (write their entire subtree)
+        for i, s in enumerate(child_sections):
+            s.write_tree(parent_dir + self.dir_slug(), i, total)

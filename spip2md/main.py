@@ -5,7 +5,7 @@ from sys import argv
 
 from peewee import ModelSelect
 
-from config import config
+from config import CFG
 from converters import unknown_chars, unknown_chars_context
 from database import DB
 from spipobjects import (
@@ -52,7 +52,7 @@ def warn_unknown_chars(article: Article) -> None:
 
 
 # Connect to the MySQL database with Peewee ORM
-DB.init(config.db, host=config.db_host, user=config.db_user, password=config.db_pass)
+DB.init(CFG.db, host=CFG.db_host, user=CFG.db_user, password=CFG.db_pass)
 DB.connect()
 
 
@@ -62,29 +62,29 @@ if __name__ == "__main__":
     if len(argv) >= 2:
         max_articles_export = int(argv[1])
     else:
-        max_articles_export = config.max_articles_export
+        max_articles_export = CFG.max_articles_export
     # Define max nb of sections to export based on second CLI argument
     if len(argv) >= 3:
         max_sections_export = int(argv[2])
     else:
-        max_sections_export = config.max_sections_export
+        max_sections_export = CFG.max_sections_export
 
     # Clear the output dir & create a new
-    if config.clear_output:
-        rmtree(config.output_dir, True)
-    makedirs(config.output_dir, exist_ok=True)
+    if CFG.clear_output:
+        rmtree(CFG.output_dir, True)
+    makedirs(CFG.output_dir, exist_ok=True)
 
-    # Make a list containing articles where unknown characters are detected
-    unknown_chars_articles: list[Article] = []
+    # Get the first max_sections_export root sections
+    sections: ModelSelect = root_sections(max_sections_export)
+    total: int = len(sections)
 
     # Write each root sections with its subtree
-    for section in root_sections(max_sections_export):
-        section.write()
+    for i, section in enumerate(sections):
+        section.write_tree(CFG.output_dir, i, total)
         print()  # Break line after exporting the section
 
-    print()  # Break line between export & unknown characters warning
+    # print()  # Break line between export & unknown characters warning
     # Warn about each article that contains unknown(s) character(s)
-    for article in unknown_chars_articles:
-        warn_unknown_chars(article)
+    # TODO do it with Python warnings
 
     DB.close()  # Close the connection with the database
