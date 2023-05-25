@@ -244,9 +244,9 @@ class Article(SpipObject, SpipArticles):
             "spip_id_rubrique": self.id_rubrique,
         }
         if append is not None:
-            return dump(super().frontmatter(meta | append), allow_unicode=True)
+            return super().frontmatter(meta | append)
         else:
-            return dump(super().frontmatter(meta), allow_unicode=True)
+            return super().frontmatter(meta)
 
     def content(self) -> str:
         body: str = super().content()
@@ -292,9 +292,9 @@ class Rubrique(SpipObject, SpipRubriques):
             "spip_profondeur": self.profondeur,
         }
         if append is not None:
-            return dump(super().frontmatter(meta | append), allow_unicode=True)
+            return super().frontmatter(meta | append)
         else:
-            return dump(super().frontmatter(meta), allow_unicode=True)
+            return super().frontmatter(meta)
 
     def write_tree(self, parent_dir: str, index: int, total: int):
         self.begin_message(index, total, int(self.profondeur))
