@@ -2,9 +2,9 @@ from os import makedirs
 from os.path import basename, splitext
 from re import finditer
 from shutil import copyfile
-from typing import Any
+from typing import Any, Optional
 
-from peewee import Model, ModelSelect
+from peewee import BigAutoField, DateTimeField, Model, ModelSelect
 from slugify import slugify
 from yaml import dump
 
@@ -75,7 +75,7 @@ class Document(SpipWritable, SpipDocuments):
 
     # Get slugified name of this file
     def filename(self, date: bool = False) -> str:
-        name_type: tuple[str, str] = splitext(basename(self.fichier))
+        name_type: tuple[str, str] = splitext(basename(str(self.fichier)))
         return (
             slugify((self.date_publication + "-" if date else "") + name_type[0])
             + name_type[1]
@@ -91,9 +91,9 @@ class Document(SpipWritable, SpipDocuments):
 
 
 class SpipObject(SpipWritable):
-    id: int
+    object_id: BigAutoField
     id_trad: int
-    date: str
+    date: DateTimeField
     maj: str
     id_secteur: int
 
@@ -122,7 +122,7 @@ class SpipObject(SpipWritable):
                 SpipDocumentsLiens,
                 on=(Document.id_document == SpipDocumentsLiens.id_document),
             )
-            .where(SpipDocumentsLiens.id_objet == self.id)
+            .where(SpipDocumentsLiens.id_objet == self.object_id)
         )
         if link_documents:
             self.link_documents(documents)
@@ -144,7 +144,7 @@ class SpipObject(SpipWritable):
     def articles(self) -> ModelSelect:
         return (
             Article.select()
-            .where(Article.id_rubrique == self.id)
+            .where(Article.id_rubrique == self.object_id)
             .order_by(Article.date.desc())
             # .limit(limit)
         )
@@ -160,7 +160,7 @@ class SpipObject(SpipWritable):
         return self.prefix + "." + self.lang + "." + config.export_filetype
 
     # Get the YAML frontmatter string
-    def frontmatter(self, append: dict[str, Any] = {}) -> str:
+    def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         meta: dict[str, Any] = {
             "lang": self.lang,
             "translationKey": self.id_trad,
@@ -171,9 +171,12 @@ class SpipObject(SpipWritable):
             "description": self.descriptif,
             # Debugging
             "spip_id_secteur": self.id_secteur,
-            "spip_id": self.id,
+            "spip_id": self.object_id,
         }
-        return dump(meta | append, allow_unicode=True)
+        if append is not None:
+            return dump(meta | append, allow_unicode=True)
+        else:
+            return dump(meta, allow_unicode=True)
 
     # Get file text content
     def content(self) -> str:
@@ -214,30 +217,32 @@ class Article(SpipObject, SpipArticles):
         # Terminal output color
         self.term_color = YELLOW
 
-    def frontmatter(self, append: dict[str, Any] = {}) -> str:
-        return super().frontmatter(
-            {
-                # Article specific
-                "summary": self.chapo,
-                "surtitle": self.surtitre,
-                "subtitle": self.soustitre,
-                "date": self.date_redac,
-                "authors": [author.nom for author in self.authors()],
-                # Debugging
-                "spip_id_rubrique": self.id_rubrique,
-            }
-        )
+    def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
+        meta: dict[str, Any] = {
+            # Article specific
+            "summary": self.chapo,
+            "surtitle": self.surtitre,
+            "subtitle": self.soustitre,
+            "date": self.date_redac,
+            "authors": [author.nom for author in self.authors()],
+            # Debugging
+            "spip_id_rubrique": self.id_rubrique,
+        }
+        if append is not None:
+            return dump(super().frontmatter(meta | append), allow_unicode=True)
+        else:
+            return dump(super().frontmatter(meta), allow_unicode=True)
 
     def content(self) -> str:
         body: str = super().content()
         # If there is a caption, add the caption followed by a hr
-        if len(self.chapo) > 0:
+        if len(str(self.chapo)) > 0:
             body += "\n\n" + self.chapo + "\n\n***"
         # PS
-        if len(self.ps) > 0:
+        if len(str(self.ps)) > 0:
             body += "\n\n# POST-SCRIPTUM\n\n" + self.ps
         # Microblog
-        if len(self.microblog) > 0:
+        if len(str(self.microblog)) > 0:
             body += "\n\n# MICROBLOGGING\n\n" + self.microblog
         return body
 
@@ -265,11 +270,20 @@ class Rubrique(SpipObject, SpipRubriques):
         # Terminal output color
         self.term_color = GREEN
 
-    def frontmatter(self, append: dict[str, Any] = {}) -> str:
-        return super().frontmatter(
-            {
-                # Debugging
-                "spip_id_parent": self.id_parent,
-                "spip_profondeur": self.profondeur,
-            }
+    def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
+        meta: dict[str, Any] = {
+            # Debugging
+            "spip_id_parent": self.id_parent,
+            "spip_profondeur": self.profondeur,
+        }
+        if append is not None:
+            return dump(super().frontmatter(meta | append), allow_unicode=True)
+        else:
+            return dump(super().frontmatter(meta), allow_unicode=True)
+
+    def write_tree(self):
+        child_sections = (
+            Rubrique.select()
+            .where(Rubrique.id_parent == self.id_rubrique)
+            .order_by(Rubrique.date.desc())
         )
