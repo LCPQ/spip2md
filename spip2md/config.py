@@ -24,6 +24,7 @@ class Configuration:
     data_dir: str = "data"
     clear_output: bool = False
     prepend_h1: bool = True
+    export_filetype: str = "md"
 
     def __init__(self, config_file: Optional[str] = None):
         if config_file is not None:
