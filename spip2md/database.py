@@ -28,35 +28,35 @@ class BaseModel(Model):
 
 
 class SpipArticles(BaseModel):
-    accepter_forum: str = CharField(constraints=[SQL("DEFAULT ''")])
-    chapo: str = TextField()
+    accepter_forum = CharField(constraints=[SQL("DEFAULT ''")])
+    chapo = TextField()
     date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_modif: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_redac: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    descriptif: str = TextField()
-    export: str = CharField(constraints=[SQL("DEFAULT 'oui'")], null=True)
-    extra: str = TextField(null=True)
-    id_article: int = BigAutoField()
-    id_rubrique: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_secteur: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_trad: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_version: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    lang: str = CharField(constraints=[SQL("DEFAULT ''")], index=True)
-    langue_choisie: str = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    microblog: str = CharField(constraints=[SQL("DEFAULT ''")])
-    nom_site: str = TextField()
-    popularite: float = FloatField(constraints=[SQL("DEFAULT 0")])
-    ps: str = TextField()
-    referers: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    soustitre: str = TextField()
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")])
-    surtitre: str = TextField()
-    texte: str = TextField()
-    titre: str = TextField()
-    url_site: str = CharField(constraints=[SQL("DEFAULT ''")])
-    virtuel: str = CharField(constraints=[SQL("DEFAULT ''")])
-    visites: int = IntegerField(constraints=[SQL("DEFAULT 0")])
+    date_modif = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date_redac = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    descriptif = TextField()
+    export = CharField(constraints=[SQL("DEFAULT 'oui'")], null=True)
+    extra = TextField(null=True)
+    id_article = BigAutoField()
+    id_rubrique = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_secteur = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_trad = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_version = IntegerField(constraints=[SQL("DEFAULT 0")])
+    lang = CharField(constraints=[SQL("DEFAULT ''")], index=True)
+    langue_choisie = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    microblog = CharField(constraints=[SQL("DEFAULT ''")])
+    nom_site = TextField()
+    popularite = FloatField(constraints=[SQL("DEFAULT 0")])
+    ps = TextField()
+    referers = IntegerField(constraints=[SQL("DEFAULT 0")])
+    soustitre = TextField()
+    statut = CharField(constraints=[SQL("DEFAULT '0'")])
+    surtitre = TextField()
+    texte = TextField()
+    titre = TextField()
+    url_site = CharField(constraints=[SQL("DEFAULT ''")])
+    virtuel = CharField(constraints=[SQL("DEFAULT ''")])
+    visites = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
         table_name: str = "spip_articles"
@@ -64,42 +64,42 @@ class SpipArticles(BaseModel):
 
 
 class SpipAuteurs(BaseModel):
-    alea_actuel: str = TextField()
-    alea_futur: str = TextField()
-    bio: str = TextField()
-    cookie_oubli: str = TextField()
-    email: str = TextField()
-    en_ligne: str = DateTimeField(
+    alea_actuel = TextField()
+    alea_futur = TextField()
+    bio = TextField()
+    cookie_oubli = TextField()
+    email = TextField()
+    en_ligne = DateTimeField(
         constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True
     )
-    extra: str = TextField(null=True)
-    htpass: str = TextField()
-    id_auteur: int = BigAutoField()
-    imessage: str = CharField()
-    lang: str = CharField(constraints=[SQL("DEFAULT ''")])
-    login: str = CharField(index=True)
-    low_sec: str = TextField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    messagerie: str = CharField()
-    nom: str = TextField()
-    nom_site: str = TextField()
-    pass_: str = TextField(column_name="pass")
-    pgp: str = TextField()
-    prefs: str = TextField()
-    source: str = CharField(constraints=[SQL("DEFAULT 'spip'")])
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")], index=True)
-    url_site: str = TextField()
-    webmestre: str = CharField(constraints=[SQL("DEFAULT 'non'")])
+    extra = TextField(null=True)
+    htpass = TextField()
+    id_auteur = BigAutoField()
+    imessage = CharField()
+    lang = CharField(constraints=[SQL("DEFAULT ''")])
+    login = CharField(index=True)
+    low_sec = TextField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    messagerie = CharField()
+    nom = TextField()
+    nom_site = TextField()
+    pass_ = TextField(column_name="pass")
+    pgp = TextField()
+    prefs = TextField()
+    source = CharField(constraints=[SQL("DEFAULT 'spip'")])
+    statut = CharField(constraints=[SQL("DEFAULT '0'")], index=True)
+    url_site = TextField()
+    webmestre = CharField(constraints=[SQL("DEFAULT 'non'")])
 
     class Meta:
         table_name: str = "spip_auteurs"
 
 
 class SpipAuteursLiens(BaseModel):
-    id_auteur: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_objet: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    objet: str = CharField(constraints=[SQL("DEFAULT ''")], index=True)
-    vu: str = CharField(constraints=[SQL("DEFAULT 'non'")])
+    id_auteur = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_objet = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    objet = CharField(constraints=[SQL("DEFAULT ''")], index=True)
+    vu = CharField(constraints=[SQL("DEFAULT 'non'")])
 
     class Meta:
         table_name: str = "spip_auteurs_liens"
@@ -108,46 +108,46 @@ class SpipAuteursLiens(BaseModel):
 
 
 class SpipBreves(BaseModel):
-    date_heure: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    extra: str = TextField(null=True)
-    id_breve: int = BigAutoField()
-    id_rubrique: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    lang: str = CharField(constraints=[SQL("DEFAULT ''")])
-    langue_choisie: str = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
-    lien_titre: str = TextField()
-    lien_url: str = TextField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")])
-    texte: str = TextField()
-    titre: str = TextField()
+    date_heure = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    extra = TextField(null=True)
+    id_breve = BigAutoField()
+    id_rubrique = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    lang = CharField(constraints=[SQL("DEFAULT ''")])
+    langue_choisie = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
+    lien_titre = TextField()
+    lien_url = TextField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    statut = CharField(constraints=[SQL("DEFAULT '0'")])
+    texte = TextField()
+    titre = TextField()
 
     class Meta:
         table_name: str = "spip_breves"
 
 
 class SpipDepots(BaseModel):
-    descriptif: str = TextField()
-    id_depot: int = BigAutoField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    nbr_autres: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    nbr_paquets: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    nbr_plugins: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    sha_paquets: str = CharField(constraints=[SQL("DEFAULT ''")])
-    titre: str = TextField()
-    type: str = CharField(constraints=[SQL("DEFAULT ''")])
-    url_archives: str = CharField(constraints=[SQL("DEFAULT ''")])
-    url_brouteur: str = CharField(constraints=[SQL("DEFAULT ''")])
-    url_commits: str = CharField(constraints=[SQL("DEFAULT ''")])
-    url_serveur: str = CharField(constraints=[SQL("DEFAULT ''")])
-    xml_paquets: str = CharField(constraints=[SQL("DEFAULT ''")])
+    descriptif = TextField()
+    id_depot = BigAutoField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    nbr_autres = IntegerField(constraints=[SQL("DEFAULT 0")])
+    nbr_paquets = IntegerField(constraints=[SQL("DEFAULT 0")])
+    nbr_plugins = IntegerField(constraints=[SQL("DEFAULT 0")])
+    sha_paquets = CharField(constraints=[SQL("DEFAULT ''")])
+    titre = TextField()
+    type = CharField(constraints=[SQL("DEFAULT ''")])
+    url_archives = CharField(constraints=[SQL("DEFAULT ''")])
+    url_brouteur = CharField(constraints=[SQL("DEFAULT ''")])
+    url_commits = CharField(constraints=[SQL("DEFAULT ''")])
+    url_serveur = CharField(constraints=[SQL("DEFAULT ''")])
+    xml_paquets = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
         table_name: str = "spip_depots"
 
 
 class SpipDepotsPlugins(BaseModel):
-    id_depot: int = BigIntegerField()
-    id_plugin: int = BigIntegerField()
+    id_depot = BigIntegerField()
+    id_plugin = BigIntegerField()
 
     class Meta:
         table_name: str = "spip_depots_plugins"
@@ -156,36 +156,34 @@ class SpipDepotsPlugins(BaseModel):
 
 
 class SpipDocuments(BaseModel):
-    brise: int = IntegerField(constraints=[SQL("DEFAULT 0")], null=True)
-    credits: str = CharField(constraints=[SQL("DEFAULT ''")])
-    date: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_publication: str = DateTimeField(
-        constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")]
-    )
-    descriptif: str = TextField()
-    distant: str = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
-    extension: str = CharField(constraints=[SQL("DEFAULT ''")], index=True)
-    fichier: str = TextField()
-    hauteur: int = IntegerField(null=True)
-    id_document: int = BigAutoField()
-    id_vignette: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    largeur: int = IntegerField(null=True)
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    media: str = CharField(constraints=[SQL("DEFAULT 'file'")])
-    mode: str = CharField(constraints=[SQL("DEFAULT 'document'")], index=True)
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")])
-    taille: int = BigIntegerField(null=True)
-    titre: str = TextField()
+    brise = IntegerField(constraints=[SQL("DEFAULT 0")], null=True)
+    credits = CharField(constraints=[SQL("DEFAULT ''")])
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date_publication = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    descriptif = TextField()
+    distant = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
+    extension = CharField(constraints=[SQL("DEFAULT ''")], index=True)
+    fichier = TextField()
+    hauteur = IntegerField(null=True)
+    id_document = BigAutoField()
+    id_vignette = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    largeur = IntegerField(null=True)
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    media = CharField(constraints=[SQL("DEFAULT 'file'")])
+    mode = CharField(constraints=[SQL("DEFAULT 'document'")], index=True)
+    statut = CharField(constraints=[SQL("DEFAULT '0'")])
+    taille = BigIntegerField(null=True)
+    titre = TextField()
 
     class Meta:
         table_name: str = "spip_documents"
 
 
 class SpipDocumentsLiens(BaseModel):
-    id_document: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_objet: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    objet: str = CharField(constraints=[SQL("DEFAULT ''")], index=True)
-    vu: str = CharField(constraints=[SQL("DEFAULT 'non'")])
+    id_document = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_objet = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    objet = CharField(constraints=[SQL("DEFAULT ''")], index=True)
+    vu = CharField(constraints=[SQL("DEFAULT 'non'")])
 
     class Meta:
         table_name: str = "spip_documents_liens"
@@ -194,66 +192,64 @@ class SpipDocumentsLiens(BaseModel):
 
 
 class SpipEvenements(BaseModel):
-    adresse: str = TextField()
-    attendee: str = CharField(constraints=[SQL("DEFAULT ''")])
-    date_creation: str = DateTimeField(
-        constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")]
-    )
-    date_debut: str = DateTimeField(
+    adresse = TextField()
+    attendee = CharField(constraints=[SQL("DEFAULT ''")])
+    date_creation = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date_debut = DateTimeField(
         constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True
     )
-    date_fin: str = DateTimeField(
+    date_fin = DateTimeField(
         constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True
     )
-    descriptif: str = TextField()
-    horaire: str = CharField(constraints=[SQL("DEFAULT 'oui'")])
-    id_article: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_evenement: int = BigAutoField()
-    id_evenement_source: int = BigIntegerField()
-    inscription: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    lieu: str = TextField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    notes: str = TextField()
-    origin: str = CharField(constraints=[SQL("DEFAULT ''")])
-    places: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")])
-    titre: str = TextField()
+    descriptif = TextField()
+    horaire = CharField(constraints=[SQL("DEFAULT 'oui'")])
+    id_article = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_evenement = BigAutoField()
+    id_evenement_source = BigIntegerField()
+    inscription = IntegerField(constraints=[SQL("DEFAULT 0")])
+    lieu = TextField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    notes = TextField()
+    origin = CharField(constraints=[SQL("DEFAULT ''")])
+    places = IntegerField(constraints=[SQL("DEFAULT 0")])
+    statut = CharField(constraints=[SQL("DEFAULT '0'")])
+    titre = TextField()
 
     class Meta:
         table_name: str = "spip_evenements"
 
 
 class SpipEvenementsParticipants(BaseModel):
-    date: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    email: str = TextField()
-    id_auteur: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_evenement: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_evenement_participant: int = BigAutoField()
-    nom: str = TextField()
-    reponse: str = CharField(constraints=[SQL("DEFAULT '?'")])
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    email = TextField()
+    id_auteur = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_evenement = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_evenement_participant = BigAutoField()
+    nom = TextField()
+    reponse = CharField(constraints=[SQL("DEFAULT '?'")])
 
     class Meta:
         table_name: str = "spip_evenements_participants"
 
 
 class SpipForum(BaseModel):
-    auteur: str = TextField()
-    date_heure: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_thread: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    email_auteur: str = TextField()
-    id_auteur: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_forum: int = BigAutoField()
-    id_objet: int = BigIntegerField(constraints=[SQL("DEFAULT 0")])
-    id_parent: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_thread: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    ip: str = CharField(constraints=[SQL("DEFAULT ''")])
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    nom_site: str = TextField()
-    objet: str = CharField(constraints=[SQL("DEFAULT ''")])
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")])
-    texte: str = TextField()
-    titre: str = TextField()
-    url_site: str = TextField()
+    auteur = TextField()
+    date_heure = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date_thread = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    email_auteur = TextField()
+    id_auteur = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_forum = BigAutoField()
+    id_objet = BigIntegerField(constraints=[SQL("DEFAULT 0")])
+    id_parent = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_thread = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    ip = CharField(constraints=[SQL("DEFAULT ''")])
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    nom_site = TextField()
+    objet = CharField(constraints=[SQL("DEFAULT ''")])
+    statut = CharField(constraints=[SQL("DEFAULT '0'")])
+    texte = TextField()
+    titre = TextField()
+    url_site = TextField()
 
     class Meta:
         table_name: str = "spip_forum"
@@ -261,43 +257,41 @@ class SpipForum(BaseModel):
 
 
 class SpipGroupesMots(BaseModel):
-    comite: str = CharField(constraints=[SQL("DEFAULT ''")])
-    descriptif: str = TextField()
-    forum: str = CharField(constraints=[SQL("DEFAULT ''")])
-    id_groupe: int = BigAutoField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    minirezo: str = CharField(constraints=[SQL("DEFAULT ''")])
-    obligatoire: str = CharField(constraints=[SQL("DEFAULT ''")])
-    tables_liees: str = TextField()
-    texte: str = TextField()
-    titre: str = TextField()
-    unseul: str = CharField(constraints=[SQL("DEFAULT ''")])
+    comite = CharField(constraints=[SQL("DEFAULT ''")])
+    descriptif = TextField()
+    forum = CharField(constraints=[SQL("DEFAULT ''")])
+    id_groupe = BigAutoField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    minirezo = CharField(constraints=[SQL("DEFAULT ''")])
+    obligatoire = CharField(constraints=[SQL("DEFAULT ''")])
+    tables_liees = TextField()
+    texte = TextField()
+    titre = TextField()
+    unseul = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
         table_name: str = "spip_groupes_mots"
 
 
 class SpipJobs(BaseModel):
-    args: str = TextField()
-    date: str = DateTimeField(
-        constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True
-    )
-    descriptif: str = TextField()
-    fonction: str = CharField()
-    id_job: int = BigAutoField()
-    inclure: str = CharField()
-    md5args: str = CharField(constraints=[SQL("DEFAULT ''")])
-    priorite: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    status: int = IntegerField(constraints=[SQL("DEFAULT 1")], index=True)
+    args = TextField()
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")], index=True)
+    descriptif = TextField()
+    fonction = CharField()
+    id_job = BigAutoField()
+    inclure = CharField()
+    md5args = CharField(constraints=[SQL("DEFAULT ''")])
+    priorite = IntegerField(constraints=[SQL("DEFAULT 0")])
+    status = IntegerField(constraints=[SQL("DEFAULT 1")], index=True)
 
     class Meta:
         table_name: str = "spip_jobs"
 
 
 class SpipJobsLiens(BaseModel):
-    id_job: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_objet: int = BigIntegerField(constraints=[SQL("DEFAULT 0")])
-    objet: str = CharField(constraints=[SQL("DEFAULT ''")])
+    id_job = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_objet = BigIntegerField(constraints=[SQL("DEFAULT 0")])
+    objet = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
         table_name: str = "spip_jobs_liens"
@@ -306,62 +300,62 @@ class SpipJobsLiens(BaseModel):
 
 
 class SpipMeslettres(BaseModel):
-    date: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    id_malettre: int = BigAutoField()
-    lang: str = CharField()
-    titre: str = TextField()
-    url_html: str = CharField(null=True)
-    url_txt: str = CharField()
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    id_malettre = BigAutoField()
+    lang = CharField()
+    titre = TextField()
+    url_html = CharField(null=True)
+    url_txt = CharField()
 
     class Meta:
         table_name: str = "spip_meslettres"
 
 
 class SpipMessages(BaseModel):
-    date_fin: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_heure: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    destinataires: str = TextField()
-    id_auteur: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_message: int = BigAutoField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    rv: str = CharField(constraints=[SQL("DEFAULT ''")])
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")])
-    texte: str = TextField()
-    titre: str = TextField()
-    type: str = CharField(constraints=[SQL("DEFAULT ''")])
+    date_fin = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date_heure = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    destinataires = TextField()
+    id_auteur = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_message = BigAutoField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    rv = CharField(constraints=[SQL("DEFAULT ''")])
+    statut = CharField(constraints=[SQL("DEFAULT '0'")])
+    texte = TextField()
+    titre = TextField()
+    type = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
         table_name: str = "spip_messages"
 
 
 class SpipMeta(BaseModel):
-    impt: str = CharField(constraints=[SQL("DEFAULT 'oui'")])
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    nom: str = CharField(primary_key=True)
-    valeur: str = TextField(null=True)
+    impt = CharField(constraints=[SQL("DEFAULT 'oui'")])
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    nom = CharField(primary_key=True)
+    valeur = TextField(null=True)
 
     class Meta:
         table_name: str = "spip_meta"
 
 
 class SpipMots(BaseModel):
-    descriptif: str = TextField()
-    extra: str = TextField(null=True)
-    id_groupe: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_mot: int = BigAutoField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    texte: str = TextField()
-    titre: str = TextField()
-    type: str = TextField()
+    descriptif = TextField()
+    extra = TextField(null=True)
+    id_groupe = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_mot = BigAutoField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    texte = TextField()
+    titre = TextField()
+    type = TextField()
 
     class Meta:
         table_name: str = "spip_mots"
 
 
 class SpipMotsLiens(BaseModel):
-    id_mot: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_objet: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    objet: str = CharField(constraints=[SQL("DEFAULT ''")], index=True)
+    id_mot = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_objet = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    objet = CharField(constraints=[SQL("DEFAULT ''")], index=True)
 
     class Meta:
         table_name: str = "spip_mots_liens"
@@ -370,13 +364,11 @@ class SpipMotsLiens(BaseModel):
 
 
 class SpipOrthoCache(BaseModel):
-    lang: str = CharField()
-    maj: str = DateTimeField(
-        constraints=[SQL("DEFAULT current_timestamp()")], index=True
-    )
-    mot: str = CharField()
-    ok: int = IntegerField()
-    suggest: str = TextField()
+    lang = CharField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")], index=True)
+    mot = CharField()
+    ok = IntegerField()
+    suggest = TextField()
 
     class Meta:
         table_name: str = "spip_ortho_cache"
@@ -385,10 +377,10 @@ class SpipOrthoCache(BaseModel):
 
 
 class SpipOrthoDico(BaseModel):
-    id_auteur: int = BigIntegerField()
-    lang: str = CharField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    mot: str = CharField()
+    id_auteur = BigIntegerField()
+    lang = CharField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    mot = CharField()
 
     class Meta:
         table_name: str = "spip_ortho_dico"
@@ -397,99 +389,99 @@ class SpipOrthoDico(BaseModel):
 
 
 class SpipPaquets(BaseModel):
-    actif: str = CharField(constraints=[SQL("DEFAULT 'non'")])
-    attente: str = CharField(constraints=[SQL("DEFAULT 'non'")])
-    auteur: str = TextField()
-    branches_spip: str = CharField(constraints=[SQL("DEFAULT ''")])
-    compatibilite_spip: str = CharField(constraints=[SQL("DEFAULT ''")])
-    constante: str = CharField(constraints=[SQL("DEFAULT ''")])
-    copyright: str = TextField()
-    credit: str = TextField()
-    date_crea: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_modif: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    dependances: str = TextField()
-    description: str = TextField()
-    etat: str = CharField(constraints=[SQL("DEFAULT ''")])
-    etatnum: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    id_depot: int = BigIntegerField(constraints=[SQL("DEFAULT 0")])
-    id_paquet: int = BigAutoField()
-    id_plugin: int = BigIntegerField(index=True)
-    installe: str = CharField(constraints=[SQL("DEFAULT 'non'")])
-    licence: str = TextField()
-    lien_demo: str = TextField()
-    lien_dev: str = TextField()
-    lien_doc: str = TextField()
-    logo: str = CharField(constraints=[SQL("DEFAULT ''")])
-    maj_archive: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    maj_version: str = CharField(constraints=[SQL("DEFAULT ''")])
-    nbo_archive: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    nom_archive: str = CharField(constraints=[SQL("DEFAULT ''")])
-    obsolete: str = CharField(constraints=[SQL("DEFAULT 'non'")])
-    prefixe: str = CharField(constraints=[SQL("DEFAULT ''")])
-    procure: str = TextField()
-    recent: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    signature: str = CharField(constraints=[SQL("DEFAULT ''")])
-    src_archive: str = CharField(constraints=[SQL("DEFAULT ''")])
-    superieur: str = CharField(constraints=[SQL("DEFAULT 'non'")])
-    traductions: str = TextField()
-    version: str = CharField(constraints=[SQL("DEFAULT ''")])
-    version_base: str = CharField(constraints=[SQL("DEFAULT ''")])
+    actif = CharField(constraints=[SQL("DEFAULT 'non'")])
+    attente = CharField(constraints=[SQL("DEFAULT 'non'")])
+    auteur = TextField()
+    branches_spip = CharField(constraints=[SQL("DEFAULT ''")])
+    compatibilite_spip = CharField(constraints=[SQL("DEFAULT ''")])
+    constante = CharField(constraints=[SQL("DEFAULT ''")])
+    copyright = TextField()
+    credit = TextField()
+    date_crea = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date_modif = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    dependances = TextField()
+    description = TextField()
+    etat = CharField(constraints=[SQL("DEFAULT ''")])
+    etatnum = IntegerField(constraints=[SQL("DEFAULT 0")])
+    id_depot = BigIntegerField(constraints=[SQL("DEFAULT 0")])
+    id_paquet = BigAutoField()
+    id_plugin = BigIntegerField(index=True)
+    installe = CharField(constraints=[SQL("DEFAULT 'non'")])
+    licence = TextField()
+    lien_demo = TextField()
+    lien_dev = TextField()
+    lien_doc = TextField()
+    logo = CharField(constraints=[SQL("DEFAULT ''")])
+    maj_archive = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    maj_version = CharField(constraints=[SQL("DEFAULT ''")])
+    nbo_archive = IntegerField(constraints=[SQL("DEFAULT 0")])
+    nom_archive = CharField(constraints=[SQL("DEFAULT ''")])
+    obsolete = CharField(constraints=[SQL("DEFAULT 'non'")])
+    prefixe = CharField(constraints=[SQL("DEFAULT ''")])
+    procure = TextField()
+    recent = IntegerField(constraints=[SQL("DEFAULT 0")])
+    signature = CharField(constraints=[SQL("DEFAULT ''")])
+    src_archive = CharField(constraints=[SQL("DEFAULT ''")])
+    superieur = CharField(constraints=[SQL("DEFAULT 'non'")])
+    traductions = TextField()
+    version = CharField(constraints=[SQL("DEFAULT ''")])
+    version_base = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
         table_name: str = "spip_paquets"
 
 
 class SpipPetitions(BaseModel):
-    email_unique: str = CharField(constraints=[SQL("DEFAULT ''")])
-    id_article: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], unique=True)
-    id_petition: int = BigAutoField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    message: str = CharField(constraints=[SQL("DEFAULT ''")])
-    site_obli: str = CharField(constraints=[SQL("DEFAULT ''")])
-    site_unique: str = CharField(constraints=[SQL("DEFAULT ''")])
-    statut: str = CharField(constraints=[SQL("DEFAULT 'publie'")])
-    texte: str = TextField()
+    email_unique = CharField(constraints=[SQL("DEFAULT ''")])
+    id_article = BigIntegerField(constraints=[SQL("DEFAULT 0")], unique=True)
+    id_petition = BigAutoField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    message = CharField(constraints=[SQL("DEFAULT ''")])
+    site_obli = CharField(constraints=[SQL("DEFAULT ''")])
+    site_unique = CharField(constraints=[SQL("DEFAULT ''")])
+    statut = CharField(constraints=[SQL("DEFAULT 'publie'")])
+    texte = TextField()
 
     class Meta:
         table_name: str = "spip_petitions"
 
 
 class SpipPlugins(BaseModel):
-    branches_spip: str = CharField(constraints=[SQL("DEFAULT ''")])
-    categorie: str = CharField(constraints=[SQL("DEFAULT ''")])
-    compatibilite_spip: str = CharField(constraints=[SQL("DEFAULT ''")])
-    date_crea: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_modif: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    id_plugin: int = BigAutoField()
-    nom: str = TextField()
-    prefixe: str = CharField(constraints=[SQL("DEFAULT ''")], index=True)
-    slogan: str = TextField()
-    tags: str = TextField()
-    vmax: str = CharField(constraints=[SQL("DEFAULT ''")])
+    branches_spip = CharField(constraints=[SQL("DEFAULT ''")])
+    categorie = CharField(constraints=[SQL("DEFAULT ''")])
+    compatibilite_spip = CharField(constraints=[SQL("DEFAULT ''")])
+    date_crea = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date_modif = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    id_plugin = BigAutoField()
+    nom = TextField()
+    prefixe = CharField(constraints=[SQL("DEFAULT ''")], index=True)
+    slogan = TextField()
+    tags = TextField()
+    vmax = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
         table_name: str = "spip_plugins"
 
 
 class SpipReferers(BaseModel):
-    date: str = DateField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    referer: str = CharField(null=True)
-    referer_md5: int = BigAutoField()
-    visites: int = IntegerField()
-    visites_jour: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    visites_veille: int = IntegerField(constraints=[SQL("DEFAULT 0")])
+    date = DateField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    referer = CharField(null=True)
+    referer_md5 = BigAutoField()
+    visites = IntegerField()
+    visites_jour = IntegerField(constraints=[SQL("DEFAULT 0")])
+    visites_veille = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
         table_name: str = "spip_referers"
 
 
 class SpipReferersArticles(BaseModel):
-    id_article: int = IntegerField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    referer: str = CharField(constraints=[SQL("DEFAULT ''")])
-    referer_md5: int = BigIntegerField(index=True)
-    visites: int = IntegerField()
+    id_article = IntegerField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    referer = CharField(constraints=[SQL("DEFAULT ''")])
+    referer_md5 = BigIntegerField(index=True)
+    visites = IntegerField()
 
     class Meta:
         table_name: str = "spip_referers_articles"
@@ -498,12 +490,12 @@ class SpipReferersArticles(BaseModel):
 
 
 class SpipResultats(BaseModel):
-    id: int = IntegerField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    points: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    recherche: str = CharField(constraints=[SQL("DEFAULT ''")])
-    serveur: str = CharField(constraints=[SQL("DEFAULT ''")])
-    table_objet: str = CharField(constraints=[SQL("DEFAULT ''")])
+    id = IntegerField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    points = IntegerField(constraints=[SQL("DEFAULT 0")])
+    recherche = CharField(constraints=[SQL("DEFAULT ''")])
+    serveur = CharField(constraints=[SQL("DEFAULT ''")])
+    table_objet = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
         table_name: str = "spip_resultats"
@@ -511,63 +503,63 @@ class SpipResultats(BaseModel):
 
 
 class SpipRubriques(BaseModel):
-    agenda: int = IntegerField(constraints=[SQL("DEFAULT 0")])
+    agenda = IntegerField(constraints=[SQL("DEFAULT 0")])
     date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_tmp: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    descriptif: str = TextField()
-    extra: str = TextField(null=True)
-    id_parent: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_rubrique: int = BigAutoField()
-    id_secteur: int = BigIntegerField(constraints=[SQL("DEFAULT 0")])
-    id_trad: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    lang: str = CharField(constraints=[SQL("DEFAULT ''")], index=True)
-    langue_choisie: str = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    profondeur: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")])
-    statut_tmp: str = CharField(constraints=[SQL("DEFAULT '0'")])
-    texte: str = TextField()
-    titre: str = TextField()
+    date_tmp = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    descriptif = TextField()
+    extra = TextField(null=True)
+    id_parent = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_rubrique = BigAutoField()
+    id_secteur = BigIntegerField(constraints=[SQL("DEFAULT 0")])
+    id_trad = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    lang = CharField(constraints=[SQL("DEFAULT ''")], index=True)
+    langue_choisie = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    profondeur = IntegerField(constraints=[SQL("DEFAULT 0")])
+    statut = CharField(constraints=[SQL("DEFAULT '0'")])
+    statut_tmp = CharField(constraints=[SQL("DEFAULT '0'")])
+    texte = TextField()
+    titre = TextField()
 
     class Meta:
         table_name: str = "spip_rubriques"
 
 
 class SpipSignatures(BaseModel):
-    ad_email: str = TextField()
-    date_time: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    id_petition: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_signature: int = BigAutoField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    message: str = TextField()
-    nom_email: str = TextField()
-    nom_site: str = TextField()
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")], index=True)
-    url_site: str = TextField()
+    ad_email = TextField()
+    date_time = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    id_petition = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_signature = BigAutoField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    message = TextField()
+    nom_email = TextField()
+    nom_site = TextField()
+    statut = CharField(constraints=[SQL("DEFAULT '0'")], index=True)
+    url_site = TextField()
 
     class Meta:
         table_name: str = "spip_signatures"
 
 
 class SpipSyndic(BaseModel):
-    date: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_index: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    date_syndic: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    descriptif: str = TextField()
-    extra: str = TextField(null=True)
-    id_rubrique: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_secteur: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_syndic: int = BigAutoField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    miroir: str = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
-    moderation: str = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
-    nom_site: str = TextField()
-    oubli: str = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
-    resume: str = CharField(constraints=[SQL("DEFAULT 'oui'")], null=True)
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")])
-    syndication: str = CharField(constraints=[SQL("DEFAULT ''")])
-    url_site: str = TextField()
-    url_syndic: str = TextField()
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date_index = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    date_syndic = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    descriptif = TextField()
+    extra = TextField(null=True)
+    id_rubrique = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_secteur = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_syndic = BigAutoField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    miroir = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
+    moderation = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
+    nom_site = TextField()
+    oubli = CharField(constraints=[SQL("DEFAULT 'non'")], null=True)
+    resume = CharField(constraints=[SQL("DEFAULT 'oui'")], null=True)
+    statut = CharField(constraints=[SQL("DEFAULT '0'")])
+    syndication = CharField(constraints=[SQL("DEFAULT ''")])
+    url_site = TextField()
+    url_syndic = TextField()
 
     class Meta:
         table_name: str = "spip_syndic"
@@ -575,26 +567,26 @@ class SpipSyndic(BaseModel):
 
 
 class SpipSyndicArticles(BaseModel):
-    date: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    descriptif: str = TextField()
-    id_syndic: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_syndic_article: int = BigAutoField()
-    lang: str = CharField(constraints=[SQL("DEFAULT ''")])
-    lesauteurs: str = TextField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    source: str = TextField()
-    statut: str = CharField(constraints=[SQL("DEFAULT '0'")], index=True)
-    tags: str = TextField()
-    titre: str = TextField()
-    url: str = TextField(index=True)
-    url_source: str = TextField()
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    descriptif = TextField()
+    id_syndic = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_syndic_article = BigAutoField()
+    lang = CharField(constraints=[SQL("DEFAULT ''")])
+    lesauteurs = TextField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    source = TextField()
+    statut = CharField(constraints=[SQL("DEFAULT '0'")], index=True)
+    tags = TextField()
+    titre = TextField()
+    url = TextField(index=True)
+    url_source = TextField()
 
     class Meta:
         table_name: str = "spip_syndic_articles"
 
 
 class SpipTest(BaseModel):
-    a: int = IntegerField(null=True)
+    a = IntegerField(null=True)
 
     class Meta:
         table_name: str = "spip_test"
@@ -602,27 +594,27 @@ class SpipTest(BaseModel):
 
 
 class SpipTypesDocuments(BaseModel):
-    descriptif: str = TextField()
-    extension: str = CharField(constraints=[SQL("DEFAULT ''")], primary_key=True)
-    inclus: str = CharField(constraints=[SQL("DEFAULT 'non'")], index=True)
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    media_defaut: str = CharField(constraints=[SQL("DEFAULT 'file'")])
-    mime_type: str = CharField(constraints=[SQL("DEFAULT ''")])
-    titre: str = TextField()
-    upload: str = CharField(constraints=[SQL("DEFAULT 'oui'")])
+    descriptif = TextField()
+    extension = CharField(constraints=[SQL("DEFAULT ''")], primary_key=True)
+    inclus = CharField(constraints=[SQL("DEFAULT 'non'")], index=True)
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    media_defaut = CharField(constraints=[SQL("DEFAULT 'file'")])
+    mime_type = CharField(constraints=[SQL("DEFAULT ''")])
+    titre = TextField()
+    upload = CharField(constraints=[SQL("DEFAULT 'oui'")])
 
     class Meta:
         table_name: str = "spip_types_documents"
 
 
 class SpipUrls(BaseModel):
-    date: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    id_objet: int = BigIntegerField()
-    id_parent: int = BigIntegerField(constraints=[SQL("DEFAULT 0")])
-    perma: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    segments: int = IntegerField(constraints=[SQL("DEFAULT 1")])
-    type: str = CharField(constraints=[SQL("DEFAULT 'article'")])
-    url: str = CharField()
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    id_objet = BigIntegerField()
+    id_parent = BigIntegerField(constraints=[SQL("DEFAULT 0")])
+    perma = IntegerField(constraints=[SQL("DEFAULT 0")])
+    segments = IntegerField(constraints=[SQL("DEFAULT 1")])
+    type = CharField(constraints=[SQL("DEFAULT 'article'")])
+    url = CharField()
 
     class Meta:
         table_name: str = "spip_urls"
@@ -634,14 +626,14 @@ class SpipUrls(BaseModel):
 
 
 class SpipVersions(BaseModel):
-    champs: str = TextField()
-    date: str = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
-    id_auteur: str = CharField(constraints=[SQL("DEFAULT ''")])
-    id_objet: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    id_version: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    objet: str = CharField(constraints=[SQL("DEFAULT ''")], index=True)
-    permanent: str = CharField(constraints=[SQL("DEFAULT ''")])
-    titre_version: str = TextField()
+    champs = TextField()
+    date = DateTimeField(constraints=[SQL("DEFAULT '0000-00-00 00:00:00'")])
+    id_auteur = CharField(constraints=[SQL("DEFAULT ''")])
+    id_objet = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    id_version = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    objet = CharField(constraints=[SQL("DEFAULT ''")], index=True)
+    permanent = CharField(constraints=[SQL("DEFAULT ''")])
+    titre_version = TextField()
 
     class Meta:
         table_name: str = "spip_versions"
@@ -650,13 +642,13 @@ class SpipVersions(BaseModel):
 
 
 class SpipVersionsFragments(BaseModel):
-    compress: int = IntegerField()
-    fragment: str = TextField(null=True)
-    id_fragment: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    id_objet: int = BigIntegerField(constraints=[SQL("DEFAULT 0")])
-    objet: str = CharField(constraints=[SQL("DEFAULT ''")])
-    version_max: int = IntegerField(constraints=[SQL("DEFAULT 0")])
-    version_min: int = IntegerField(constraints=[SQL("DEFAULT 0")])
+    compress = IntegerField()
+    fragment = TextField(null=True)
+    id_fragment = IntegerField(constraints=[SQL("DEFAULT 0")])
+    id_objet = BigIntegerField(constraints=[SQL("DEFAULT 0")])
+    objet = CharField(constraints=[SQL("DEFAULT ''")])
+    version_max = IntegerField(constraints=[SQL("DEFAULT 0")])
+    version_min = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
         table_name: str = "spip_versions_fragments"
@@ -665,19 +657,19 @@ class SpipVersionsFragments(BaseModel):
 
 
 class SpipVisites(BaseModel):
-    date: str = DateField(primary_key=True)
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    visites: int = IntegerField(constraints=[SQL("DEFAULT 0")])
+    date = DateField(primary_key=True)
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    visites = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
         table_name: str = "spip_visites"
 
 
 class SpipVisitesArticles(BaseModel):
-    date: str = DateField()
-    id_article: int = IntegerField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    visites: int = IntegerField(constraints=[SQL("DEFAULT 0")])
+    date = DateField()
+    id_article = IntegerField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    visites = IntegerField(constraints=[SQL("DEFAULT 0")])
 
     class Meta:
         table_name: str = "spip_visites_articles"
@@ -686,21 +678,21 @@ class SpipVisitesArticles(BaseModel):
 
 
 class SpipZones(BaseModel):
-    descriptif: str = TextField()
-    id_zone: int = BigAutoField()
-    maj: str = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    privee: str = CharField(constraints=[SQL("DEFAULT 'non'")])
-    publique: str = CharField(constraints=[SQL("DEFAULT 'oui'")])
-    titre: str = CharField(constraints=[SQL("DEFAULT ''")])
+    descriptif = TextField()
+    id_zone = BigAutoField()
+    maj = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
+    privee = CharField(constraints=[SQL("DEFAULT 'non'")])
+    publique = CharField(constraints=[SQL("DEFAULT 'oui'")])
+    titre = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
         table_name: str = "spip_zones"
 
 
 class SpipZonesLiens(BaseModel):
-    id_objet: int = BigIntegerField(constraints=[SQL("DEFAULT 0")])
-    id_zone: int = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
-    objet: str = CharField(constraints=[SQL("DEFAULT ''")])
+    id_objet = BigIntegerField(constraints=[SQL("DEFAULT 0")])
+    id_zone = BigIntegerField(constraints=[SQL("DEFAULT 0")], index=True)
+    objet = CharField(constraints=[SQL("DEFAULT ''")])
 
     class Meta:
         table_name: str = "spip_zones_liens"
