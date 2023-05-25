@@ -1,13 +1,15 @@
+from os import makedirs
 from os.path import basename, splitext
-from re import I, compile, finditer
+from re import finditer
+from shutil import copyfile
 from typing import Any
 
-from peewee import ModelSelect
+from peewee import Model, ModelSelect
 from slugify import slugify
 from yaml import dump
 
 from config import config
-from converters import convert, link_document
+from converters import convert, link_document, unknown_chars
 from database import (
     SpipArticles,
     SpipAuteurs,
@@ -16,9 +18,50 @@ from database import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
+from styling import BLUE, BOLD, GREEN, YELLOW, highlight, indent, ss, style
 
 
-class Document(SpipDocuments):
+class SpipWritable:
+    class Meta:
+        table_name: str
+
+    term_color: int
+    texte: str
+    lang: str
+    titre: str
+
+    def filename(self, date: bool = False) -> str:
+        raise NotImplementedError("Subclasses need to implement filename()")
+
+    # Output information about file that will be exported
+    def begin_message(
+        self, index: int, limit: int, depth: int = 0, step: int = 100
+    ) -> None:
+        # Print the remaining number of objects to export every step object
+        if index % step == 0:
+            indent(depth)
+            print("Exporting", end="")
+            style(f" {limit-index}", BOLD, self.term_color)
+            print(f" element{ss(limit-index)} from", end="")
+            style(f" {self.Meta.table_name}")
+        # Print the counter & title of the object being exported
+        indent(depth)
+        style(f"{index + 1}. ")
+        highlight(self.titre, *unknown_chars(self.titre))
+        # + ("EMPTY " if len(self.texte) < 1 else "")
+        # + f"{self.lang} "
+
+    # Write object to output destination
+    def write(self, export_dir: str) -> None:
+        raise NotImplementedError("Subclasses need to implement write()")
+
+    # Output information about file that was just exported
+    def end_message(self, export_dir: str):
+        style(" -> ", BOLD, self.term_color)
+        print(export_dir + self.filename())
+
+
+class Document(SpipWritable, SpipDocuments):
     class Meta:
         table_name: str = "spip_documents"
 
@@ -27,17 +70,32 @@ class Document(SpipDocuments):
         self.titre: str = convert(self.titre, True)
         self.descriptif: str = convert(self.descriptif, True)
         self.statut: str = "false" if self.statut == "publie" else "true"
+        # Terminal output color
+        self.term_color: int = BLUE
 
-    def slug(self, date: bool = False) -> str:
+    # Get slugified name of this file
+    def filename(self, date: bool = False) -> str:
         name_type: tuple[str, str] = splitext(basename(self.fichier))
         return (
             slugify((self.date_publication + "-" if date else "") + name_type[0])
             + name_type[1]
         )
 
+    # Write document to output destination
+    def write(self, export_dir: str) -> None:
+        # Copy the document from it’s SPIP location to the new location
+        try:
+            copyfile(config.data_dir + self.fichier, export_dir + self.filename())
+        except FileNotFoundError:
+            raise FileNotFoundError(" -> NOT FOUND!\n") from None
 
-class SpipObject:
+
+class SpipObject(SpipWritable):
     id: int
+    id_trad: int
+    date: str
+    maj: str
+    id_secteur: int
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,10 +106,16 @@ class SpipObject:
         self.statut: str = "false" if self.statut == "publie" else "true"
         self.langue_choisie: str = "false" if self.langue_choisie == "oui" else "true"
         self.extra: str = convert(self.extra)  # Probably unused
-        # Define file prefix (need to be changed later)
+        # Define file prefix (needs to be redefined for sections)
         self.prefix = "index"
 
-    def documents(self) -> ModelSelect:
+    # Convert SPIP style internal links for images & other files into Markdown style
+    def link_documents(self, documents: ModelSelect) -> None:
+        for d in documents:
+            self.texte = link_document(self.texte, d.id_document, d.titre, d.slug())
+
+    # Output related documents & link them in the text by the way
+    def documents(self, link_documents: bool = True) -> ModelSelect:
         documents = (
             Document.select()
             .join(
@@ -60,23 +124,44 @@ class SpipObject:
             )
             .where(SpipDocumentsLiens.id_objet == self.id)
         )
-        for d in documents:
-            self.texte = link_document(self.texte, d.id_document, d.titre, d.slug())
-        # Internal (articles) links
-        self.text = link_articles(self.texte)
+        if link_documents:
+            self.link_documents(documents)
         return documents
 
-    def slug(self, date: bool = False) -> str:
-        return slugify((self.date + "-" if date else "") + self.titre)
+    # Convert SPIP style internal links for other articles or sections into Markdown
+    def link_articles(self) -> None:
+        for match in finditer(r"\[(.*?)]\((?:art|article)([0-9]+)\)", self.texte):
+            article = Article.get(Article.id_article == match.group(2))
+            if len(match.group(1)) > 0:
+                title: str = match.group(1)
+            else:
+                title: str = article.titre
+            self.texte = self.texte.replace(
+                match.group(0), f"[{title}]({article.slug()}/{article.filename()})"
+            )
 
+    # Output related articles
+    def articles(self) -> ModelSelect:
+        return (
+            Article.select()
+            .where(Article.id_rubrique == self.id)
+            .order_by(Article.date.desc())
+            # .limit(limit)
+        )
+
+    # Get slugified directory of this object
+    def dir_slug(self, include_date: bool = False, end_slash: bool = True) -> str:
+        date: str = self.date + "-" if include_date else ""
+        slash: str = "/" if end_slash else ""
+        return slugify(date + self.titre) + slash
+
+    # Get filename of this object
     def filename(self) -> str:
         return self.prefix + "." + self.lang + "." + config.export_filetype
 
-    def frontmatter(self) -> str:
-        raise NotImplementedError("Subclasses must implement 'frontmatter' method.")
-
-    def common_frontmatter(self) -> dict[str, Any]:
-        return {
+    # Get the YAML frontmatter string
+    def frontmatter(self, append: dict[str, Any] = {}) -> str:
+        meta: dict[str, Any] = {
             "lang": self.lang,
             "translationKey": self.id_trad,
             "title": self.titre,
@@ -88,9 +173,12 @@ class SpipObject:
             "spip_id_secteur": self.id_secteur,
             "spip_id": self.id,
         }
+        return dump(meta | append, allow_unicode=True)
 
-    def body(self) -> str:
-        body: str = ""
+    # Get file text content
+    def content(self) -> str:
+        # Start the content with frontmatter
+        body: str = "---\n" + self.frontmatter() + "---"
         # Add the title as a Markdown h1
         if len(self.titre) > 0 and config.prepend_h1:
             body += "\n\n# " + self.titre
@@ -103,9 +191,10 @@ class SpipObject:
             body += "\n\n# EXTRA\n\n" + self.extra
         return body
 
-    def content(self) -> str:
-        # Return the final article text
-        return "---\n" + self.frontmatter() + "---" + self.body()
+    # Write object to output destination
+    def write(self, export_dir: str) -> None:
+        with open(export_dir + self.filename(), "w") as f:
+            f.write(self.content())
 
 
 class Article(SpipObject, SpipArticles):
@@ -122,11 +211,12 @@ class Article(SpipObject, SpipArticles):
         self.accepter_forum: str = "true" if self.accepter_forum == "oui" else "false"
         # ID
         self.id = self.id_article
+        # Terminal output color
+        self.term_color = YELLOW
 
-    def frontmatter(self) -> str:
-        return dump(
+    def frontmatter(self, append: dict[str, Any] = {}) -> str:
+        return super().frontmatter(
             {
-                **super().common_frontmatter(),
                 # Article specific
                 "summary": self.chapo,
                 "surtitle": self.surtitre,
@@ -135,12 +225,11 @@ class Article(SpipObject, SpipArticles):
                 "authors": [author.nom for author in self.authors()],
                 # Debugging
                 "spip_id_rubrique": self.id_rubrique,
-            },
-            allow_unicode=True,
+            }
         )
 
-    def body(self) -> str:
-        body: str = super().body()
+    def content(self) -> str:
+        body: str = super().content()
         # If there is a caption, add the caption followed by a hr
         if len(self.chapo) > 0:
             body += "\n\n" + self.chapo + "\n\n***"
@@ -163,29 +252,6 @@ class Article(SpipObject, SpipArticles):
         )
 
 
-# Query the DB to retrieve all articles sorted by publication date
-def get_articles(section_id: int, limit: int = 10**6) -> ModelSelect:
-    return (
-        Article.select()
-        .where(Article.id_rubrique == section_id)
-        .order_by(Article.date.desc())
-        .limit(limit)
-    )
-
-
-def link_articles(text: str):
-    for match in finditer(r"\[(.*?)]\((?:art|article)([0-9]+)\)", text):
-        article = Article.get(Article.id_article == match.group(2))
-        if len(match.group(1)) > 0:
-            title: str = match.group(1)
-        else:
-            title: str = article.titre
-        text = text.replace(
-            match.group(0), f"[{title}]({article.slug()}/{article.filename()})"
-        )
-    return text
-
-
 class Rubrique(SpipObject, SpipRubriques):
     class Meta:
         table_name: str = "spip_rubriques"
@@ -196,19 +262,14 @@ class Rubrique(SpipObject, SpipRubriques):
         self.id = self.id_rubrique
         # File prefix
         self.prefix = "_index"
+        # Terminal output color
+        self.term_color = GREEN
 
-    def frontmatter(self) -> str:
-        return dump(
+    def frontmatter(self, append: dict[str, Any] = {}) -> str:
+        return super().frontmatter(
             {
-                **super().common_frontmatter(),
                 # Debugging
                 "spip_id_parent": self.id_parent,
                 "spip_profondeur": self.profondeur,
-            },
-            allow_unicode=True,
+            }
         )
-
-
-# Query the DB to retrieve all sections sorted by publication date
-def get_sections(limit: int = 10**6) -> ModelSelect:
-    return Rubrique.select().order_by(Rubrique.date.desc()).limit(limit)
