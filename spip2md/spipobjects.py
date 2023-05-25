@@ -49,7 +49,7 @@ class SpipWritable:
         if len(self.titre) > 0:
             highlight(self.titre, *unknown_chars(self.titre))
         else:
-            print("NO NAME", end="")
+            print("MISSING NAME", end="")
         # + ("EMPTY " if len(self.texte) < 1 else "")
         # + f"{self.lang} "
 
@@ -204,7 +204,7 @@ class SpipObject(SpipWritable):
     # Write object to output destination
     def write(self, parent_dir: str) -> str:
         # Define actual export directory
-        directory: str = self.dir_slug() + parent_dir
+        directory: str = parent_dir + self.dir_slug()
         # Make a directory for this object if there isn’t
         makedirs(directory, exist_ok=True)
         # Define actual export path
@@ -305,6 +305,8 @@ class Rubrique(SpipObject, SpipRubriques):
         self.link_articles()
         export_path: str = self.write(parent_dir)
         self.end_message(export_path)
+        # Redefine parent_dir for subtree elements
+        parent_dir = parent_dir + self.dir_slug()
 
         # Write this section’s articles and documents
         def write_loop(objects: ModelSelect):
@@ -326,6 +328,7 @@ class Rubrique(SpipObject, SpipRubriques):
             .where(Rubrique.id_parent == self.id_rubrique)
             .order_by(Rubrique.date.desc())
         )
+        nb: int = len(child_sections)
         # Do the same for subsections (write their entire subtree)
         for i, s in enumerate(child_sections):
-            s.write_tree(parent_dir + self.dir_slug(), i, total)
+            s.write_tree(parent_dir, i, nb)
