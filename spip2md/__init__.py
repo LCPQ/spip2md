@@ -9,7 +9,7 @@ from peewee import ModelSelect
 
 from spip2md.config import CFG
 from spip2md.database import DB
-from spip2md.spipobjects import Rubrique
+from spip2md.spipobjects import RootRubrique, Rubrique
 
 # Define styles
 BOLD = 1  # Bold
@@ -56,6 +56,7 @@ def root_sections(limit: int = 10**3) -> ModelSelect:
         .limit(limit)
     )
 
+
 r"""
 # Print the detected unknown chars in article in their context but highlighted
 def warn_unknown_chars(article: Article) -> None:
@@ -80,12 +81,22 @@ def warn_unknown_chars(article: Article) -> None:
 
 # Print one root section list output correctly
 # sys.setrecursionlimit(2000)
-def print_output(tree: list[Any], depth: int = 0, indent: str = "  ") -> None:
+def print_output(
+    tree: list[Any],
+    indent: str = "  ",
+    depth: int = 0,
+    branches: int = 1,
+    leaves: int = 0,
+) -> tuple[int, int]:
     for sub in tree:
         if type(sub) == list:
-            print_output(sub, depth + 1)
+            branches, leaves = print_output(
+                sub, indent, depth + 1, branches + 1, leaves
+            )
         else:
+            leaves += 1
             print(indent * depth + sub)
+    return (branches, leaves)
 
 
 # Connect to the MySQL database with Peewee ORM
@@ -95,32 +106,28 @@ DB.connect()
 
 # Main loop to execute only if script is directly executed
 def main(*argv):
+    # Allow main to get args when directly executed
     if len(argv) == 0:
         argv = sys.argv
-    # Define max nb of sections to export based on first CLI argument TODO
-    if len(argv) >= 2:
-        sections_export = int(argv[1])
-    else:
-        sections_export = CFG.max_sections_export
-    # Define max nb of articles to export based on second CLI argument TODO
-    # if len(argv) >= 3:
-    #     articles_export = int(argv[2])
+
+    # TODO Define max nb of sections to export based on first CLI argument
+    # if len(argv) >= 2:
+    #     sections_export = int(argv[1])
     # else:
-    #     articles_export = CFG.max_articles_export
+    #     sections_export = CFG.max_sections_export
 
     # Clear the output dir & create a new
     if CFG.clear_output:
         rmtree(CFG.output_dir, True)
     makedirs(CFG.output_dir, exist_ok=True)
 
-    # Get the first max_sections_export root sections
-    sections: ModelSelect = root_sections(sections_export)
-    total: int = len(sections)
+    # Get the virtual id=0 section
+    root: Rubrique = RootRubrique()
 
-    # Write each root sections with its subtree
-    for i, section in enumerate(sections):
-        print_output(section.write_tree(CFG.output_dir, i, total))
-        print()  # Break line after exporting the section
+    # Write everything & print the output human-readably
+    sections, articles = print_output(root.write_tree(CFG.output_dir))
+    # End, summary message
+    print(f"Exported a total of {sections} sections, containing {articles} articles")
 
     # print()  # Break line between export & unknown characters warning
     # Warn about each article that contains unknown(s) character(s)

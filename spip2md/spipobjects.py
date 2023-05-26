@@ -3,7 +3,7 @@ from os import makedirs
 from os.path import basename, splitext
 from re import finditer, sub
 from shutil import copyfile
-from typing import Any, Optional
+from typing import Any, Match, Optional
 
 from peewee import BigAutoField, DateTimeField, ModelSelect
 from slugify import slugify
@@ -24,7 +24,8 @@ from spip2md.regexmap import (
     DOCUMENT_LINK_REPL,
     HTMLTAG,
     ISO_UTF,
-    MULTILANG,
+    MULTILANG_BLOCK,
+    MULTILANGS,
     SPIP_MARKDOWN,
     UNKNOWN_ISO,
 )
@@ -35,7 +36,46 @@ class SpipWritable:
     texte: str
     lang: str
     titre: str
+    descriptif: str
     profondeur: int
+
+    # Returns the first detected language (& instantiate a new object for the second)
+    # (currently don’t instantiate, just warns)
+    def translate(self, text: str) -> str:
+        def replace_lang(match: Match[str]) -> str:
+            first_lang: str = match.group(1)
+            # The first group is the inside of <multi></multi> blocks
+            for i, lang in enumerate(MULTILANGS.finditer(match.group(1))):
+                if i == 0:
+                    # Redefine this lang to the first one WARNING
+                    self.lang = lang.group(1)
+                    # Outputs the first lang associated text
+                    first_lang = lang.group(2)
+                else:
+                    pass
+                    # print("Found other language for", first_lang, ":", lang.groups())
+            return first_lang
+
+        return MULTILANG_BLOCK.sub(replace_lang, text)
+
+    # Apply different mappings to a text field, like SPIP to Markdown or encoding
+    def convert(self, text: Optional[str]) -> str:
+        if text is not None and len(text) > 0:
+            for spip, markdown in SPIP_MARKDOWN:
+                text = spip.sub(markdown, text)
+            for bloat in BLOAT:
+                text = bloat.sub("", text)
+            for iso, utf in ISO_UTF:
+                text = text.replace(iso, utf)
+            text = self.translate(text)
+        else:
+            return ""
+        return text
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.titre = self.convert(self.titre)
+        self.descriptif = self.convert(self.descriptif)
 
     def filename(self, date: bool = False) -> str:
         raise NotImplementedError(
@@ -58,19 +98,6 @@ class SpipWritable:
         else:
             output[-1] += "MISSING NAME"
         return output
-
-    # Apply different mappings to text fields, like SPIP to Markdown or encoding
-    def convert_attrs(self, *attrs: str) -> None:
-        attrs += "titre", "descriptif"
-        for attr in attrs:
-            a = getattr(self, attr)
-            if len(a) > 0:
-                for spip, markdown in SPIP_MARKDOWN:
-                    setattr(self, attr, spip.sub(markdown, a))
-                for bloat in BLOAT:
-                    setattr(self, attr, bloat.sub("", a))
-                for iso, utf in ISO_UTF:
-                    setattr(self, attr, a.replace(iso, utf))
 
     # Write object to output destination
     def write(self, parent_dir: str) -> str:
@@ -107,8 +134,6 @@ class Document(SpipWritable, SpipDocuments):
 
     # Write document to output destination
     def write(self, parent_dir: str) -> str:
-        # Apply needed conversions
-        super().convert_attrs()
         # Define file source and destination
         src: str = CFG.data_dir + self.fichier
         dest: str = parent_dir + self.filename()
@@ -129,6 +154,7 @@ class SpipObject(SpipWritable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Common fields that need conversions
+        self.extra: str = self.convert(self.extra)
         self.statut: str = "false" if self.statut == "publie" else "true"
         self.langue_choisie: str = "false" if self.langue_choisie == "oui" else "true"
         # Define file prefix (needs to be redefined for sections)
@@ -223,13 +249,21 @@ class SpipObject(SpipWritable):
             body += "\n\n# EXTRA\n\n" + self.extra
         return body
 
-    def convert_attrs(self, *attrs: str) -> None:
-        return super().convert_attrs(*attrs, "descriptif", "extra")
+    # Clean remaining HTML tags in attrs
+    def clean_html(self, *attrs: str) -> None:
+        attrs += "titre", "texte", "descriptif", "extra"
+        for attr in attrs:
+            a = getattr(self, attr)
+            if len(a) > 0:
+                setattr(self, attr, HTMLTAG.sub("", a))
 
     # Write object to output destination
-    def write(self, parent_dir: str) -> str:
-        # Apply needed conversions
-        super().convert_attrs()
+    def write(self, parent_dir: str, clean_html: bool = True) -> str:
+        # Link articles
+        self.link_articles()
+        # Delete remaining HTML tags WARNING
+        if clean_html:
+            self.clean_html()
         # Define actual export directory
         directory: str = parent_dir + self.dir_slug()
         # Make a directory for this object if there isn’t
@@ -249,14 +283,13 @@ class Article(SpipObject, SpipArticles):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # More conversions needed for articles
+        self.surtitre: str = self.convert(self.surtitre)
+        self.soustitre: str = self.convert(self.soustitre)
+        self.chapo: str = self.convert(self.chapo)
+        self.ps: str = self.convert(self.ps)
         self.accepter_forum: str = "true" if self.accepter_forum == "oui" else "false"
         # ID
         self.object_id = self.id_article
-
-    def convert_attrs(self, *attrs: str) -> None:
-        return super().convert_attrs(
-            *attrs, "surtitre", "soustitre", "chapo", "ps", "accepter_forum"
-        )
 
     def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         meta: dict[str, Any] = {
@@ -331,7 +364,6 @@ class Rubrique(SpipObject, SpipRubriques):
         articles = self.articles()
         documents = self.documents()
         # Write this section
-        self.link_articles()
         output[-1] += self.end_message(self.write(parent_dir))
         # Redefine parent_dir for subtree elements
         parent_dir = parent_dir + self.dir_slug()
@@ -352,6 +384,39 @@ class Rubrique(SpipObject, SpipRubriques):
         output.append(write_loop(articles))
         output.append(write_loop(documents))
 
+        # Get all child section of self
+        child_sections = (
+            Rubrique.select()
+            .where(Rubrique.id_parent == self.id_rubrique)
+            .order_by(Rubrique.date.desc())
+        )
+        nb: int = len(child_sections)
+        # Do the same for subsections (write their entire subtree)
+        for i, s in enumerate(child_sections):
+            output.append(s.write_tree(parent_dir, i, nb))
+        return output
+
+
+class RootRubrique(Rubrique):
+    class Meta:
+        table_name: str = "spip_rubriques"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 0 ID
+        self.id_rubrique = 0
+        # self.object_id = 0
+
+    def write_tree(
+        self, parent_dir: str, sections_limit: int = 0, articles_limit: int = 0
+    ) -> list[str | list[Any]]:
+        # Define dictionary output to diplay
+        output: list[str | list[Any]] = []
+        # Starting message
+        output.append(
+            f"Begin converting {CFG.db}@{CFG.db_host} db to plain Markdown+YAML files"
+        )
+        output.append(f" as db user {CFG.db_user}, into the directory {parent_dir}")
         # Get all child section of self
         child_sections = (
             Rubrique.select()
