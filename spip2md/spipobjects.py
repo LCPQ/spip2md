@@ -9,6 +9,7 @@ from peewee import BigAutoField, DateTimeField, ModelSelect
 from slugify import slugify
 from yaml import dump
 
+from spip2md import BLUE, BOLD, GREEN, RED, YELLOW, highlight, indent, ss, style
 from spip2md.config import CFG
 from spip2md.converters import convert, link_document, unknown_chars
 from spip2md.database import (
@@ -19,7 +20,6 @@ from spip2md.database import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
-from spip2md.styling import BLUE, BOLD, GREEN, RED, YELLOW, highlight, indent, ss, style
 
 
 class SpipWritable:
