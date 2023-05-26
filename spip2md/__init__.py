@@ -3,12 +3,13 @@
 import sys
 from os import makedirs
 from shutil import rmtree
+from typing import Any
 
 from peewee import ModelSelect
 
 from spip2md.config import CFG
-from spip2md.converters import unknown_chars, unknown_chars_context
 from spip2md.database import DB
+from spip2md.regexmap import unknown_chars, unknown_chars_context
 from spip2md.spipobjects import (
     Article,
     Rubrique,
@@ -50,17 +51,6 @@ def highlight(string: str, *start_stop: tuple[int, int], end: str = "") -> None:
     print(string[previous_stop:], end=end)
 
 
-# Plural ?
-def ss(nb: int) -> str:
-    return "s" if nb > 1 else ""
-
-
-# Indent with 2 spaces
-def indent(nb: int = 1) -> None:
-    for _ in range(nb):
-        print("  ", end="")
-
-
 # Query the DB to retrieve all sections without parent, sorted by publication date
 def root_sections(limit: int = 10**3) -> ModelSelect:
     return (
@@ -97,6 +87,16 @@ def warn_unknown_chars(article: Article) -> None:
     print()  # Break line
 
 
+# Print one root section list output correctly
+# sys.setrecursionlimit(2000)
+def print_output(tree: list[Any], depth: int = 0, indent: str = "  ") -> None:
+    for sub in tree:
+        if type(sub) == list:
+            print_output(sub, depth + 1)
+        else:
+            print(indent * depth + sub)
+
+
 # Connect to the MySQL database with Peewee ORM
 DB.init(CFG.db, host=CFG.db_host, user=CFG.db_user, password=CFG.db_pass)
 DB.connect()
@@ -128,7 +128,7 @@ def main(*argv):
 
     # Write each root sections with its subtree
     for i, section in enumerate(sections):
-        section.write_tree(CFG.output_dir, i, total)
+        print_output(section.write_tree(CFG.output_dir, i, total))
         print()  # Break line after exporting the section
 
     # print()  # Break line between export & unknown characters warning

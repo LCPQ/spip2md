@@ -9,9 +9,7 @@ from peewee import BigAutoField, DateTimeField, ModelSelect
 from slugify import slugify
 from yaml import dump
 
-from spip2md import BLUE, BOLD, GREEN, RED, YELLOW, highlight, indent, ss, style
 from spip2md.config import CFG
-from spip2md.converters import convert, link_document, unknown_chars
 from spip2md.database import (
     SpipArticles,
     SpipAuteurs,
@@ -20,6 +18,7 @@ from spip2md.database import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
+from spip2md.regexmap import convert, link_document, unknown_chars
 
 
 class SpipWritable:
@@ -33,26 +32,22 @@ class SpipWritable:
             f"Subclasses need to implement filename(), date: {date}"
         )
 
-    def begin_message(
-        self, index: int, limit: int, depth: int = 0, step: int = 100
-    ) -> None:
-        # Print the remaining number of objects to export every step object
+    def begin_message(self, index: int, limit: int, step: int = 100) -> list[str]:
+        output: list[str] = []
+        # Output the remaining number of objects to export every step object
         if index % step == 0:
-            indent(depth)
-            print("Exporting", end="")
-            style(f" {limit-index}", BOLD, self.term_color)
+            output.append(f"Exporting {limit-index}")
             if hasattr(self, "profondeur"):
-                print(f" level {self.profondeur}", end="")
-            style(f" {type(self).__name__}{ss(limit-index)}\n")
-        # Print the counter & title of the object being exported
-        indent(depth)
-        style(f"{index + 1}. ")
+                output[-1] += f" level {self.profondeur}"
+            s: str = "s" if limit - index > 1 else ""
+            output[-1] += f" {type(self).__name__}{s}"
+        # Output the counter & title of the object being exported
+        output.append(f"{index + 1}. ")
         if len(self.titre) > 0:
-            highlight(self.titre, *unknown_chars(self.titre))
+            output[-1] += self.titre
         else:
-            print("MISSING NAME", end="")
-        # + ("EMPTY " if len(self.texte) < 1 else "")
-        # + f"{self.lang} "
+            output[-1] += "MISSING NAME"
+        return output
 
     # Write object to output destination
     def write(self, parent_dir: str) -> str:
@@ -61,11 +56,11 @@ class SpipWritable:
         )
 
     # Output information about file that was just exported
-    def end_message(self, message: str | Exception):
-        style(" -> ", BOLD, self.term_color)
+    def end_message(self, message: str | Exception) -> str:
+        output: str = " -> "
         if message is Exception:
-            style("ERROR ", BOLD, RED)
-        print(message)
+            output += "ERROR "
+        return output + str(message)
 
 
 class Document(SpipWritable, SpipDocuments):
@@ -77,8 +72,6 @@ class Document(SpipWritable, SpipDocuments):
         self.titre: str = convert(self.titre, True)
         self.descriptif: str = convert(self.descriptif, True)
         self.statut: str = "false" if self.statut == "publie" else "true"
-        # Terminal output color
-        self.term_color: int = BLUE
 
     # Get slugified name of this file
     def filename(self, date: bool = False) -> str:
@@ -233,8 +226,6 @@ class Article(SpipObject, SpipArticles):
         self.accepter_forum: str = "true" if self.accepter_forum == "oui" else "false"
         # ID
         self.object_id = self.id_article
-        # Terminal output color
-        self.term_color = YELLOW
 
     def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         meta: dict[str, Any] = {
@@ -286,8 +277,6 @@ class Rubrique(SpipObject, SpipRubriques):
         self.object_id = self.id_rubrique
         # File prefix
         self.prefix = "_index"
-        # Terminal output color
-        self.term_color = GREEN
 
     def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         meta: dict[str, Any] = {
@@ -300,31 +289,37 @@ class Rubrique(SpipObject, SpipRubriques):
         else:
             return super().frontmatter(meta)
 
-    def write_tree(self, parent_dir: str, index: int, total: int):
-        self.begin_message(index, total, int(self.profondeur))
+    def write_tree(
+        self, parent_dir: str, index: int, total: int
+    ) -> list[str | list[Any]]:
+        # Define dictionary output to diplay
+        output: list[str | list[Any]] = []
+        for m in self.begin_message(index, total):
+            output.append(m)
         # Get this section’s articles documents
         articles = self.articles()
         documents = self.documents()
         # Write this section
         self.link_articles()
-        export_path: str = self.write(parent_dir)
-        self.end_message(export_path)
+        output[-1] += self.end_message(self.write(parent_dir))
         # Redefine parent_dir for subtree elements
         parent_dir = parent_dir + self.dir_slug()
 
         # Write this section’s articles and documents
-        def write_loop(objects: ModelSelect):
+        def write_loop(objects: ModelSelect) -> list[str]:
+            output: list[str] = []
             total = len(objects)
             for i, obj in enumerate(objects):
-                obj.begin_message(i, total, self.profondeur + 1)
+                for m in obj.begin_message(i, total):
+                    output.append(m)
                 try:
-                    export_path: str = obj.write(parent_dir)
-                    obj.end_message(export_path)
+                    output[-1] += obj.end_message(obj.write(parent_dir))
                 except Exception as err:
-                    obj.end_message(err)
+                    output[-1] += obj.end_message(err)
+            return output
 
-        write_loop(articles)
-        write_loop(documents)
+        output.append(write_loop(articles))
+        output.append(write_loop(documents))
 
         # Get all child section of self
         child_sections = (
@@ -335,4 +330,5 @@ class Rubrique(SpipObject, SpipRubriques):
         nb: int = len(child_sections)
         # Do the same for subsections (write their entire subtree)
         for i, s in enumerate(child_sections):
-            s.write_tree(parent_dir, i, nb)
+            output.append(s.write_tree(parent_dir, i, nb))
+        return output
