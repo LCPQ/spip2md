@@ -256,31 +256,7 @@ UNKNOWN_ISO = (
 
 # Special elements in terminal output to surround
 SPECIAL_OUTPUT = (
-    (compile(r"^([0-9]+?\.)(?= )"), r"{}\1{}"),  # Counter
-    (compile(r"(?<= )->(?= )"), r"{}->{}"),  # Arrow
-    (compile(r"(?<=^Exporting )([0-9]+?)(?= )"), r"{}\1{}"),  # Total
+    compile(r"^([0-9]+?\.)(?= )"),  # Counter
+    compile(r"(?<= )(->)(?= )"),  # Arrow
+    compile(r"(?<=^Exporting )([0-9]+?)(?= )"),  # Total
 )
-
-
-r"""
-# Return a list of tuples giving the start and end of unknown substring in text
-def unknown_chars(text: str) -> list[tuple[int, int]]:
-    positions: list[tuple[int, int]] = []
-    for char in UNKNOWN_ISO:
-        for match in finditer("(" + char + ")+", text):
-            positions.append((match.start(), match.end()))
-    return positions
-
-# Return strings with unknown chards found in text, surrounded by context_length chars
-def unknown_chars_context(text: str, context_length: int = 24) -> list[str]:
-    errors: list[str] = []
-    context: str = r".{0," + str(context_length) + r"}"
-    for char in UNKNOWN_ISO:
-        matches = finditer(
-            context + r"(?=" + char + r")" + char + context,
-            text,
-        )
-        for match in matches:
-            errors.append(match.group())
-    return errors
-"""

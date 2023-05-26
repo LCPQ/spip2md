@@ -406,6 +406,7 @@ class RootRubrique(Rubrique):
         # 0 ID
         self.id_rubrique = 0
         # self.object_id = 0
+        self.profondeur = 0
 
     def write_tree(
         self, parent_dir: str, sections_limit: int = 0, articles_limit: int = 0
@@ -414,9 +415,11 @@ class RootRubrique(Rubrique):
         output: list[str | list[Any]] = []
         # Starting message
         output.append(
-            f"Begin converting {CFG.db}@{CFG.db_host} db to plain Markdown+YAML files"
+            f"""\
+Begin exporting `{CFG.db}@{CFG.db_host}` SPIP database to plain Markdown+YAML
+files into the directory `{parent_dir}`, as database user `{CFG.db_user}`
+"""
         )
-        output.append(f" as db user {CFG.db_user}, into the directory {parent_dir}")
         # Get all child section of self
         child_sections = (
             Rubrique.select()
