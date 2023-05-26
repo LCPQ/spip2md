@@ -84,7 +84,10 @@ class Document(SpipWritable, SpipDocuments):
     def filename(self, date: bool = False) -> str:
         name_type: tuple[str, str] = splitext(basename(str(self.fichier)))
         return (
-            slugify((self.date_publication + "-" if date else "") + name_type[0])
+            slugify(
+                (self.date_publication + "-" if date else "") + name_type[0],
+                max_length=100,
+            )
             + name_type[1]
         )
 
@@ -161,7 +164,7 @@ class SpipObject(SpipWritable):
     def dir_slug(self, include_date: bool = False, end_slash: bool = True) -> str:
         date: str = self.date + "-" if include_date else ""
         slash: str = "/" if end_slash else ""
-        return slugify(date + self.titre) + slash
+        return slugify(date + self.titre, max_length=100) + slash
 
     # Get filename of this object
     def filename(self) -> str:

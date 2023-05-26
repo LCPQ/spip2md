@@ -106,13 +106,6 @@ SPIP_TO_MARKDOWN = (
         ),
         "```\n\\1\n\n```",
     ),
-    (  # WARNING Keep only the first language in multi-language blocks
-        compile(
-            r"<multi>\s*(?:\[.{2,4}\])?\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
-            S | I,
-        ),
-        r"\1",
-    ),
     (  # WARNING remove every html tag
         compile(r"<\/?.*?>\s*", S | I),
         r"",
@@ -250,6 +243,12 @@ ISO_TO_UTF = (
 UNKNOWN_ISO = (
     r"â€¨",
     r"âˆ†",
+)
+
+# Multi language block, capture the first
+MULTILINGUAL = compile(
+    r"<multi>\s*(?:\[.{2,4}\])?\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
+    S | I,
 )
 
 
