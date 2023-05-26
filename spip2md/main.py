@@ -1,13 +1,13 @@
+# SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 #!python
 from os import makedirs
 from shutil import rmtree
 from sys import argv
 
-from peewee import ModelSelect
-
 from config import CFG
 from converters import unknown_chars, unknown_chars_context
 from database import DB
+from peewee import ModelSelect
 from spipobjects import (
     Article,
     Rubrique,

@@ -1,12 +1,9 @@
+# SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 from os import makedirs
 from os.path import basename, splitext
 from re import finditer
 from shutil import copyfile
 from typing import Any, Optional
-
-from peewee import BigAutoField, DateTimeField, ModelSelect
-from slugify import slugify
-from yaml import dump
 
 from config import CFG
 from converters import convert, link_document, unknown_chars
@@ -18,7 +15,10 @@ from database import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
+from peewee import BigAutoField, DateTimeField, ModelSelect
+from slugify import slugify
 from styling import BLUE, BOLD, GREEN, RED, YELLOW, highlight, indent, ss, style
+from yaml import dump
 
 
 class SpipWritable:

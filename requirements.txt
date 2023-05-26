@@ -1,4 +1,0 @@
-pyyaml
-python-slugify[unidecode]
-pymysql
-peewee

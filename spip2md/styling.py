@@ -1,3 +1,4 @@
+# SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 # pyright: strict
 # Define styles
 BOLD = 1  # Bold
