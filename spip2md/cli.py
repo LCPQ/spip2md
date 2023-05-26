@@ -1,18 +1,19 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
-#!python
+# Top level functions
+import sys
 from os import makedirs
 from shutil import rmtree
-from sys import argv
 
-from config import CFG
-from converters import unknown_chars, unknown_chars_context
-from database import DB
 from peewee import ModelSelect
-from spipobjects import (
+
+from spip2md.config import CFG
+from spip2md.converters import unknown_chars, unknown_chars_context
+from spip2md.database import DB
+from spip2md.spipobjects import (
     Article,
     Rubrique,
 )
-from styling import highlight, style
+from spip2md.styling import highlight, style
 
 
 # Query the DB to retrieve all sections without parent, sorted by publication date
@@ -57,17 +58,19 @@ DB.connect()
 
 
 # Main loop to execute only if script is directly executed
-if __name__ == "__main__":
+def main(*argv):
+    if len(argv) == 0:
+        argv = sys.argv
     # Define max nb of articles to export based on first CLI argument
     if len(argv) >= 2:
-        max_articles_export = int(argv[1])
+        articles_export = int(argv[1])
     else:
-        max_articles_export = CFG.max_articles_export
+        articles_export = CFG.max_articles_export
     # Define max nb of sections to export based on second CLI argument
     if len(argv) >= 3:
-        max_sections_export = int(argv[2])
+        sections_export = int(argv[2])
     else:
-        max_sections_export = CFG.max_sections_export
+        sections_export = CFG.max_sections_export
 
     # Clear the output dir & create a new
     if CFG.clear_output:
@@ -75,7 +78,7 @@ if __name__ == "__main__":
     makedirs(CFG.output_dir, exist_ok=True)
 
     # Get the first max_sections_export root sections
-    sections: ModelSelect = root_sections(max_sections_export)
+    sections: ModelSelect = root_sections(sections_export)
     total: int = len(sections)
 
     # Write each root sections with its subtree

@@ -5,9 +5,13 @@ from re import finditer
 from shutil import copyfile
 from typing import Any, Optional
 
-from config import CFG
-from converters import convert, link_document, unknown_chars
-from database import (
+from peewee import BigAutoField, DateTimeField, ModelSelect
+from slugify import slugify
+from yaml import dump
+
+from spip2md.config import CFG
+from spip2md.converters import convert, link_document, unknown_chars
+from spip2md.database import (
     SpipArticles,
     SpipAuteurs,
     SpipAuteursLiens,
@@ -15,10 +19,7 @@ from database import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
-from peewee import BigAutoField, DateTimeField, ModelSelect
-from slugify import slugify
-from styling import BLUE, BOLD, GREEN, RED, YELLOW, highlight, indent, ss, style
-from yaml import dump
+from spip2md.styling import BLUE, BOLD, GREEN, RED, YELLOW, highlight, indent, ss, style
 
 
 class SpipWritable:

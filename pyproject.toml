@@ -29,7 +29,7 @@ pymysql = "^1.0.3"
 peewee = "^3.16.2"
 
 [tool.poetry.scripts]
-spip2md = "spip2md:main"
+spip2md = "spip2md.cli:main"
 
 [build-system]
 requires = ["poetry-core"]
