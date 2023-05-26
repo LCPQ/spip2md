@@ -1,10 +1,9 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 # pyright: strict
-from re import I, S, compile, finditer, sub
-from typing import Optional
+from re import I, S, compile
 
-# SPIP syntax to Markdown
-SPIP_TO_MARKDOWN = (
+# ((SPIP syntax, Replacement Markdown syntax), …)
+SPIP_MARKDOWN = (
     (  # horizontal rule
         compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", S | I),
         # r"---",
@@ -43,15 +42,15 @@ SPIP_TO_MARKDOWN = (
     ),
     (  # images
         compile(r"<(img|image)([0-9]+)(\|.*?)*>", S | I),
-        r"![](\1\2)",
+        r"![](\2)",  # Needs to be further processed to replace ID with filename
     ),
     (  # documents & embeds
         compile(r"<(doc|document|emb)([0-9]+)(\|.*?)*>", S | I),
-        r"[](\1\2)",
+        r"[](\2)",  # Needs to be further processed to replace ID with filename
     ),
     (  # internal links
         compile(r"<(art|article)([0-9]+)(\|.*?)*>", S | I),
-        r"[](\1\2)",
+        r"[](\2)",  # Needs to be further processed to replace ID with filename
     ),
     (  # anchor
         compile(r"\[ *(.*?) *-> *(.*?) *\]", S | I),
@@ -106,20 +105,31 @@ SPIP_TO_MARKDOWN = (
         ),
         "```\n\\1\n\n```",
     ),
-    (  # WARNING remove every html tag
-        compile(r"<\/?.*?>\s*", S | I),
-        r"",
-    ),
 )
 
-# Further cleaning for metadata texts such as titles or descriptions
-SPIP_META_BLOAT = (
+# Match against documents ID found in links, ID can be inserted with .format()
+# Name and path can be further replaced with .format()
+DOCUMENT_LINK = r"(!)?\[(.*?)\]\(({})\)"
+DOCUMENT_LINK_REPL = r"\1[\2{}]({})"
+
+# Multi language block, capture groups: (lang, text, lang, text, …)
+MULTILANG = compile(
+    r"<multi>(?:\s*\[(.{2,6})\]\s*(.*?)\s*)+<\/multi>",
+    S | I,
+)
+
+# WARNING probably useless text in metadata fields, to be removed
+BLOAT = (
     compile(r"^>+ +", S | I),  # Remove beginning with angle bracket(s)
     compile(r"^\d+\. +", S | I),  # Remove beginning with a number followed by a dot
 )
 
-# Broken ISO encoding to proper UTF-8
-ISO_TO_UTF = (
+# Matches against every HTML tag
+HTMLTAG = compile(r"<\/?.*?>\s*", S | I)
+
+
+# ((Broken ISO 8859-1 encoding, Proper UTF equivalent encoding), …)
+ISO_UTF = (
     (  # Fix UTF-8 appostrophe that was interpreted as ISO 8859-1
         "â€™",
         r"’",
@@ -224,7 +234,7 @@ ISO_TO_UTF = (
         "iÌ\u0081",
         r"í",
     ),
-    # WARNING not sure
+    # WARNING not sure below
     (  # Fix UTF-8 é that was interpreted as ISO 8859-1
         "eÌ ",
         r"é",
@@ -239,62 +249,22 @@ ISO_TO_UTF = (
     ),
 )
 
-# WARNING unknown broken encoding
+# WARNING broken ISO 8859-1 encoding which I don’t know the UTF equivalent
 UNKNOWN_ISO = (
-    r"â€¨",
-    r"âˆ†",
-)
-
-# Multi language block, capture the first
-MULTILINGUAL = compile(
-    r"<multi>\s*(?:\[.{2,4}\])?\s*(.*?)\s*(?:\s*\[.{2,4}\].*)*<\/multi>",
-    S | I,
+    "â€¨",
+    "âˆ†",
 )
 
 
-# Apply SPIP to Markdown & ISO to UTF conversions to a text, & eventually clean meta
-def convert(text: Optional[str], clean_meta: bool = False) -> str:
-    if text is None:
-        return ""
-    for spip, markdown in SPIP_TO_MARKDOWN:
-        text = spip.sub(markdown, text)
-    if clean_meta:
-        for bloat in SPIP_META_BLOAT:
-            text = bloat.sub("", text)
-    for iso, utf in ISO_TO_UTF:
-        text = text.replace(iso, utf)
-    return text
+# Special elements in terminal output to surround
+SPECIAL_OUTPUT = (
+    (compile(r"^([0-9]+?\.)(?= )"), r"{}\1{}"),  # Counter
+    (compile(r"(?<= )->(?= )"), r"{}->{}"),  # Arrow
+    (compile(r"(?<=^Exporting )([0-9]+?)(?= )"), r"{}\1{}"),  # Total
+)
 
 
-# Replace images & files links in Markdown with real slugs of the actually linked files
-def link_document(text: str, id: int, name: str, slug: str) -> str:
-    # Replace images that dont have a title written in text
-    text = sub(
-        r"!\[]\((?:img|image)" + str(id) + r"(\|.*?)*\)",
-        f"![{name}]({slug})",
-        text,
-    )
-    # Replace images that dont have a title written in text
-    text = sub(
-        r"\[]\((?:doc|document|emb)" + str(id) + r"(\|.*?)*\)",
-        f"[{name}]({slug})",
-        text,
-    )
-    # Replace images that already had a title in Markdown style link
-    text = sub(
-        r"!\[(.+?)\]\((?:img|image)" + str(id) + r"(\|.*?)*\)",
-        f"![\\1]({slug})",
-        text,
-    )
-    # Replace documents that already had a title in Markdown style link
-    text = sub(
-        r"\[(.+?)\]\((?:doc|document|emb)" + str(id) + r"(\|.*?)*\)",
-        f"[\\1]({slug})",
-        text,
-    )
-    return text
-
-
+r"""
 # Return a list of tuples giving the start and end of unknown substring in text
 def unknown_chars(text: str) -> list[tuple[int, int]]:
     positions: list[tuple[int, int]] = []
@@ -302,7 +272,6 @@ def unknown_chars(text: str) -> list[tuple[int, int]]:
         for match in finditer("(" + char + ")+", text):
             positions.append((match.start(), match.end()))
     return positions
-
 
 # Return strings with unknown chards found in text, surrounded by context_length chars
 def unknown_chars_context(text: str, context_length: int = 24) -> list[str]:
@@ -316,3 +285,4 @@ def unknown_chars_context(text: str, context_length: int = 24) -> list[str]:
         for match in matches:
             errors.append(match.group())
     return errors
+"""

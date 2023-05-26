@@ -9,11 +9,7 @@ from peewee import ModelSelect
 
 from spip2md.config import CFG
 from spip2md.database import DB
-from spip2md.regexmap import unknown_chars, unknown_chars_context
-from spip2md.spipobjects import (
-    Article,
-    Rubrique,
-)
+from spip2md.spipobjects import Rubrique
 
 # Define styles
 BOLD = 1  # Bold
@@ -60,13 +56,7 @@ def root_sections(limit: int = 10**3) -> ModelSelect:
         .limit(limit)
     )
 
-
-def has_unknown_chars(article: Article) -> bool:
-    if len(unknown_chars_context(article.texte)) > 0:
-        return True
-    return False
-
-
+r"""
 # Print the detected unknown chars in article in their context but highlighted
 def warn_unknown_chars(article: Article) -> None:
     # Print the title of the article in which there is unknown characters
@@ -85,6 +75,7 @@ def warn_unknown_chars(article: Article) -> None:
         highlight(text, *unknown_chars(text))
         style(" … \n")
     print()  # Break line
+"""
 
 
 # Print one root section list output correctly
@@ -106,16 +97,16 @@ DB.connect()
 def main(*argv):
     if len(argv) == 0:
         argv = sys.argv
-    # Define max nb of articles to export based on first CLI argument
+    # Define max nb of sections to export based on first CLI argument TODO
     if len(argv) >= 2:
-        articles_export = int(argv[1])
-    else:
-        articles_export = CFG.max_articles_export
-    # Define max nb of sections to export based on second CLI argument
-    if len(argv) >= 3:
-        sections_export = int(argv[2])
+        sections_export = int(argv[1])
     else:
         sections_export = CFG.max_sections_export
+    # Define max nb of articles to export based on second CLI argument TODO
+    # if len(argv) >= 3:
+    #     articles_export = int(argv[2])
+    # else:
+    #     articles_export = CFG.max_articles_export
 
     # Clear the output dir & create a new
     if CFG.clear_output:

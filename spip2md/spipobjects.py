@@ -1,7 +1,7 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 from os import makedirs
 from os.path import basename, splitext
-from re import finditer
+from re import finditer, sub
 from shutil import copyfile
 from typing import Any, Optional
 
@@ -18,7 +18,16 @@ from spip2md.database import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
-from spip2md.regexmap import convert, link_document, unknown_chars
+from spip2md.regexmap import (
+    BLOAT,
+    DOCUMENT_LINK,
+    DOCUMENT_LINK_REPL,
+    HTMLTAG,
+    ISO_UTF,
+    MULTILANG,
+    SPIP_MARKDOWN,
+    UNKNOWN_ISO,
+)
 
 
 class SpipWritable:
@@ -26,6 +35,7 @@ class SpipWritable:
     texte: str
     lang: str
     titre: str
+    profondeur: int
 
     def filename(self, date: bool = False) -> str:
         raise NotImplementedError(
@@ -49,6 +59,19 @@ class SpipWritable:
             output[-1] += "MISSING NAME"
         return output
 
+    # Apply different mappings to text fields, like SPIP to Markdown or encoding
+    def convert_attrs(self, *attrs: str) -> None:
+        attrs += "titre", "descriptif"
+        for attr in attrs:
+            a = getattr(self, attr)
+            if len(a) > 0:
+                for spip, markdown in SPIP_MARKDOWN:
+                    setattr(self, attr, spip.sub(markdown, a))
+                for bloat in BLOAT:
+                    setattr(self, attr, bloat.sub("", a))
+                for iso, utf in ISO_UTF:
+                    setattr(self, attr, a.replace(iso, utf))
+
     # Write object to output destination
     def write(self, parent_dir: str) -> str:
         raise NotImplementedError(
@@ -69,8 +92,6 @@ class Document(SpipWritable, SpipDocuments):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.titre: str = convert(self.titre, True)
-        self.descriptif: str = convert(self.descriptif, True)
         self.statut: str = "false" if self.statut == "publie" else "true"
 
     # Get slugified name of this file
@@ -86,6 +107,8 @@ class Document(SpipWritable, SpipDocuments):
 
     # Write document to output destination
     def write(self, parent_dir: str) -> str:
+        # Apply needed conversions
+        super().convert_attrs()
         # Define file source and destination
         src: str = CFG.data_dir + self.fichier
         dest: str = parent_dir + self.filename()
@@ -100,23 +123,25 @@ class SpipObject(SpipWritable):
     date: DateTimeField
     maj: str
     id_secteur: int
+    descriptif: str
+    extra: str
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Common fields that need conversions
-        self.titre: str = convert(self.titre, True)
-        self.descriptif: str = convert(self.descriptif, True)
-        self.texte: str = convert(self.texte)  # Convert SPIP to Markdown
         self.statut: str = "false" if self.statut == "publie" else "true"
         self.langue_choisie: str = "false" if self.langue_choisie == "oui" else "true"
-        self.extra: str = convert(self.extra)  # Probably unused
         # Define file prefix (needs to be redefined for sections)
         self.prefix = "index"
 
     # Convert SPIP style internal links for images & other files into Markdown style
     def link_documents(self, documents: ModelSelect) -> None:
         for d in documents:
-            self.texte = link_document(self.texte, d.id_document, d.titre, d.filename())
+            self.texte = sub(
+                DOCUMENT_LINK.format(d.id_document),
+                DOCUMENT_LINK_REPL.format(d.titre, d.filename()),
+                self.texte,
+            )
 
     # Output related documents & link them in the text by the way
     def documents(self, link_documents: bool = True) -> ModelSelect:
@@ -198,8 +223,13 @@ class SpipObject(SpipWritable):
             body += "\n\n# EXTRA\n\n" + self.extra
         return body
 
+    def convert_attrs(self, *attrs: str) -> None:
+        return super().convert_attrs(*attrs, "descriptif", "extra")
+
     # Write object to output destination
     def write(self, parent_dir: str) -> str:
+        # Apply needed conversions
+        super().convert_attrs()
         # Define actual export directory
         directory: str = parent_dir + self.dir_slug()
         # Make a directory for this object if there isn’t
@@ -219,13 +249,14 @@ class Article(SpipObject, SpipArticles):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # More conversions needed for articles
-        self.surtitre: str = convert(self.surtitre, True)  # Probably unused
-        self.soustitre: str = convert(self.soustitre, True)  # Probably unused
-        self.chapo: str = convert(self.chapo)  # Probably unused
-        self.ps: str = convert(self.ps)  # Probably unused
         self.accepter_forum: str = "true" if self.accepter_forum == "oui" else "false"
         # ID
         self.object_id = self.id_article
+
+    def convert_attrs(self, *attrs: str) -> None:
+        return super().convert_attrs(
+            *attrs, "surtitre", "soustitre", "chapo", "ps", "accepter_forum"
+        )
 
     def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         meta: dict[str, Any] = {
