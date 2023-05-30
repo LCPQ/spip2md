@@ -5,17 +5,17 @@ from re import I, S, compile
 # ((SPIP syntax, Replacement Markdown syntax), …)
 SPIP_MARKDOWN = (
     (  # horizontal rule
-        compile(r"- ?- ?- ?- ?[\- ]*|<hr ?.*?>", S | I),
+        compile(r"\r?\n?\r?\n?- ?- ?- ?- ?[\- ]*\r?\n?\r?\n?|<hr ?.*?>", I),
         # r"---",
-        r"***",
+        "\n\n***\n\n",
     ),
     (  # line break
-        compile(r"\r?\n_ *(?=\r?\n)|<br ?.*?>", S | I),
-        "\n",
+        compile(r"\r?\n_ *(?=\r?\n)|<br ?.*?>", I),
+        "\n",  # WARNING not the real translation
     ),
     (  # heading
-        compile(r"\{\{\{ *(.*?) *\}\}\}", S | I),
-        r"## \1",  # Translate SPIP headings to h2
+        compile(r"\r?\n?\r?\n?\{\{\{ *(.*?) *\}\}\}\r?\n?\r?\n?", S | I),
+        "\n\n## \\1\n\n",  # Translate SPIP headings to h2
     ),
     (  # strong
         compile(r"\{\{ *(.*?) *\}\} ?", S | I),
@@ -40,18 +40,18 @@ SPIP_MARKDOWN = (
         ),
         r"~\1~",
     ),
-    (  # images
-        compile(r"<(img|image)([0-9]+)(\|.*?)*>", S | I),
-        r"![](\2)",  # Needs to be further processed to replace ID with filename
-    ),
-    (  # documents & embeds
-        compile(r"<(doc|document|emb)([0-9]+)(\|.*?)*>", S | I),
-        r"[](\2)",  # Needs to be further processed to replace ID with filename
-    ),
-    (  # internal links
-        compile(r"<(art|article)([0-9]+)(\|.*?)*>", S | I),
-        r"[](\2)",  # Needs to be further processed to replace ID with filename
-    ),
+    # (  # images # processed by a specific function
+    #     compile(r"<(img|image)([0-9]+)(\|.*?)*>", S | I),
+    #     r"![](\2)",
+    # ),
+    # (  # documents & embeds # processed by a specific function
+    #     compile(r"<(doc|document|emb)([0-9]+)(\|.*?)*>", S | I),
+    #     r"[](\2)",
+    # ),
+    # (  # internal links # processed by a specific function
+    #     compile(r"<(art|article)([0-9]+)(\|.*?)*>", S | I),
+    #     r"[](\2)",
+    # ),
     (  # anchor
         compile(r"\[ *(.*?) *-> *(.*?) *\]", S | I),
         r"[\1](\2)",
@@ -62,7 +62,7 @@ SPIP_MARKDOWN = (
     ),
     (  # footnote
         compile(r"\[\[ *(.*?) *\]\]", S | I),
-        r"",
+        r"",  # WARNING remove it
     ),
     (  # unordered list
         compile(r"(\r?\n)-(?!#|-)\*? *", S | I),
@@ -107,10 +107,35 @@ SPIP_MARKDOWN = (
     ),
 )
 
-# Match against documents ID found in links, ID can be inserted with .format()
-# Name and path can be further replaced with .format()
-DOCUMENT_LINK = r"(!)?\[(.*?)\]\(({})\)"
-DOCUMENT_LINK_REPL = r"\1[\2{}]({})"
+DOCUMENT_LINK = (
+    (  # SPIP style documents & embeds links
+        compile(r"<()(?:doc|document|emb|embed)([0-9]+)(?:\|(.*?))?>", S | I),
+        r"[{}]({})",
+    ),
+    (  # Markdown style documents & embeds links
+        compile(r"\[(.*?)\]\((?:doc|document|emb|embed)([0-9]+)(?:\|(.*?))?\)", S | I),
+        r"[\1{}]({})",
+    ),
+    (  # SPIP style images links
+        compile(r"<()(?:img|image)([0-9]+)(?:\|(.*?))?>", S | I),
+        r"![{}]({})",
+    ),
+    (  # Markdown style images links
+        compile(r"\[(.*?)\]\((?:img|image)([0-9]+)(?:\|(.*?))?\)", S | I),
+        r"![\1{}]({})",
+    ),
+)  # Name and path can be further replaced with .format()
+
+ARTICLE_LINK = (
+    (  # SPIP style documents & embeds links
+        compile(r"<()(?:art|article)([0-9]+)(?:\|(.*?))?>", S | I),
+        r"[{}]({})",
+    ),
+    (  # Markdown style internal links
+        compile(r"\[(.*?)\]\((?:art|article)([0-9]+)(?:\|(.*?))?\)", S | I),
+        r"[\1{}]({})",
+    ),
+)  # Name and path can be further replaced with .format()
 
 # Multi language block, to be further processed per lang
 MULTILANG_BLOCK = compile(r"<multi>(.+?)<\/multi>", S | I)
@@ -120,12 +145,12 @@ MULTILANGS = compile(
 
 # WARNING probably useless text in metadata fields, to be removed
 BLOAT = (
-    compile(r"^>+ +", S | I),  # Remove beginning with angle bracket(s)
-    compile(r"^\d+\. +", S | I),  # Remove beginning with a number followed by a dot
+    compile(r"^>+ +"),  # Remove beginning with angle bracket(s)
+    compile(r"^\d+\. +"),  # Remove beginning with a number followed by a dot
 )
 
 # Matches against every HTML tag
-HTMLTAG = compile(r"<\/?.*?>\s*", S | I)
+HTMLTAG = compile(r"<\/?.*?>\s*", S)
 
 
 # ((Broken ISO 8859-1 encoding, Proper UTF equivalent encoding), …)

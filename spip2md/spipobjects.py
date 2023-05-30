@@ -2,7 +2,7 @@
 import logging
 from os import makedirs, remove
 from os.path import basename, splitext
-from re import finditer, search, sub
+from re import finditer, search
 from shutil import copyfile
 from typing import Any, Match, Optional
 
@@ -20,9 +20,9 @@ from spip2md.database import (
     SpipRubriques,
 )
 from spip2md.regexmap import (
+    ARTICLE_LINK,
     BLOAT,
     DOCUMENT_LINK,
-    DOCUMENT_LINK_REPL,
     HTMLTAG,
     ISO_UTF,
     MULTILANG_BLOCK,
@@ -72,14 +72,6 @@ class SpipWritable:
 
         return MULTILANG_BLOCK.sub(replace_lang, text)
 
-    # Remove remaining HTML tags
-    @staticmethod
-    def clean_html(string: str) -> str:
-        if string is not None and len(string) > 0:
-            return HTMLTAG.sub("", string)
-        else:
-            return ""
-
     # Apply different mappings to a text field, like SPIP to Markdown or encoding
     def convert(self, text: Optional[str], clean_html: bool = True) -> str:
         # Return unknown char surrounded by context_length chars
@@ -108,7 +100,7 @@ class SpipWritable:
             text = self.translate(text)
             # Delete remaining HTML tags in body WARNING
             if clean_html:
-                text = self.clean_html(text)
+                text = HTMLTAG.sub("", text)
             # Warn about unknown chars
             for char in UNKNOWN_ISO:
                 lastend: int = 0
@@ -222,26 +214,55 @@ class SpipObject(SpipWritable):
     descriptif: str
     extra: str
 
+    def convert(self, text: Optional[str], clean_html: bool = True) -> str:
+        if text is not None and len(text) > 0:
+            for id_link, path_link in DOCUMENT_LINK:
+                for match in id_link.finditer(text):
+                    doc: Document = Document.get(Document.id_document == match.group(2))
+                    if doc is not None:
+                        text = text.replace(
+                            match.group(), path_link.format(doc.titre, doc.filename())
+                        )
+                    else:
+                        logging.warn(
+                            f"No document for link {match.group()} in {self.titre}"
+                        )
+                        text = text.replace(
+                            match.group(), path_link.format("", "NOT FOUND")
+                        )
+            for id_link, path_link in ARTICLE_LINK:
+                for match in id_link.finditer(text):
+                    art: Article = Article.get(Article.id_article == match.group(2))
+                    if art is not None:
+                        text = text.replace(
+                            match.group(),
+                            path_link.format(
+                                art.titre, f"{art.dir_slug()}/{art.filename()}"
+                            ),
+                        )
+                    else:
+                        logging.warn(
+                            f"No article for link {match.group()} in {self.titre}"
+                        )
+                        text = text.replace(
+                            match.group(), path_link.format("", "NOT FOUND")
+                        )
+        else:
+            return ""
+        return super().convert(text, clean_html)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Common fields that need conversions
+        self.texte = self.convert(self.texte)
         self.extra: str = self.convert(self.extra)
         self.statut: str = "false" if self.statut == "publie" else "true"
         self.langue_choisie: str = "false" if self.langue_choisie == "oui" else "true"
         # Define file prefix (needs to be redefined for sections)
         self.prefix = "index"
 
-    # Convert SPIP style internal links for images & other files into Markdown style
-    def link_documents(self, documents: ModelSelect) -> None:
-        for d in documents:
-            self.texte = sub(
-                DOCUMENT_LINK.format(d.id_document),
-                DOCUMENT_LINK_REPL.format(d.titre, d.filename()),
-                self.texte,
-            )
-
-    # Output related documents & link them in the text by the way
-    def documents(self, link_documents: bool = True) -> ModelSelect:
+    # Get related documents
+    def documents(self) -> ModelSelect:
         documents = (
             Document.select()
             .join(
@@ -250,23 +271,9 @@ class SpipObject(SpipWritable):
             )
             .where(SpipDocumentsLiens.id_objet == self.object_id)
         )
-        if link_documents:
-            self.link_documents(documents)
         return documents
 
-    # Convert SPIP style internal links for other articles or sections into Markdown
-    def link_articles(self) -> None:
-        for match in finditer(r"\[(.*?)]\((?:art|article)([0-9]+)\)", self.texte):
-            article = Article.get(Article.id_article == match.group(2))
-            if len(match.group(1)) > 0:
-                title: str = match.group(1)
-            else:
-                title: str = article.titre
-            self.texte = self.texte.replace(
-                match.group(0), f"[{title}]({article.dir_slug()}/{article.filename()})"
-            )
-
-    # Output related articles
+    # Get related articles
     def articles(self) -> ModelSelect:
         return (
             Article.select()
@@ -322,10 +329,6 @@ class SpipObject(SpipWritable):
 
     # Write object to output destination
     def write(self, parent_dir: str) -> str:
-        # Link articles
-        self.link_articles()
-        # Convert body after linking articles
-        self.texte = self.convert(self.texte)
         # Define actual export directory
         directory: str = parent_dir + self.dir_slug()
         # Make a directory for this object if there isn’t
