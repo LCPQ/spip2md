@@ -260,3 +260,10 @@ SPECIAL_OUTPUT = (
     compile(r"(?<= )(->)(?= )"),  # Arrow
     compile(r"(?<=^Exporting )([0-9]+?)(?= )"),  # Total
 )
+
+# Warning elements in terminal output to highlight
+WARNING_OUTPUT = (
+    compile(r"(ERROR)"),  # ERROR
+    compile(r"(MISSING NAME)"),  # MISSING NAME
+    compile(r"(NOT FOUND)"),  # NOT FOUND
+)

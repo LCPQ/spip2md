@@ -26,9 +26,12 @@ from spip2md.regexmap import (
     ISO_UTF,
     MULTILANG_BLOCK,
     MULTILANGS,
+    SPECIAL_OUTPUT,
     SPIP_MARKDOWN,
     UNKNOWN_ISO,
+    WARNING_OUTPUT,
 )
+from spip2md.style import BLUE, BOLD, GREEN, WARNING_STYLE, YELLOW, esc
 
 
 class SpipWritable:
@@ -38,6 +41,7 @@ class SpipWritable:
     titre: str
     descriptif: str
     profondeur: int
+    style: tuple[int, ...]
 
     # Returns the first detected language (& instantiate a new object for the second)
     # (currently don’t instantiate, just warns)
@@ -82,6 +86,19 @@ class SpipWritable:
             f"Subclasses need to implement filename(), date: {date}"
         )
 
+    # Print one or more string(s) in which special elements are stylized
+    def style_print(self, string: str, indent: bool = True, end: str = "\n") -> str:
+        stylized: str = string
+        for o in SPECIAL_OUTPUT:
+            stylized = o.sub(esc(*self.style) + r"\1" + esc(), stylized)
+        for w in WARNING_OUTPUT:
+            stylized = w.sub(esc(*WARNING_STYLE) + r"\1" + esc(), stylized)
+        if indent:
+            stylized = "  " * self.profondeur + stylized
+        print(stylized, end=end)
+        # Return the stylized string
+        return stylized
+
     def begin_message(self, index: int, limit: int, step: int = 100) -> list[str]:
         output: list[str] = []
         # Output the remaining number of objects to export every step object
@@ -91,12 +108,16 @@ class SpipWritable:
                 output[-1] += f" level {self.profondeur}"
             s: str = "s" if limit - index > 1 else ""
             output[-1] += f" {type(self).__name__}{s}"
+            # Print the output as the program goes
+            self.style_print(output[-1])
         # Output the counter & title of the object being exported
         output.append(f"{index + 1}. ")
         if len(self.titre) > 0:
-            output[-1] += self.titre
+            output[-1] += self.titre.strip(" ")
         else:
             output[-1] += "MISSING NAME"
+        # Print the output as the program goes
+        self.style_print(output[-1], end="")
         return output
 
     # Write object to output destination
@@ -110,10 +131,15 @@ class SpipWritable:
         output: str = " -> "
         if message is Exception:
             output += "ERROR "
+        # Print the output as the program goes
+        self.style_print(output + str(message), indent=False)
         return output + str(message)
 
 
 class Document(SpipWritable, SpipDocuments):
+    # Documents accent color is blue
+    style = (BOLD, BLUE)
+
     class Meta:
         table_name: str = "spip_documents"
 
@@ -277,6 +303,9 @@ class SpipObject(SpipWritable):
 
 
 class Article(SpipObject, SpipArticles):
+    # Articles accent color is yellow
+    style = (BOLD, YELLOW)
+
     class Meta:
         table_name: str = "spip_articles"
 
@@ -332,6 +361,9 @@ class Article(SpipObject, SpipArticles):
 
 
 class Rubrique(SpipObject, SpipRubriques):
+    # Sections accent color is green
+    style = (BOLD, GREEN)
+
     class Meta:
         table_name: str = "spip_rubriques"
 
@@ -373,6 +405,7 @@ class Rubrique(SpipObject, SpipRubriques):
             output: list[str] = []
             total = len(objects)
             for i, obj in enumerate(objects):
+                obj.profondeur = self.profondeur + 1
                 for m in obj.begin_message(i, total):
                     output.append(m)
                 try:
@@ -385,7 +418,7 @@ class Rubrique(SpipObject, SpipRubriques):
         output.append(write_loop(documents))
 
         # Get all child section of self
-        child_sections = (
+        child_sections: ModelSelect = (
             Rubrique.select()
             .where(Rubrique.id_parent == self.id_rubrique)
             .order_by(Rubrique.date.desc())
@@ -410,18 +443,20 @@ class RootRubrique(Rubrique):
 
     def write_tree(
         self, parent_dir: str, sections_limit: int = 0, articles_limit: int = 0
-    ) -> list[str | list[Any]]:
+    ) -> list[str | list]:
         # Define dictionary output to diplay
-        output: list[str | list[Any]] = []
-        # Starting message
-        output.append(
+        output: list[str | list] = []
+        # Print starting message
+        print(
             f"""\
-Begin exporting `{CFG.db}@{CFG.db_host}` SPIP database to plain Markdown+YAML
-files into the directory `{parent_dir}`, as database user `{CFG.db_user}`
+Begin exporting {esc(BOLD)}{CFG.db}@{CFG.db_host}{esc()} SPIP database to plain \
+Markdown+YAML files,
+into the directory {esc(BOLD)}{parent_dir}{esc()}, \
+as database user {esc(BOLD)}{CFG.db_user}{esc(BOLD)}
 """
         )
         # Get all child section of self
-        child_sections = (
+        child_sections: ModelSelect = (
             Rubrique.select()
             .where(Rubrique.id_parent == self.id_rubrique)
             .order_by(Rubrique.date.desc())
@@ -430,4 +465,5 @@ files into the directory `{parent_dir}`, as database user `{CFG.db_user}`
         # Do the same for subsections (write their entire subtree)
         for i, s in enumerate(child_sections):
             output.append(s.write_tree(parent_dir, i, nb))
+            print()  # Break line for level 1
         return output

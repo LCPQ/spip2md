@@ -6,39 +6,12 @@ from shutil import rmtree
 
 from spip2md.config import CFG
 from spip2md.database import DB
-from spip2md.regexmap import SPECIAL_OUTPUT
 from spip2md.spipobjects import RootRubrique, Rubrique
-
-# Define styles
-BOLD = 1  # Bold
-ITALIC = 3  # Italic
-UNDER = 4  # Underline
-# Define colors
-RED = 91  # Red
-GREEN = 92  # Green
-YELLOW = 93  # Yellow
-BLUE = 94  # Blue
-C0 = 95  # Color
-C1 = 96  # Color
-C2 = 96  # Color
+from spip2md.style import BOLD, esc
 
 
-# Terminal escape sequence
-def esc(*args: int) -> str:
-    if len(args) == 0:
-        params: str = "0;"  # Defaults to reset
-    else:
-        params: str = ""
-    # Build a string from args, that will be stripped from its trailing ;
-    for a in args:
-        params += str(a) + ";"
-    # Base terminal escape sequence that needs to be closed by "m"
-    return "\033[" + params[:-1] + "m"
-
-
-# Print one root section list output correctly
-# sys.setrecursionlimit(2000)
-def print_output(
+# Count on outputted tree
+def count_output(
     tree: list[str | list[str | list]],
     indent: str = "  ",
     depth: int = -1,
@@ -47,15 +20,11 @@ def print_output(
 ) -> tuple[int, int]:
     for sub in tree:
         if type(sub) == list:
-            branches, leaves = print_output(
+            branches, leaves = count_output(
                 sub, indent, depth + 1, branches + 1, leaves
             )
         elif type(sub) == str:
             leaves += 1
-            # Highlight special elements (in red for the moment)
-            for elmnt in SPECIAL_OUTPUT:
-                sub = elmnt.sub(esc(BOLD, GREEN) + r"\1" + esc(), sub)
-            print(indent * depth + sub)
     return (branches, leaves)
 
 
@@ -84,12 +53,13 @@ def main(*argv):
     # Get the virtual id=0 section
     root: Rubrique = RootRubrique()
 
-    # Write everything & print the output human-readably
-    branches, leaves = print_output(root.write_tree(CFG.output_dir))
+    # Write everything while printing the output human-readably
+    branches, leaves = count_output(root.write_tree(CFG.output_dir))
     # End, summary message
     print(
         f"""
-Exported a total of {leaves} Markdown files, stored into {branches} directories"""
+Exported a total of {esc(BOLD)}{leaves}{esc()} Markdown files, \
+stored into {esc(BOLD)}{branches}{esc()} directories"""
     )
 
     # print()  # Break line between export & unknown characters warning
