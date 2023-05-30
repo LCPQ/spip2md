@@ -232,7 +232,7 @@ class SpipObject(SpipWritable):
                 repl: str = path_link.format(match.group(1), doc.filename())
             else:
                 repl: str = path_link.format(doc.titre, doc.filename())
-            logging.warn(f"Translating link to {repl}")
+            logging.info(f"Translating link to {repl}")
             return text.replace(match.group(), repl)
 
         def not_found_warn(path_link: str, text: str, match: Match) -> str:
@@ -242,7 +242,7 @@ class SpipObject(SpipWritable):
         for id_link, path_link in DOCUMENT_LINK:
             # print(f"Looking for links like {id_link}")
             for match in id_link.finditer(text):
-                logging.warning(f"Found document link {match.group()} in {self.titre}")
+                logging.info(f"Found document link {match.group()} in {self.titre}")
                 try:
                     doc: Document = Document.get(Document.id_document == match.group(2))
                     text = found_replace(path_link, doc, text, match)

@@ -150,8 +150,12 @@ ARTICLE_LINK = (
 )  # Name and path can be further replaced with .format()
 
 SECTION_LINK = (
-    (  # SPIP style documents & embeds links
+    (  # SPIP style sections embeds
         compile(r"<()(?:rub|rubrique)([0-9]+)(?:\|(.*?))?>", S | I),
+        r"[{}]({})",
+    ),
+    (  # SPIP style sections links
+        compile(r"\[ *([^\]]*?) *-> *(?:rub|rubrique)([0-9]+) *\]", S | I),
         r"[{}]({})",
     ),
     (  # Markdown style internal links
