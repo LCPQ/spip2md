@@ -1,6 +1,6 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 import logging
-from os import makedirs
+from os import makedirs, remove
 from os.path import basename, splitext
 from re import finditer, search, sub
 from shutil import copyfile
@@ -34,6 +34,9 @@ from spip2md.regexmap import (
 )
 from spip2md.style import BLUE, BOLD, GREEN, WARNING_STYLE, YELLOW, esc
 
+# Clear the previous log file if needed
+if CFG.clear_log:
+    remove(CFG.logfile)
 # Output logs to logfile
 logging.basicConfig(filename=CFG.logfile, encoding="utf-8")
 
@@ -69,8 +72,16 @@ class SpipWritable:
 
         return MULTILANG_BLOCK.sub(replace_lang, text)
 
+    # Remove remaining HTML tags
+    @staticmethod
+    def clean_html(string: str) -> str:
+        if string is not None and len(string) > 0:
+            return HTMLTAG.sub("", string)
+        else:
+            return ""
+
     # Apply different mappings to a text field, like SPIP to Markdown or encoding
-    def convert(self, text: Optional[str]) -> str:
+    def convert(self, text: Optional[str], clean_html: bool = True) -> str:
         # Return unknown char surrounded by context_length chars
         def unknown_chars_context(text: str, char: str, context_len: int = 24) -> str:
             context: str = r".{0," + str(context_len) + r"}"
@@ -84,12 +95,21 @@ class SpipWritable:
                 return char
 
         if text is not None and len(text) > 0:
+            # Convert SPIP syntax to Markdown
             for spip, markdown in SPIP_MARKDOWN:
                 text = spip.sub(markdown, text)
+            # Remove useless text
             for bloat in BLOAT:
                 text = bloat.sub("", text)
+            # Convert broken ISO encoding to UTF
             for iso, utf in ISO_UTF:
                 text = text.replace(iso, utf)
+            # Handle <multi> multi language blocks
+            text = self.translate(text)
+            # Delete remaining HTML tags in body WARNING
+            if clean_html:
+                text = self.clean_html(text)
+            # Warn about unknown chars
             for char in UNKNOWN_ISO:
                 lastend: int = 0
                 for match in finditer("(" + char + ")+", text):
@@ -98,7 +118,6 @@ class SpipWritable:
                         f"Unknown char {char} found in {self.titre[:40]} at: {context}"
                     )
                     lastend = match.end()
-            text = self.translate(text)
         else:
             return ""
         return text
@@ -131,8 +150,7 @@ class SpipWritable:
         # Output the remaining number of objects to export every step object
         if index % step == 0:
             output.append(f"Exporting {limit-index}")
-            if hasattr(self, "profondeur"):
-                output[-1] += f" level {self.profondeur}"
+            output[-1] += f" level {self.profondeur}"
             s: str = "s" if limit - index > 1 else ""
             output[-1] += f" {type(self).__name__}{s}"
             # Print the output as the program goes
@@ -302,21 +320,12 @@ class SpipObject(SpipWritable):
             body += "\n\n# EXTRA\n\n" + self.extra
         return body
 
-    # Clean remaining HTML tags in attrs
-    def clean_html(self, *attrs: str) -> None:
-        attrs += "titre", "texte", "descriptif", "extra"
-        for attr in attrs:
-            a = getattr(self, attr)
-            if len(a) > 0:
-                setattr(self, attr, HTMLTAG.sub("", a))
-
     # Write object to output destination
-    def write(self, parent_dir: str, clean_html: bool = True) -> str:
+    def write(self, parent_dir: str) -> str:
         # Link articles
         self.link_articles()
-        # Delete remaining HTML tags WARNING
-        if clean_html:
-            self.clean_html()
+        # Convert body after linking articles
+        self.texte = self.convert(self.texte)
         # Define actual export directory
         directory: str = parent_dir + self.dir_slug()
         # Make a directory for this object if there isn’t

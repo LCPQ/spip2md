@@ -1,6 +1,6 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 import sys
-from os import makedirs, remove
+from os import makedirs
 from shutil import rmtree
 
 from spip2md.config import CFG
@@ -48,9 +48,6 @@ def main(*argv):
     if CFG.clear_output:
         rmtree(CFG.output_dir, True)
     makedirs(CFG.output_dir, exist_ok=True)
-    # Clear the log file
-    # if CFG.clear_log:
-    #     remove(CFG.logfile)
 
     # Get the virtual id=0 section
     root: Rubrique = RootRubrique()
