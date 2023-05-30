@@ -27,6 +27,8 @@ class Configuration:
     export_filetype: str = "md"
     logfile: str = "spip2md.log"
     loglevel: str = "WARNING"
+    unknown_char_replacement: str = "??"
+    alternative_languages = ("fr", "en", "es")
     # max_articles_export: int = 1000  # TODO reimplement with recursion
     # max_sections_export: int = 500  # TODO reimplement with recursion
 

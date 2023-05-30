@@ -108,32 +108,44 @@ SPIP_MARKDOWN = (
 )
 
 DOCUMENT_LINK = (
-    (  # SPIP style documents & embeds links
+    (  # SPIP style embeds
         compile(r"<()(?:doc|document|emb|embed)([0-9]+)(?:\|(.*?))?>", S | I),
+        r"[{}]({})",
+    ),
+    (  # SPIP style documents & embeds links
+        compile(r"\[ *([^\]]*?) *-> *(?:doc|document|emb|embed)([0-9]+) *\]", S | I),
         r"[{}]({})",
     ),
     (  # Markdown style documents & embeds links
         compile(r"\[(.*?)\]\((?:doc|document|emb|embed)([0-9]+)(?:\|(.*?))?\)", S | I),
-        r"[\1{}]({})",
+        r"[{}]({})",
     ),
-    (  # SPIP style images links
+    (  # SPIP style images embeds
         compile(r"<()(?:img|image)([0-9]+)(?:\|(.*?))?>", S | I),
         r"![{}]({})",
     ),
+    (  # SPIP style image links
+        compile(r"\[ *([^\]]*?) *-> *(?:img|image)([0-9]+) *\]", S | I),
+        r"[{}]({})",
+    ),
     (  # Markdown style images links
         compile(r"\[(.*?)\]\((?:img|image)([0-9]+)(?:\|(.*?))?\)", S | I),
-        r"![\1{}]({})",
+        r"![{}]({})",
     ),
 )  # Name and path can be further replaced with .format()
 
 ARTICLE_LINK = (
-    (  # SPIP style documents & embeds links
+    (  # SPIP style article embeds
         compile(r"<()(?:art|article)([0-9]+)(?:\|(.*?))?>", S | I),
+        r"[{}]({})",
+    ),
+    (  # SPIP style article links
+        compile(r"\[ *([^\]]*?) *-> *(?:art|article)([0-9]+) *\]", S | I),
         r"[{}]({})",
     ),
     (  # Markdown style internal links
         compile(r"\[(.*?)\]\((?:art|article)([0-9]+)(?:\|(.*?))?\)", S | I),
-        r"[\1{}]({})",
+        r"[{}]({})",
     ),
 )  # Name and path can be further replaced with .format()
 
@@ -144,7 +156,7 @@ SECTION_LINK = (
     ),
     (  # Markdown style internal links
         compile(r"\[(.*?)\]\((?:rub|rubrique)([0-9]+)(?:\|(.*?))?\)", S | I),
-        r"[\1{}]({})",
+        r"[{}]({})",
     ),
 )  # Name and path can be further replaced with .format()
 
@@ -303,5 +315,6 @@ SPECIAL_OUTPUT = (
 WARNING_OUTPUT = (
     compile(r"(ERROR)"),  # ERROR
     compile(r"(MISSING NAME)"),  # MISSING NAME
+    compile(r"(EMPTY NAME)"),  # EMPTY NAME
     compile(r"(NOT FOUND)"),  # NOT FOUND
 )

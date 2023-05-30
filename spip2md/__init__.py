@@ -78,4 +78,5 @@ stored into {esc(BOLD)}{branches}{esc()} directories"""
     )
 
     # Warn about issued warnings in log file
-    print(f"\nThere might be warnings and infos in {esc(BOLD)}{CFG.logfile}{esc()}")
+    if isfile(CFG.logfile):
+        print(f"\nTake a look at warnings and infos in {esc(BOLD)}{CFG.logfile}{esc()}")

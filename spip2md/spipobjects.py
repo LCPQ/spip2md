@@ -68,7 +68,11 @@ class SpipWritable:
         return MULTILANG_BLOCK.sub(replace_lang, text)
 
     # Apply different mappings to a text field, like SPIP to Markdown or encoding
-    def convert(self, text: Optional[str], clean_html: bool = True) -> str:
+    def convert(self, text: str, clean_html: bool = True) -> str:
+        if len(text) == 0:
+            # print("Empty text")
+            return ""
+
         # Return unknown char surrounded by context_length chars
         def unknown_chars_context(text: str, char: str, context_len: int = 24) -> str:
             context: str = r".{0," + str(context_len) + r"}"
@@ -81,42 +85,44 @@ class SpipWritable:
             else:
                 return char
 
-        if text is not None and len(text) > 0:
-            print(f"Converting {text[:40]} from {self.titre}")
-            # Convert SPIP syntax to Markdown
-            for spip, markdown in SPIP_MARKDOWN:
-                text = spip.sub(markdown, text)
-            # Remove useless text
-            for bloat in BLOAT:
-                text = bloat.sub("", text)
-            # Convert broken ISO encoding to UTF
-            for iso, utf in ISO_UTF:
-                text = text.replace(iso, utf)
-            # Handle <multi> multi language blocks
-            text = self.translate(text)
-            # Delete remaining HTML tags in body WARNING
-            if clean_html:
-                text = HTMLTAG.sub("", text)
-            # Warn about unknown chars
-            for char in UNKNOWN_ISO:
-                lastend: int = 0
-                for match in finditer("(" + char + ")+", text):
-                    context: str = unknown_chars_context(text[lastend:], char)
+        # Convert SPIP syntax to Markdown
+        for spip, markdown in SPIP_MARKDOWN:
+            text = spip.sub(markdown, text)
+        # Remove useless text
+        for bloat in BLOAT:
+            text = bloat.sub("", text)
+        # Convert broken ISO encoding to UTF
+        for iso, utf in ISO_UTF:
+            text = text.replace(iso, utf)
+        # Handle <multi> multi language blocks
+        text = self.translate(text)
+        # Delete remaining HTML tags in body WARNING
+        if clean_html:
+            text = HTMLTAG.sub("", text)
+        # Warn about unknown chars
+        for char in UNKNOWN_ISO:
+            lastend: int = 0
+            for match in finditer("(" + char + ")+", text):
+                context: str = unknown_chars_context(text[lastend:], char)
+                logging.warn(
+                    f"Unknown char {char} found in {self.titre[:40]} at: {context}"
+                )
+                if CFG.unknown_char_replacement is not None:
                     logging.warn(
-                        f"Unknown char {char} found in {self.titre[:40]} at: {context}"
+                        f"Replacing {match.group()} with {CFG.unknown_char_replacement}"
                     )
-                    lastend = match.end()
-        else:
-            print("Empty or null text")
-            return ""
+                    text = text.replace(match.group(), CFG.unknown_char_replacement, 1)
+                lastend = match.end()
         return text
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print(f"Convert titre from {self.titre}")
-        self.titre: str = self.convert(self.titre)
-        print(f"Convert descriptif from {self.titre}")
-        self.descriptif: str = self.convert(self.descriptif)
+        if self.titre is not None:
+            # print(f"Convert titre from {type(self)} {self.titre}")
+            self.titre: str = self.convert(self.titre)
+        if self.descriptif is not None:
+            # print(f"Convert descriptif from {type(self)} {self.titre}")
+            self.descriptif: str = self.convert(self.descriptif)
 
     def filename(self, date: bool = False) -> str:
         raise NotImplementedError(
@@ -148,10 +154,12 @@ class SpipWritable:
             self.style_print(output[-1])
         # Output the counter & title of the object being exported
         output.append(f"{index + 1}. ")
-        if len(self.titre) > 0:
-            output[-1] += self.titre.strip(" ")
-        else:
+        if self.titre is None:
             output[-1] += "MISSING NAME"
+        elif len(self.titre) == 0:
+            output[-1] += "EMPTY NAME"
+        else:
+            output[-1] += self.titre.strip(" ")
         # Print the output as the program goes
         self.style_print(output[-1], end="")
         return output
@@ -213,59 +221,66 @@ class SpipObject(SpipWritable):
     descriptif: str
     extra: str
 
-    def convert(self, text: Optional[str], clean_html: bool = True) -> str:
+    def convert(self, text: str, clean_html: bool = True) -> str:
+        if len(text) == 0:
+            # print("Empty text")
+            return ""
+
         def found_replace(path_link: str, doc: Any, text: str, match: Match) -> str:
-            repl: str = path_link.format(doc.titre, doc.filename())
-            print(f"Translating link to {repl}")
+            # TODO get relative path
+            if len(match.group(1)) > 0:
+                repl: str = path_link.format(match.group(1), doc.filename())
+            else:
+                repl: str = path_link.format(doc.titre, doc.filename())
+            logging.warn(f"Translating link to {repl}")
             return text.replace(match.group(), repl)
 
         def not_found_warn(path_link: str, text: str, match: Match) -> str:
             logging.warn(f"No object for link {match.group()} in {self.titre}")
-            return text.replace(match.group(), path_link.format("", "NOT FOUND"))
+            return text.replace(match.group(), path_link.format("", "NOT FOUND"), 1)
 
-        if text is not None and len(text) > 0:
-            for id_link, path_link in DOCUMENT_LINK:
-                print(f"Looking for links like {id_link}")
-                for match in id_link.finditer(text):
-                    logging.info(f"Found document link {match.group()} in {self.titre}")
-                    try:
-                        doc: Document = Document.get(
-                            Document.id_document == match.group(2)
-                        )
-                        text = found_replace(path_link, doc, text, match)
-                    except DoesNotExist:
-                        text = not_found_warn(path_link, text, match)
-            for id_link, path_link in ARTICLE_LINK:
-                print(f"Looking for links like {id_link}")
-                for match in id_link.finditer(text):
-                    logging.info(f"Found article link {match.group()} in {self.titre}")
-                    try:
-                        art: Article = Article.get(Article.id_article == match.group(2))
-                        text = found_replace(path_link, art, text, match)
-                    except DoesNotExist:
-                        text = not_found_warn(path_link, text, match)
-            for id_link, path_link in SECTION_LINK:
-                print(f"Looking for links like {id_link}")
-                for match in id_link.finditer(text):
-                    logging.info(f"Found section link {match.group()} in {self.titre}")
-                    try:
-                        section: Rubrique = Rubrique.get(
-                            Rubrique.id_rubrique == match.group(2)
-                        )
-                        text = found_replace(path_link, section, text, match)
-                    except DoesNotExist:
-                        text = not_found_warn(path_link, text, match)
-        else:
-            return ""
+        for id_link, path_link in DOCUMENT_LINK:
+            # print(f"Looking for links like {id_link}")
+            for match in id_link.finditer(text):
+                logging.warning(f"Found document link {match.group()} in {self.titre}")
+                try:
+                    doc: Document = Document.get(Document.id_document == match.group(2))
+                    text = found_replace(path_link, doc, text, match)
+                except DoesNotExist:
+                    text = not_found_warn(path_link, text, match)
+        for id_link, path_link in ARTICLE_LINK:
+            # print(f"Looking for links like {id_link}")
+            for match in id_link.finditer(text):
+                logging.info(f"Found article link {match.group()} in {self.titre}")
+                try:
+                    art: Article = Article.get(Article.id_article == match.group(2))
+                    text = found_replace(path_link, art, text, match)
+                except DoesNotExist:
+                    text = not_found_warn(path_link, text, match)
+        for id_link, path_link in SECTION_LINK:
+            # print(f"Looking for links like {id_link}")
+            for match in id_link.finditer(text):
+                logging.info(f"Found section link {match.group()} in {self.titre}")
+                try:
+                    section: Rubrique = Rubrique.get(
+                        Rubrique.id_rubrique == match.group(2)
+                    )
+                    text = found_replace(path_link, section, text, match)
+                except DoesNotExist:
+                    text = not_found_warn(path_link, text, match)
         return super().convert(text, clean_html)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Common fields that need conversions
-        print(f"Convert texte from {self.titre}")
-        self.texte: str = self.convert(self.texte)
-        print(f"Convert extra from {self.titre}")
-        self.extra: str = self.convert(self.extra)
+        if self.texte is not None:
+            # print(f"Convert texte from {type(self)} {self.titre}")
+            # print(f"First 500 chars: {self.texte[:500]}")
+            self.texte: str = self.convert(self.texte)
+        if self.extra is not None:
+            # print(f"Convert extra from {type(self)} {self.titre}")
+            # print(f"First 500 chars: {self.extra[:500]}")
+            self.extra: str = self.convert(self.extra)
         self.statut: str = "false" if self.statut == "publie" else "true"
         self.langue_choisie: str = "false" if self.langue_choisie == "oui" else "true"
         # Define file prefix (needs to be redefined for sections)
@@ -326,14 +341,14 @@ class SpipObject(SpipWritable):
         # Start the content with frontmatter
         body: str = "---\n" + self.frontmatter() + "---"
         # Add the title as a Markdown h1
-        if len(self.titre) > 0 and CFG.prepend_h1:
+        if self.titre is not None and len(self.titre) > 0 and CFG.prepend_h1:
             body += "\n\n# " + self.titre
         # If there is a text, add the text preceded by two line breaks
-        if len(self.texte) > 0:
+        if self.texte is not None and len(self.texte) > 0:
             # Remove remaining HTML after & append to body
             body += "\n\n" + self.texte
         # Same with an "extra" section
-        if len(self.extra) > 0:
+        if self.extra is not None and len(self.extra) > 0:
             body += "\n\n# EXTRA\n\n" + self.extra
         return body
 
@@ -361,10 +376,14 @@ class Article(SpipObject, SpipArticles):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # More conversions needed for articles
-        self.surtitre: str = self.convert(self.surtitre)
-        self.soustitre: str = self.convert(self.soustitre)
-        self.chapo: str = self.convert(self.chapo)
-        self.ps: str = self.convert(self.ps)
+        if self.surtitre is not None:
+            self.surtitre: str = self.convert(self.surtitre)
+        if self.soustitre is not None:
+            self.soustitre: str = self.convert(self.soustitre)
+        if self.chapo is not None:
+            self.chapo: str = self.convert(self.chapo)
+        if self.ps is not None:
+            self.ps: str = self.convert(self.ps)
         self.accepter_forum: str = "true" if self.accepter_forum == "oui" else "false"
         # ID
         self.object_id = self.id_article
