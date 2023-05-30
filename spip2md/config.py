@@ -26,7 +26,7 @@ class Configuration:
     prepend_h1: bool = True
     export_filetype: str = "md"
     logfile: str = "spip2md.log"
-    loglevel: str = "INFO"
+    loglevel: str = "WARNING"
     # max_articles_export: int = 1000  # TODO reimplement with recursion
     # max_sections_export: int = 500  # TODO reimplement with recursion
 

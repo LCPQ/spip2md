@@ -82,6 +82,7 @@ class SpipWritable:
                 return char
 
         if text is not None and len(text) > 0:
+            print(f"Converting {text[:40]} from {self.titre}")
             # Convert SPIP syntax to Markdown
             for spip, markdown in SPIP_MARKDOWN:
                 text = spip.sub(markdown, text)
@@ -106,13 +107,16 @@ class SpipWritable:
                     )
                     lastend = match.end()
         else:
+            print("Empty or null text")
             return ""
         return text
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.titre = self.convert(self.titre)
-        self.descriptif = self.convert(self.descriptif)
+        print(f"Convert titre from {self.titre}")
+        self.titre: str = self.convert(self.titre)
+        print(f"Convert descriptif from {self.titre}")
+        self.descriptif: str = self.convert(self.descriptif)
 
     def filename(self, date: bool = False) -> str:
         raise NotImplementedError(
@@ -161,7 +165,7 @@ class SpipWritable:
     # Output information about file that was just exported
     def end_message(self, message: str | Exception) -> str:
         output: str = " -> "
-        if message is Exception:
+        if type(message) is not str:
             output += "ERROR "
         # Print the output as the program goes
         self.style_print(output + str(message), indent=False)
@@ -212,7 +216,7 @@ class SpipObject(SpipWritable):
     def convert(self, text: Optional[str], clean_html: bool = True) -> str:
         def found_replace(path_link: str, doc: Any, text: str, match: Match) -> str:
             repl: str = path_link.format(doc.titre, doc.filename())
-            logging.info(f"Translating link to {repl}")
+            print(f"Translating link to {repl}")
             return text.replace(match.group(), repl)
 
         def not_found_warn(path_link: str, text: str, match: Match) -> str:
@@ -221,6 +225,7 @@ class SpipObject(SpipWritable):
 
         if text is not None and len(text) > 0:
             for id_link, path_link in DOCUMENT_LINK:
+                print(f"Looking for links like {id_link}")
                 for match in id_link.finditer(text):
                     logging.info(f"Found document link {match.group()} in {self.titre}")
                     try:
@@ -231,6 +236,7 @@ class SpipObject(SpipWritable):
                     except DoesNotExist:
                         text = not_found_warn(path_link, text, match)
             for id_link, path_link in ARTICLE_LINK:
+                print(f"Looking for links like {id_link}")
                 for match in id_link.finditer(text):
                     logging.info(f"Found article link {match.group()} in {self.titre}")
                     try:
@@ -239,6 +245,7 @@ class SpipObject(SpipWritable):
                     except DoesNotExist:
                         text = not_found_warn(path_link, text, match)
             for id_link, path_link in SECTION_LINK:
+                print(f"Looking for links like {id_link}")
                 for match in id_link.finditer(text):
                     logging.info(f"Found section link {match.group()} in {self.titre}")
                     try:
@@ -255,7 +262,9 @@ class SpipObject(SpipWritable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Common fields that need conversions
-        self.texte = self.convert(self.texte)
+        print(f"Convert texte from {self.titre}")
+        self.texte: str = self.convert(self.texte)
+        print(f"Convert extra from {self.titre}")
         self.extra: str = self.convert(self.extra)
         self.statut: str = "false" if self.statut == "publie" else "true"
         self.langue_choisie: str = "false" if self.langue_choisie == "oui" else "true"

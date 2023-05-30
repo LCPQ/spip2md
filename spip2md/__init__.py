@@ -52,7 +52,7 @@ def main(*argv):
     if len(argv) == 0:
         argv = sys.argv
 
-    # TODO Define max nb of sections to export based on first CLI argument
+    # TODO Define max nb of sections/articles to export based on first CLI argument
     # if len(argv) >= 2:
     #     sections_export = int(argv[1])
     # else:
