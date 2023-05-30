@@ -452,7 +452,7 @@ class RootRubrique(Rubrique):
 Begin exporting {esc(BOLD)}{CFG.db}@{CFG.db_host}{esc()} SPIP database to plain \
 Markdown+YAML files,
 into the directory {esc(BOLD)}{parent_dir}{esc()}, \
-as database user {esc(BOLD)}{CFG.db_user}{esc(BOLD)}
+as database user {esc(BOLD)}{CFG.db_user}{esc()}
 """
         )
         # Get all child section of self
