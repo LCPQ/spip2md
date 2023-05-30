@@ -1,7 +1,8 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
+import logging
 from os import makedirs
 from os.path import basename, splitext
-from re import finditer, sub
+from re import finditer, search, sub
 from shutil import copyfile
 from typing import Any, Match, Optional
 
@@ -33,6 +34,9 @@ from spip2md.regexmap import (
 )
 from spip2md.style import BLUE, BOLD, GREEN, WARNING_STYLE, YELLOW, esc
 
+# Output logs to logfile
+logging.basicConfig(filename=CFG.logfile, encoding="utf-8")
+
 
 class SpipWritable:
     term_color: int
@@ -57,13 +61,28 @@ class SpipWritable:
                     first_lang = lang.group(2)
                 else:
                     pass
-                    # print("Found other language for", first_lang, ":", lang.groups())
+                    logging.warning(
+                        f"Ignored {lang.group(1)} translation of {first_lang[:40]}: "
+                        + lang.group(2)[:40],
+                    )
             return first_lang
 
         return MULTILANG_BLOCK.sub(replace_lang, text)
 
     # Apply different mappings to a text field, like SPIP to Markdown or encoding
     def convert(self, text: Optional[str]) -> str:
+        # Return unknown char surrounded by context_length chars
+        def unknown_chars_context(text: str, char: str, context_len: int = 24) -> str:
+            context: str = r".{0," + str(context_len) + r"}"
+            match = search(
+                context + r"(?=" + char + r")" + char + context,
+                text,
+            )
+            if match is not None:
+                return match.group()
+            else:
+                return char
+
         if text is not None and len(text) > 0:
             for spip, markdown in SPIP_MARKDOWN:
                 text = spip.sub(markdown, text)
@@ -71,6 +90,14 @@ class SpipWritable:
                 text = bloat.sub("", text)
             for iso, utf in ISO_UTF:
                 text = text.replace(iso, utf)
+            for char in UNKNOWN_ISO:
+                lastend: int = 0
+                for match in finditer("(" + char + ")+", text):
+                    context: str = unknown_chars_context(text[lastend:], char)
+                    logging.warn(
+                        f"Unknown char {char} found in {self.titre[:40]} at: {context}"
+                    )
+                    lastend = match.end()
             text = self.translate(text)
         else:
             return ""

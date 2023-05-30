@@ -22,10 +22,12 @@ class Configuration:
     output_dir: str = "output/"
     data_dir: str = "data/"
     clear_output: bool = False
+    clear_log: bool = True
     prepend_h1: bool = True
     export_filetype: str = "md"
     max_articles_export: int = 1000  # TODO reimplement with recursion
     max_sections_export: int = 500  # TODO reimplement with recursion
+    logfile: str = "spip2md.log"
 
     def __init__(self, config_file: Optional[str] = None):
         if config_file is not None:

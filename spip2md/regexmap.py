@@ -114,7 +114,9 @@ DOCUMENT_LINK_REPL = r"\1[\2{}]({})"
 
 # Multi language block, to be further processed per lang
 MULTILANG_BLOCK = compile(r"<multi>(.+?)<\/multi>", S | I)
-MULTILANGS = compile(r"\[([a-zA-Z\-]{2,6})\]\s*(.+?)(?=\[[a-zA-Z\-]{2,6}\]|$)", S | I)
+MULTILANGS = compile(
+    r"\[([a-zA-Z\-]{2,6})\]\s*(.+?)\s*(?=\[[a-zA-Z\-]{2,6}\]|$)", S | I
+)
 
 # WARNING probably useless text in metadata fields, to be removed
 BLOAT = (
