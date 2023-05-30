@@ -1,4 +1,6 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
+import sys
+
 from spip2md import main
 
-main()
+sys.exit(main())
