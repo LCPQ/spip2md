@@ -1,12 +1,12 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 import logging
-from os import makedirs, remove
+from os import makedirs
 from os.path import basename, splitext
 from re import finditer, search
 from shutil import copyfile
 from typing import Any, Match, Optional
 
-from peewee import BigAutoField, DateTimeField, ModelSelect
+from peewee import BigAutoField, DateTimeField, DoesNotExist, ModelSelect
 from slugify import slugify
 from yaml import dump
 
@@ -27,18 +27,13 @@ from spip2md.regexmap import (
     ISO_UTF,
     MULTILANG_BLOCK,
     MULTILANGS,
+    SECTION_LINK,
     SPECIAL_OUTPUT,
     SPIP_MARKDOWN,
     UNKNOWN_ISO,
     WARNING_OUTPUT,
 )
 from spip2md.style import BLUE, BOLD, GREEN, WARNING_STYLE, YELLOW, esc
-
-# Clear the previous log file if needed
-if CFG.clear_log:
-    remove(CFG.logfile)
-# Output logs to logfile
-logging.basicConfig(filename=CFG.logfile, encoding="utf-8")
 
 
 class SpipWritable:
@@ -63,10 +58,10 @@ class SpipWritable:
                     # Outputs the first lang associated text
                     first_lang = lang.group(2)
                 else:
-                    pass
+                    title: str = first_lang[:40].strip(" \n")
+                    translate: str = lang.group(2)[:40].strip(" \n")
                     logging.warning(
-                        f"Ignored {lang.group(1)} translation of {first_lang[:40]}: "
-                        + lang.group(2)[:40],
+                        f"Ignored {lang.group(1)} translation of {title}: {translate}",
                     )
             return first_lang
 
@@ -215,38 +210,44 @@ class SpipObject(SpipWritable):
     extra: str
 
     def convert(self, text: Optional[str], clean_html: bool = True) -> str:
+        def found_replace(path_link: str, doc: Any, text: str, match: Match) -> str:
+            repl: str = path_link.format(doc.titre, doc.filename())
+            logging.info(f"Translating link to {repl}")
+            return text.replace(match.group(), repl)
+
+        def not_found_warn(path_link: str, text: str, match: Match) -> str:
+            logging.warn(f"No object for link {match.group()} in {self.titre}")
+            return text.replace(match.group(), path_link.format("", "NOT FOUND"))
+
         if text is not None and len(text) > 0:
             for id_link, path_link in DOCUMENT_LINK:
                 for match in id_link.finditer(text):
-                    doc: Document = Document.get(Document.id_document == match.group(2))
-                    if doc is not None:
-                        text = text.replace(
-                            match.group(), path_link.format(doc.titre, doc.filename())
+                    logging.info(f"Found document link {match.group()} in {self.titre}")
+                    try:
+                        doc: Document = Document.get(
+                            Document.id_document == match.group(2)
                         )
-                    else:
-                        logging.warn(
-                            f"No document for link {match.group()} in {self.titre}"
-                        )
-                        text = text.replace(
-                            match.group(), path_link.format("", "NOT FOUND")
-                        )
+                        text = found_replace(path_link, doc, text, match)
+                    except DoesNotExist:
+                        text = not_found_warn(path_link, text, match)
             for id_link, path_link in ARTICLE_LINK:
                 for match in id_link.finditer(text):
-                    art: Article = Article.get(Article.id_article == match.group(2))
-                    if art is not None:
-                        text = text.replace(
-                            match.group(),
-                            path_link.format(
-                                art.titre, f"{art.dir_slug()}/{art.filename()}"
-                            ),
+                    logging.info(f"Found article link {match.group()} in {self.titre}")
+                    try:
+                        art: Article = Article.get(Article.id_article == match.group(2))
+                        text = found_replace(path_link, art, text, match)
+                    except DoesNotExist:
+                        text = not_found_warn(path_link, text, match)
+            for id_link, path_link in SECTION_LINK:
+                for match in id_link.finditer(text):
+                    logging.info(f"Found section link {match.group()} in {self.titre}")
+                    try:
+                        section: Rubrique = Rubrique.get(
+                            Rubrique.id_rubrique == match.group(2)
                         )
-                    else:
-                        logging.warn(
-                            f"No article for link {match.group()} in {self.titre}"
-                        )
-                        text = text.replace(
-                            match.group(), path_link.format("", "NOT FOUND")
-                        )
+                        text = found_replace(path_link, section, text, match)
+                    except DoesNotExist:
+                        text = not_found_warn(path_link, text, match)
         else:
             return ""
         return super().convert(text, clean_html)
@@ -480,9 +481,7 @@ class RootRubrique(Rubrique):
         # self.object_id = 0
         self.profondeur = 0
 
-    def write_tree(
-        self, parent_dir: str, sections_limit: int = 0, articles_limit: int = 0
-    ) -> list[str | list]:
+    def write_tree(self, parent_dir: str) -> list[str | list]:
         # Define dictionary output to diplay
         output: list[str | list] = []
         # Print starting message

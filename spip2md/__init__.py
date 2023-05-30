@@ -1,6 +1,8 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
+import logging
 import sys
-from os import makedirs
+from os import makedirs, remove
+from os.path import isfile
 from shutil import rmtree
 
 from spip2md.config import CFG
@@ -25,6 +27,18 @@ def count_output(
         elif type(sub) == str:
             leaves += 1
     return (branches, leaves)
+
+
+# Clear the previous log file if needed
+if CFG.clear_log and isfile(CFG.logfile):
+    remove(CFG.logfile)
+# Configure logging
+logging.basicConfig(
+    format="%(levelname)s:%(message)s",
+    filename=CFG.logfile,
+    encoding="utf-8",
+    level=CFG.loglevel,
+)
 
 
 # Connect to the MySQL database with Peewee ORM
@@ -64,4 +78,4 @@ stored into {esc(BOLD)}{branches}{esc()} directories"""
     )
 
     # Warn about issued warnings in log file
-    print(f"\nThere might be warnings in {esc(BOLD)}{CFG.logfile}{esc()}")
+    print(f"\nThere might be warnings and infos in {esc(BOLD)}{CFG.logfile}{esc()}")

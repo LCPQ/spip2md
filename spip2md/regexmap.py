@@ -137,6 +137,17 @@ ARTICLE_LINK = (
     ),
 )  # Name and path can be further replaced with .format()
 
+SECTION_LINK = (
+    (  # SPIP style documents & embeds links
+        compile(r"<()(?:rub|rubrique)([0-9]+)(?:\|(.*?))?>", S | I),
+        r"[{}]({})",
+    ),
+    (  # Markdown style internal links
+        compile(r"\[(.*?)\]\((?:rub|rubrique)([0-9]+)(?:\|(.*?))?\)", S | I),
+        r"[\1{}]({})",
+    ),
+)  # Name and path can be further replaced with .format()
+
 # Multi language block, to be further processed per lang
 MULTILANG_BLOCK = compile(r"<multi>(.+?)<\/multi>", S | I)
 MULTILANGS = compile(
