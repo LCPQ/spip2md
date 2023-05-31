@@ -49,4 +49,4 @@ class Configuration:
                     setattr(self, attr, config[attr])
 
 
-CFG = Configuration(config_file())
+CFG = Configuration(config_file=config_file())

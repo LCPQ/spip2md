@@ -11,15 +11,7 @@ from slugify import slugify
 from yaml import dump
 
 from spip2md.config import CFG
-from spip2md.database import (
-    SpipArticles,
-    SpipAuteurs,
-    SpipAuteursLiens,
-    SpipDocuments,
-    SpipDocumentsLiens,
-    SpipRubriques,
-)
-from spip2md.regexmap import (
+from spip2md.regexmaps import (
     ARTICLE_LINK,
     BLOAT,
     DOCUMENT_LINK,
@@ -32,6 +24,14 @@ from spip2md.regexmap import (
     SPIP_MARKDOWN,
     UNKNOWN_ISO,
     WARNING_OUTPUT,
+)
+from spip2md.spip_models import (
+    SpipArticles,
+    SpipAuteurs,
+    SpipAuteursLiens,
+    SpipDocuments,
+    SpipDocumentsLiens,
+    SpipRubriques,
 )
 from spip2md.style import BLUE, BOLD, GREEN, WARNING_STYLE, YELLOW, esc
 
@@ -65,16 +65,16 @@ class SpipWritable:
                 translated: str = lang.group(2)[:50].strip()
                 logging.info(f"{lang.group(1)} translation of {title}: {translated}")
         # Instantiate & write translated
-        for lang, translation in translations.items():
-            if lang == "non existant lang":
-                new_lang = self.__init__(
-                    texte=translation,
-                    lang=lang,
-                    titre=self.titre,
-                    descriptif=self.descriptif,
-                    profondeur=self.profondeur,
-                    style=self.style,
-                )
+        # for lang, translation in translations.items():
+        #     if lang == "non existant lang":
+        #         new_lang = self.__init__(
+        #             texte=translation,
+        #             lang=lang,
+        #             titre=self.titre,
+        #             descriptif=self.descriptif,
+        #             profondeur=self.profondeur,
+        #             style=self.style,
+        #         )
         # Return the translations dict
         # return translations
         # Return the first detected language

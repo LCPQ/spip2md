@@ -1,3 +1,4 @@
+# SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 # Define styles for terminal printing
 BOLD = 1  # Bold
 ITALIC = 3  # Italic
@@ -7,9 +8,9 @@ RED = 91  # Red
 GREEN = 92  # Green
 YELLOW = 93  # Yellow
 BLUE = 94  # Blue
-C0 = 95  # Color
-C1 = 96  # Color
-C2 = 96  # Color
+MAGENTA = 95  # Magenta
+CYAN = 96  # Cyan
+WHITE = 97  # Clear White
 # Style used for warnings
 WARNING_STYLE = (BOLD, RED)
 
