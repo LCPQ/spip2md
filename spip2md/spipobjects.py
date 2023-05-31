@@ -37,7 +37,6 @@ from spip2md.style import BLUE, BOLD, GREEN, WARNING_STYLE, YELLOW, esc
 
 
 class SpipWritable:
-    term_color: int
     texte: str
     lang: str
     titre: str
@@ -45,27 +44,41 @@ class SpipWritable:
     profondeur: int
     style: tuple[int, ...]
 
-    # Returns the first detected language (& instantiate a new object for the second)
-    # (currently don’t instantiate, just warns)
-    def translate(self, text: str) -> str:
-        def replace_lang(match: Match[str]) -> str:
-            first_lang: str = match.group(1)
-            # The first group is the inside of <multi></multi> blocks
-            for i, lang in enumerate(MULTILANGS.finditer(match.group(1))):
+    # Returns the first detected language & instantiate a new object for the nexts
+    def translate_multi(self, text: str) -> str:
+        # Create a lang: text dict
+        translations: dict[str, str] = {"default": text}
+        # Keep the first lang in default translation, then
+        # for each langs of <multi> blocks, add its text to the corresponding dict key
+        for block in MULTILANG_BLOCK.finditer(translations["default"]):
+            for i, lang in enumerate(MULTILANGS.finditer(block.group(1))):
                 if i == 0:
-                    # Redefine this lang to the first one WARNING
-                    self.lang = lang.group(1)
-                    # Outputs the first lang associated text
-                    first_lang = lang.group(2)
-                else:
-                    title: str = first_lang[:40].strip(" \n")
-                    translate: str = lang.group(2)[:40].strip(" \n")
-                    logging.warning(
-                        f"Ignored {lang.group(1)} translation of {title}: {translate}",
+                    translations["default"] = translations["default"].replace(
+                        block.group(), lang.group(2)
                     )
-            return first_lang
-
-        return MULTILANG_BLOCK.sub(replace_lang, text)
+                if lang.group(1) in translations:
+                    translations[lang.group(1)] += lang.group(2)
+                else:
+                    translations[lang.group(1)] = lang.group(2)
+                # Logs the translation
+                title: str = self.titre.strip()
+                translated: str = lang.group(2)[:50].strip()
+                logging.info(f"{lang.group(1)} translation of {title}: {translated}")
+        # Instantiate & write translated
+        for lang, translation in translations.items():
+            if lang == "non existant lang":
+                new_lang = self.__init__(
+                    texte=translation,
+                    lang=lang,
+                    titre=self.titre,
+                    descriptif=self.descriptif,
+                    profondeur=self.profondeur,
+                    style=self.style,
+                )
+        # Return the translations dict
+        # return translations
+        # Return the first detected language
+        return translations["default"]
 
     # Apply different mappings to a text field, like SPIP to Markdown or encoding
     def convert(self, text: str, clean_html: bool = True) -> str:
@@ -95,7 +108,7 @@ class SpipWritable:
         for iso, utf in ISO_UTF:
             text = text.replace(iso, utf)
         # Handle <multi> multi language blocks
-        text = self.translate(text)
+        text = self.translate_multi(text)
         # Delete remaining HTML tags in body WARNING
         if clean_html:
             text = HTMLTAG.sub("", text)
