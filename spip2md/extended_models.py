@@ -2,11 +2,11 @@
 import logging
 from os import makedirs
 from os.path import basename, splitext
-from re import finditer, search
+from re import Pattern, finditer, search
 from shutil import copyfile
-from typing import Any, Match, Optional
+from typing import Any, Optional
 
-from peewee import BigAutoField, DateTimeField, DoesNotExist, ModelSelect
+from peewee import DateTimeField, DoesNotExist
 from slugify import slugify
 from yaml import dump
 
@@ -15,7 +15,7 @@ from spip2md.regexmaps import (
     ARTICLE_LINK,
     BLOAT,
     DOCUMENT_LINK,
-    HTMLTAG,
+    HTMLTAGS,
     ISO_UTF,
     MULTILANG_BLOCK,
     MULTILANGS,
@@ -36,56 +36,150 @@ from spip2md.spip_models import (
 from spip2md.style import BLUE, BOLD, GREEN, WARNING_STYLE, YELLOW, esc
 
 
-class SpipWritable:
+class SpipNormalized:
+    # From SPIP database
     texte: str
     lang: str
     titre: str
     descriptif: str
-    profondeur: int
-    style: tuple[int, ...]
+    statut: str
+    # profondeur: int
+    # Custom
+    obj_id: int = 0  # database ID of object, but same attribute name for all objects
+    depth: int  # Equals `profondeur` for sections
+    fileprefix: str  # String to prepend to written files
+    parentdir: str  # Path from output dir to direct parent
+    style: tuple[int, ...]  # Styles to apply to some elements of printed output
 
-    # Returns the first detected language & instantiate a new object for the nexts
+    def status(self) -> bool:
+        return self.statut == "publie"
+
+    def dest_directory(self, prepend: str = "", append: str = "") -> str:
+        raise NotImplementedError(
+            f"Subclasses need to implement directory(), params:{prepend}{append}"
+        )
+
+    def dest_filename(self, prepend: str = "", append: str = "") -> str:
+        raise NotImplementedError(
+            f"Subclasses need to implement dest_filename(), params:{prepend}{append}"
+        )
+
+    def dest_path(self) -> str:
+        return self.dest_directory() + self.dest_filename()
+
+
+class NormalizedSection(SpipNormalized, SpipRubriques):
+    fileprefix: str = "_index"
+    style = (BOLD, GREEN)  # Sections accent color is green
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.obj_id = self.id_rubrique
+        self.depth = self.profondeur
+
+
+class NormalizedArticle(SpipNormalized, SpipArticles):
+    fileprefix: str = "index"
+    style = (BOLD, YELLOW)  # Articles accent color is yellow
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.obj_id = self.id_article
+
+
+class NormalizedDocument(SpipNormalized, SpipDocuments):
+    fileprefix: str = ""
+    style = (BOLD, BLUE)  # Documents accent color is blue
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.obj_id = self.id_document
+
+
+class WritableObject(SpipNormalized):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    # Set the lang attribute of self to the first one detected
+    # Then, if there’s other langs remaining, instanciate a new object with same
+    # input text but stripped of first lang
+    # Then returns the text of first detected language
+    # WARNING currently only supports ONE <multi> block per text
     def translate_multi(self, text: str) -> str:
-        # Create a lang: text dict
-        translations: dict[str, str] = {"default": text}
-        # Keep the first lang in default translation, then
-        # for each langs of <multi> blocks, add its text to the corresponding dict key
-        for block in MULTILANG_BLOCK.finditer(translations["default"]):
-            for i, lang in enumerate(MULTILANGS.finditer(block.group(1))):
-                if i == 0:
-                    translations["default"] = translations["default"].replace(
-                        block.group(), lang.group(2)
-                    )
-                if lang.group(1) in translations:
-                    translations[lang.group(1)] += lang.group(2)
-                else:
-                    translations[lang.group(1)] = lang.group(2)
-                # Logs the translation
-                title: str = self.titre.strip()
-                translated: str = lang.group(2)[:50].strip()
-                logging.info(f"{lang.group(1)} translation of {title}: {translated}")
-        # Instantiate & write translated
-        # for lang, translation in translations.items():
-        #     if lang == "non existant lang":
-        #         new_lang = self.__init__(
-        #             texte=translation,
-        #             lang=lang,
-        #             titre=self.titre,
-        #             descriptif=self.descriptif,
-        #             profondeur=self.profondeur,
-        #             style=self.style,
-        #         )
-        # Return the translations dict
-        # return translations
+        # Memoize self title
+        title: str = self.title()
+        # First translation found, with eventual preexisting text
+        current_translation: str = text
+        next_text: str = text  # <multi> block(s) without first lang
+        block = MULTILANG_BLOCK.search(text)
+        if block is not None:
+            lang = MULTILANGS.search(block.group(1))
+            if lang is not None:
+                # set current lang to found first lang
+                self.lang = lang.group(1)
+                # replace multi blocks of current text with first lang
+                current_translation = current_translation.replace(
+                    block.group(), lang.group(2)
+                )
+                # Log the translation
+                translated: str = lang.group(2)[:60].strip()
+                logging.info(
+                    f"{title} lang becomes {self.lang}, with text {translated} …"
+                )
+                # remove first lang from next_text
+                next_text = next_text.replace(lang.group(), "")
+            else:
+                # Log the unexpected situation
+                logging.warning(
+                    f"Unexpected empty <multi> block in {title}, deleting it anyway"
+                )
+        # Do the same for the next text
+        next_block = MULTILANG_BLOCK.search(next_text)
+        if next_block is not None:
+            next_lang = MULTILANGS.search(next_block.group(1))
+            if next_lang is not None:
+                # If there is a remaining lang
+                # Instantiate & write a similar object with modified text & lang
+                logging.info(f"Instanciate {next_lang.group(1)} translation of {title}")
+                next_lang_obj: WritableObject = type(self)(
+                    texte=next_text,
+                    lang=next_lang.group(1),
+                    titre=self.titre,
+                    descriptif=self.descriptif,
+                )
+                next_lang_obj.style = self.style
+                next_lang_obj.depth = self.depth
+                next_lang_obj.parentdir = self.dest_directory()
+                # WARNING the output will appear in terminal & logfile but won’t return
+                next_lang_obj.begin_message(0, 0)  # WARNING wrong counter
+                try:
+                    next_lang_obj.end_message(next_lang_obj.write())
+                except Exception as err:
+                    next_lang_obj.end_message(err)
         # Return the first detected language
-        return translations["default"]
+        return current_translation
 
-    # Apply different mappings to a text field, like SPIP to Markdown or encoding
-    def convert(self, text: str, clean_html: bool = True) -> str:
-        if len(text) == 0:
-            # print("Empty text")
-            return ""
+    # Apply a mapping from regex maps
+    @staticmethod
+    def apply_mapping(text: str, mapping: tuple) -> str:
+        if type(mapping) == tuple and len(mapping) > 0:
+            if type(mapping[0]) == tuple and len(mapping[0]) > 0:
+                if type(mapping[0][0]) == Pattern:
+                    for old, new in mapping:
+                        text = old.sub(new, text)
+                else:
+                    for old, new in mapping:
+                        text = text.replace(old, new)
+            elif type(mapping[0]) == Pattern:
+                for old in mapping:
+                    text = old.sub("", text)
+            else:
+                for old in mapping:
+                    text = old.replace("", text)
+        return text
 
+    # Warn about unknown chars & replace them with config defined replacement
+    def warn_unknown(self, text: str, unknown_mapping: tuple) -> str:
         # Return unknown char surrounded by context_length chars
         def unknown_chars_context(text: str, char: str, context_len: int = 24) -> str:
             context: str = r".{0," + str(context_len) + r"}"
@@ -98,22 +192,7 @@ class SpipWritable:
             else:
                 return char
 
-        # Convert SPIP syntax to Markdown
-        for spip, markdown in SPIP_MARKDOWN:
-            text = spip.sub(markdown, text)
-        # Remove useless text
-        for bloat in BLOAT:
-            text = bloat.sub("", text)
-        # Convert broken ISO encoding to UTF
-        for iso, utf in ISO_UTF:
-            text = text.replace(iso, utf)
-        # Handle <multi> multi language blocks
-        text = self.translate_multi(text)
-        # Delete remaining HTML tags in body WARNING
-        if clean_html:
-            text = HTMLTAG.sub("", text)
-        # Warn about unknown chars
-        for char in UNKNOWN_ISO:
+        for char in unknown_mapping:
             lastend: int = 0
             for match in finditer("(" + char + ")+", text):
                 context: str = unknown_chars_context(text[lastend:], char)
@@ -128,21 +207,32 @@ class SpipWritable:
                 lastend = match.end()
         return text
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.titre is not None:
-            # print(f"Convert titre from {type(self)} {self.titre}")
-            self.titre: str = self.convert(self.titre)
-        if self.descriptif is not None:
-            # print(f"Convert descriptif from {type(self)} {self.titre}")
-            self.descriptif: str = self.convert(self.descriptif)
+    # Apply needed methods on text fields
+    def convert_field(self, field: Optional[str], clean_html: bool = True) -> str:
+        if field is None:
+            return ""
+        if len(field) == 0:
+            return ""
+        # Convert SPIP syntax to Markdown
+        field = self.apply_mapping(field, SPIP_MARKDOWN)
+        # Remove useless text
+        field = self.apply_mapping(field, BLOAT)
+        # Convert broken ISO encoding to UTF
+        field = self.apply_mapping(field, ISO_UTF)
+        if clean_html:
+            # Delete remaining HTML tags in body WARNING
+            field = self.apply_mapping(field, HTMLTAGS)
+        # Warn about unknown chars
+        field = self.warn_unknown(field, UNKNOWN_ISO)
+        return field.strip()  # Strip whitespaces around text
 
-    def filename(self, date: bool = False) -> str:
-        raise NotImplementedError(
-            f"Subclasses need to implement filename(), date: {date}"
-        )
+    def title(self) -> str:
+        return self.convert_field(self.titre)
 
-    # Print one or more string(s) in which special elements are stylized
+    def description(self) -> str:
+        return self.convert_field(self.descriptif)
+
+    # Print one or more line(s) in which special elements are stylized
     def style_print(self, string: str, indent: bool = True, end: str = "\n") -> str:
         stylized: str = string
         for o in SPECIAL_OUTPUT:
@@ -150,38 +240,35 @@ class SpipWritable:
         for w in WARNING_OUTPUT:
             stylized = w.sub(esc(*WARNING_STYLE) + r"\1" + esc(), stylized)
         if indent:
-            stylized = "  " * self.profondeur + stylized
+            stylized = "  " * self.depth + stylized
         print(stylized, end=end)
         # Return the stylized string
         return stylized
 
+    # Print the message telling what is going to be done
     def begin_message(self, index: int, limit: int, step: int = 100) -> list[str]:
         output: list[str] = []
         # Output the remaining number of objects to export every step object
         if index % step == 0:
             output.append(f"Exporting {limit-index}")
-            output[-1] += f" level {self.profondeur}"
+            output[-1] += f" level {self.depth}"
             s: str = "s" if limit - index > 1 else ""
             output[-1] += f" {type(self).__name__}{s}"
             # Print the output as the program goes
             self.style_print(output[-1])
         # Output the counter & title of the object being exported
         output.append(f"{index + 1}. ")
-        if self.titre is None:
-            output[-1] += "MISSING NAME"
-        elif len(self.titre) == 0:
+        if len(self.title()) == 0:
             output[-1] += "EMPTY NAME"
         else:
-            output[-1] += self.titre.strip(" ")
+            output[-1] += self.title()
         # Print the output as the program goes
         self.style_print(output[-1], end="")
         return output
 
     # Write object to output destination
-    def write(self, parent_dir: str) -> str:
-        raise NotImplementedError(
-            f"Subclasses need to implement write(), export dir: {parent_dir}"
-        )
+    def write(self) -> str:
+        raise NotImplementedError("Subclasses need to implement write()")
 
     # Output information about file that was just exported
     def end_message(self, message: str | Exception) -> str:
@@ -193,141 +280,113 @@ class SpipWritable:
         return output + str(message)
 
 
-class Document(SpipWritable, SpipDocuments):
-    # Documents accent color is blue
-    style = (BOLD, BLUE)
-
+class Document(WritableObject, NormalizedDocument):
     class Meta:
         table_name: str = "spip_documents"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.statut: str = "false" if self.statut == "publie" else "true"
+    # Get source name of this file
+    def src_path(self, data_dir: Optional[str] = None) -> str:
+        if data_dir is None:
+            return CFG.data_dir + self.fichier
+        return data_dir + self.fichier
 
-    # Get slugified name of this file
-    def filename(self, date: bool = False) -> str:
-        name_type: tuple[str, str] = splitext(basename(str(self.fichier)))
-        return (
-            slugify(
-                (self.date_publication + "-" if date else "") + name_type[0],
-                max_length=100,
-            )
-            + name_type[1]
-        )
+    # Get directory of this object
+    def dest_directory(self, prepend: str = "", append: str = "/") -> str:
+        return self.parentdir + prepend + slugify(self.titre, max_length=100) + append
+
+    # Get destination slugified name of this file
+    def dest_filename(self, prepend: str = "", append: str = "") -> str:
+        name, filetype = splitext(basename(str(self.fichier)))
+        return slugify(prepend + name, max_length=100) + append + filetype
 
     # Write document to output destination
-    def write(self, parent_dir: str) -> str:
-        # Define file source and destination
-        src: str = CFG.data_dir + self.fichier
-        dest: str = parent_dir + self.filename()
+    def write(self) -> str:
         # Copy the document from it’s SPIP location to the new location
-        copyfile(src, dest)
-        return dest
+        return copyfile(self.src_path(), self.dest_path())
 
 
-class SpipObject(SpipWritable):
-    object_id: BigAutoField
+class RedactionalObject(WritableObject):
     id_trad: int
+    id_rubrique: int
     date: DateTimeField
     maj: str
     id_secteur: int
-    descriptif: str
     extra: str
+    langue_choisie: str
+    # Custom
+    prefix: str = "index"
 
-    def convert(self, text: str, clean_html: bool = True) -> str:
-        if len(text) == 0:
-            # print("Empty text")
-            return ""
-
-        def found_replace(path_link: str, doc: Any, text: str, match: Match) -> str:
-            # TODO get relative path
-            if len(match.group(1)) > 0:
-                repl: str = path_link.format(match.group(1), doc.filename())
-            else:
-                repl: str = path_link.format(doc.titre, doc.filename())
-            logging.info(f"Translating link to {repl}")
-            return text.replace(match.group(), repl)
-
-        def not_found_warn(path_link: str, text: str, match: Match) -> str:
-            logging.warn(f"No object for link {match.group()} in {self.titre}")
-            return text.replace(match.group(), path_link.format("", "NOT FOUND"), 1)
-
-        for id_link, path_link in DOCUMENT_LINK:
+    def replace_links(
+        self,
+        text: str,
+        mapping: tuple,
+        obj_type: type[NormalizedSection | NormalizedArticle | NormalizedDocument],
+    ) -> str:
+        for id_link, path_link in mapping:
             # print(f"Looking for links like {id_link}")
             for match in id_link.finditer(text):
                 logging.info(f"Found document link {match.group()} in {self.titre}")
                 try:
-                    doc: Document = Document.get(Document.id_document == match.group(2))
-                    text = found_replace(path_link, doc, text, match)
+                    o: obj_type = obj_type.get(obj_type.obj_id == match.group(2))
+                    # TODO get relative path
+                    if len(match.group(1)) > 0:
+                        repl: str = path_link.format(match.group(1), o.dest_path())
+                    else:
+                        repl: str = path_link.format(o.titre, o.dest_path())
+                    logging.info(f"Translating link to {repl}")
+                    text = text.replace(match.group(), repl)
                 except DoesNotExist:
-                    text = not_found_warn(path_link, text, match)
-        for id_link, path_link in ARTICLE_LINK:
-            # print(f"Looking for links like {id_link}")
-            for match in id_link.finditer(text):
-                logging.info(f"Found article link {match.group()} in {self.titre}")
-                try:
-                    art: Article = Article.get(Article.id_article == match.group(2))
-                    text = found_replace(path_link, art, text, match)
-                except DoesNotExist:
-                    text = not_found_warn(path_link, text, match)
-        for id_link, path_link in SECTION_LINK:
-            # print(f"Looking for links like {id_link}")
-            for match in id_link.finditer(text):
-                logging.info(f"Found section link {match.group()} in {self.titre}")
-                try:
-                    section: Rubrique = Rubrique.get(
-                        Rubrique.id_rubrique == match.group(2)
+                    logging.warn(f"No object for link {match.group()} in {self.titre}")
+                    text = text.replace(
+                        match.group(), path_link.format("", "NOT FOUND"), 1
                     )
-                    text = found_replace(path_link, section, text, match)
-                except DoesNotExist:
-                    text = not_found_warn(path_link, text, match)
-        return super().convert(text, clean_html)
+        return text
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Common fields that need conversions
-        if self.texte is not None:
-            # print(f"Convert texte from {type(self)} {self.titre}")
-            # print(f"First 500 chars: {self.texte[:500]}")
-            self.texte: str = self.convert(self.texte)
-        if self.extra is not None:
-            # print(f"Convert extra from {type(self)} {self.titre}")
-            # print(f"First 500 chars: {self.extra[:500]}")
-            self.extra: str = self.convert(self.extra)
-        self.statut: str = "false" if self.statut == "publie" else "true"
-        self.langue_choisie: str = "false" if self.langue_choisie == "oui" else "true"
-        # Define file prefix (needs to be redefined for sections)
-        self.prefix = "index"
+    def text(self) -> str:
+        if self.texte is None:
+            return ""
+        if len(self.texte) == 0:
+            return ""
+        text: str = self.texte
+        # Handle <multi> multi language blocks
+        text = self.translate_multi(text)
+        # Replace ID based SPIP links with relative path links
+        text = self.replace_links(text, DOCUMENT_LINK, Document)
+        text = self.replace_links(text, ARTICLE_LINK, Article)
+        text = self.replace_links(text, SECTION_LINK, Section)
+        return self.convert_field(text)
+
+    def ext(self) -> str:
+        if self.extra is None:
+            return ""
+        if len(self.extra) == 0:
+            return ""
+        text: str = self.extra
+        text = self.replace_links(text, ARTICLE_LINK, Article)
+        text = self.replace_links(text, SECTION_LINK, Section)
+        return self.convert_field(text)
+
+    def choosen_language(self) -> bool:
+        return self.langue_choisie == "oui"
 
     # Get related documents
-    def documents(self) -> ModelSelect:
+    def documents(self) -> list[Document]:
         documents = (
             Document.select()
             .join(
                 SpipDocumentsLiens,
                 on=(Document.id_document == SpipDocumentsLiens.id_document),
             )
-            .where(SpipDocumentsLiens.id_objet == self.object_id)
+            .where(SpipDocumentsLiens.id_objet == self.obj_id)
         )
         return documents
 
-    # Get related articles
-    def articles(self) -> ModelSelect:
-        return (
-            Article.select()
-            .where(Article.id_rubrique == self.object_id)
-            .order_by(Article.date.desc())
-            # .limit(limit)
-        )
-
     # Get slugified directory of this object
-    def dir_slug(self, include_date: bool = False, end_slash: bool = True) -> str:
-        date: str = self.date + "-" if include_date else ""
-        slash: str = "/" if end_slash else ""
-        return slugify(date + self.titre, max_length=100) + slash
+    def dest_directory(self, prepend: str = "", append: str = "/") -> str:
+        return self.parentdir + prepend + slugify(self.titre, max_length=100) + append
 
     # Get filename of this object
-    def filename(self) -> str:
+    def dest_filename(self) -> str:
         return self.prefix + "." + self.lang + "." + CFG.export_filetype
 
     # Get the YAML frontmatter string
@@ -342,7 +401,7 @@ class SpipObject(SpipWritable):
             "description": self.descriptif,
             # Debugging
             "spip_id_secteur": self.id_secteur,
-            "spip_id": self.object_id,
+            "spip_id": self.obj_id,
         }
         if append is not None:
             return dump(meta | append, allow_unicode=True)
@@ -354,52 +413,48 @@ class SpipObject(SpipWritable):
         # Start the content with frontmatter
         body: str = "---\n" + self.frontmatter() + "---"
         # Add the title as a Markdown h1
-        if self.titre is not None and len(self.titre) > 0 and CFG.prepend_h1:
-            body += "\n\n# " + self.titre
+        if len(self.title()) > 0 and CFG.prepend_h1:
+            body += "\n\n# " + self.title()
         # If there is a text, add the text preceded by two line breaks
-        if self.texte is not None and len(self.texte) > 0:
+        if len(self.text()) > 0:
             # Remove remaining HTML after & append to body
-            body += "\n\n" + self.texte
+            body += "\n\n" + self.text()
         # Same with an "extra" section
-        if self.extra is not None and len(self.extra) > 0:
-            body += "\n\n# EXTRA\n\n" + self.extra
+        if len(self.ext()) > 0:
+            body += "\n\n# EXTRA\n\n" + self.ext()
         return body
 
     # Write object to output destination
-    def write(self, parent_dir: str) -> str:
-        # Define actual export directory
-        directory: str = parent_dir + self.dir_slug()
+    def write(self) -> str:
         # Make a directory for this object if there isn’t
-        makedirs(directory, exist_ok=True)
-        # Define actual export path
-        path: str = directory + self.filename()
+        makedirs(self.dest_directory(), exist_ok=True)
         # Write the content of this object into a file named as self.filename()
-        with open(path, "w") as f:
+        with open(self.dest_path(), "w") as f:
             f.write(self.content())
-        return path
+        return self.dest_path()
 
 
-class Article(SpipObject, SpipArticles):
-    # Articles accent color is yellow
-    style = (BOLD, YELLOW)
-
+class Article(RedactionalObject, NormalizedArticle):
     class Meta:
         table_name: str = "spip_articles"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # More conversions needed for articles
-        if self.surtitre is not None:
-            self.surtitre: str = self.convert(self.surtitre)
-        if self.soustitre is not None:
-            self.soustitre: str = self.convert(self.soustitre)
-        if self.chapo is not None:
-            self.chapo: str = self.convert(self.chapo)
-        if self.ps is not None:
-            self.ps: str = self.convert(self.ps)
-        self.accepter_forum: str = "true" if self.accepter_forum == "oui" else "false"
-        # ID
-        self.object_id = self.id_article
+    def surtitle(self) -> str:
+        return self.convert_field(str(self.surtitre))
+
+    def subtitle(self) -> str:
+        return self.convert_field(str(self.soustitre))
+
+    def caption(self) -> str:
+        return self.convert_field(str(self.chapo))
+
+    def postscriptum(self) -> str:
+        return self.convert_field(str(self.ps))
+
+    def ublog(self) -> str:
+        return self.convert_field(str(self.microblog))
+
+    def accept_forum(self) -> bool:
+        return self.accepter_forum == "oui"
 
     def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         meta: dict[str, Any] = {
@@ -420,14 +475,14 @@ class Article(SpipObject, SpipArticles):
     def content(self) -> str:
         body: str = super().content()
         # If there is a caption, add the caption followed by a hr
-        if len(str(self.chapo)) > 0:
-            body += "\n\n" + self.chapo + "\n\n***"
+        if len(self.caption()) > 0:
+            body += "\n\n" + self.caption() + "\n\n***"
         # PS
-        if len(str(self.ps)) > 0:
-            body += "\n\n# POST-SCRIPTUM\n\n" + self.ps
+        if len(self.postscriptum()) > 0:
+            body += "\n\n# POST-SCRIPTUM\n\n" + self.postscriptum()
         # Microblog
-        if len(str(self.microblog)) > 0:
-            body += "\n\n# MICROBLOGGING\n\n" + self.microblog
+        if len(self.ublog()) > 0:
+            body += "\n\n# MICROBLOGGING\n\n" + self.ublog()
         return body
 
     def authors(self) -> list[SpipAuteurs]:
@@ -437,23 +492,13 @@ class Article(SpipObject, SpipArticles):
                 SpipAuteursLiens,
                 on=(SpipAuteurs.id_auteur == SpipAuteursLiens.id_auteur),
             )
-            .where(SpipAuteursLiens.id_objet == self.id_article)
+            .where(SpipAuteursLiens.id_objet == self.obj_id)
         )
 
 
-class Rubrique(SpipObject, SpipRubriques):
-    # Sections accent color is green
-    style = (BOLD, GREEN)
-
+class Section(RedactionalObject, NormalizedSection):
     class Meta:
         table_name: str = "spip_rubriques"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # ID
-        self.object_id = self.id_rubrique
-        # File prefix
-        self.prefix = "_index"
 
     def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         meta: dict[str, Any] = {
@@ -466,31 +511,38 @@ class Rubrique(SpipObject, SpipRubriques):
         else:
             return super().frontmatter(meta)
 
-    def write_tree(
-        self, parent_dir: str, index: int, total: int
-    ) -> list[str | list[Any]]:
+    # Get articles of this section
+    def articles(self) -> list[Article]:
+        return (
+            Article.select()
+            .where(Article.id_rubrique == self.obj_id)
+            .order_by(Article.date.desc())
+            # .limit(limit)
+        )
+
+    def write_tree(self, index: int, total: int) -> list[str | list[Any]]:
         # Define dictionary output to diplay
         output: list[str | list[Any]] = []
+        # Print & add to output the message before the section write
         for m in self.begin_message(index, total):
             output.append(m)
-        # Get this section’s articles documents
-        articles = self.articles()
-        documents = self.documents()
-        # Write this section
-        output[-1] += self.end_message(self.write(parent_dir))
-        # Redefine parent_dir for subtree elements
-        parent_dir = parent_dir + self.dir_slug()
+        # Get this section’s articles & documents
+        articles: list[Article] = self.articles()
+        documents: list[Document] = self.documents()
+        # Write this section & print the finish message of the section writing
+        output[-1] += self.end_message(self.write())
 
         # Write this section’s articles and documents
-        def write_loop(objects: ModelSelect) -> list[str]:
+        def write_loop(objects: list[Article] | list[Document]) -> list[str]:
             output: list[str] = []
             total = len(objects)
             for i, obj in enumerate(objects):
-                obj.profondeur = self.profondeur + 1
+                obj.depth = self.depth + 1
+                obj.parentdir = self.dest_directory()
                 for m in obj.begin_message(i, total):
                     output.append(m)
                 try:
-                    output[-1] += obj.end_message(obj.write(parent_dir))
+                    output[-1] += obj.end_message(obj.write())
                 except Exception as err:
                     output[-1] += obj.end_message(err)
             return output
@@ -498,51 +550,15 @@ class Rubrique(SpipObject, SpipRubriques):
         output.append(write_loop(articles))
         output.append(write_loop(documents))
 
-        # Get all child section of self
-        child_sections: ModelSelect = (
-            Rubrique.select()
-            .where(Rubrique.id_parent == self.id_rubrique)
-            .order_by(Rubrique.date.desc())
+        # Get all child section of this section
+        child_sections: list[Section] = (
+            Section.select()
+            .where(Section.id_parent == self.obj_id)
+            .order_by(Section.date.desc())
         )
         nb: int = len(child_sections)
         # Do the same for subsections (write their entire subtree)
         for i, s in enumerate(child_sections):
-            output.append(s.write_tree(parent_dir, i, nb))
-        return output
-
-
-class RootRubrique(Rubrique):
-    class Meta:
-        table_name: str = "spip_rubriques"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # 0 ID
-        self.id_rubrique = 0
-        # self.object_id = 0
-        self.profondeur = 0
-
-    def write_tree(self, parent_dir: str) -> list[str | list]:
-        # Define dictionary output to diplay
-        output: list[str | list] = []
-        # Print starting message
-        print(
-            f"""\
-Begin exporting {esc(BOLD)}{CFG.db}@{CFG.db_host}{esc()} SPIP database to plain \
-Markdown+YAML files,
-into the directory {esc(BOLD)}{parent_dir}{esc()}, \
-as database user {esc(BOLD)}{CFG.db_user}{esc()}
-"""
-        )
-        # Get all child section of self
-        child_sections: ModelSelect = (
-            Rubrique.select()
-            .where(Rubrique.id_parent == self.id_rubrique)
-            .order_by(Rubrique.date.desc())
-        )
-        nb: int = len(child_sections)
-        # Do the same for subsections (write their entire subtree)
-        for i, s in enumerate(child_sections):
-            output.append(s.write_tree(parent_dir, i, nb))
-            print()  # Break line for level 1
+            s.parentdir = self.dest_directory()
+            output.append(s.write_tree(i, nb))
         return output

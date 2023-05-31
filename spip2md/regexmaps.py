@@ -177,7 +177,7 @@ BLOAT = (
 )
 
 # Matches against every HTML tag
-HTMLTAG = compile(r"<\/?.*?>\s*", S)
+HTMLTAGS = (compile(r"<\/?.*?>\s*", S),)
 
 
 # ((Broken ISO 8859-1 encoding, Proper UTF equivalent encoding), …)

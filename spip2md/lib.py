@@ -4,14 +4,47 @@ from os import makedirs, remove
 from os.path import isfile
 from shutil import rmtree
 
+from peewee import ModelSelect
+
 from spip2md.config import CFG
-from spip2md.extended_models import RootRubrique
+from spip2md.extended_models import Section
 from spip2md.spip_models import DB
 from spip2md.style import BOLD, esc
 
+# Define parent ID of level 0 sections
+ROOTID = 0
 
-# Count on outputted tree
-def count_output(
+
+# Write the level 0 sections and their subtrees
+def write_root_tree(parent_dir: str) -> list[str | list]:
+    # Define dictionary output to diplay
+    output: list[str | list] = []
+    # Print starting message
+    print(
+        f"""\
+Begin exporting {esc(BOLD)}{CFG.db}@{CFG.db_host}{esc()} SPIP database to plain \
+Markdown+YAML files,
+into the directory {esc(BOLD)}{parent_dir}{esc()}, \
+as database user {esc(BOLD)}{CFG.db_user}{esc()}
+"""
+    )
+    # Get all sections of parentID ROOTID
+    child_sections: list[Section] = (
+        Section.select()
+        .where(Section.id_parent == ROOTID)
+        .order_by(Section.date.desc())
+    )
+    nb: int = len(child_sections)
+    # Write each subsections (write their entire subtree)
+    for i, s in enumerate(child_sections):
+        s.parentdir = CFG.output_dir
+        output.append(s.write_tree(i, nb))
+        print()  # Break line between level 0 sections in output
+    return output
+
+
+# Count on outputted tree & print results if finished
+def summarize(
     tree: list[str | list[str | list]],
     indent: str = "  ",
     depth: int = -1,
@@ -20,11 +53,19 @@ def count_output(
 ) -> tuple[int, int]:
     for sub in tree:
         if type(sub) == list:
-            branches, leaves = count_output(
-                sub, indent, depth + 1, branches + 1, leaves
-            )
+            branches, leaves = summarize(sub, indent, depth + 1, branches + 1, leaves)
         elif type(sub) == str:
             leaves += 1
+    # End message only if it’s the root one
+    if depth == -1:
+        print(
+            f"""\
+Exported a total of {esc(BOLD)}{leaves}{esc()} Markdown files, \
+stored into {esc(BOLD)}{branches}{esc()} directories"""
+        )
+        # Warn about issued warnings in log file
+        if isfile(CFG.logfile):
+            print(f"\nWarnings and informations in {esc(BOLD)}{CFG.logfile}{esc()}")
     return (branches, leaves)
 
 
@@ -40,27 +81,11 @@ def init_logging() -> None:
     )
 
 
-# Summary message at the end of the program
-def summary(branches: int, leaves: int) -> None:
-    print(
-        f"""\
-Exported a total of {esc(BOLD)}{leaves}{esc()} Markdown files, \
-stored into {esc(BOLD)}{branches}{esc()} directories"""
-    )
-    # Warn about issued warnings in log file
-    if isfile(CFG.logfile):
-        print(f"\nTake a look at warnings and infos in {esc(BOLD)}{CFG.logfile}{esc()}")
-
-
 # Clear the output dir if needed & create a new
 def clear_output() -> None:
     if CFG.clear_output:
         rmtree(CFG.output_dir, True)
     makedirs(CFG.output_dir, exist_ok=True)
-
-
-# Define the virtual id=0 section
-ROOT = RootRubrique()
 
 
 # To execute when script is directly executed as a script
@@ -84,6 +109,6 @@ def cli():
     DB.connect()
 
     # Write everything while printing the output human-readably
-    summary(*count_output(ROOT.write_tree(CFG.output_dir)))
+    summarize(write_root_tree(CFG.output_dir))
 
     DB.close()  # Close the connection with the database
