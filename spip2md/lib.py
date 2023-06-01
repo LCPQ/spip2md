@@ -15,6 +15,8 @@ ROOTID = 0
 
 # Write the level 0 sections and their subtrees
 def write_root_tree(parent_dir: str) -> list[str | list]:
+    # Define logger for this method’s logs
+    log = logging.getLogger(CFG.logname + ".write_root_tree")
     # Define dictionary output to diplay
     output: list[str | list] = []
     # Print starting message
@@ -26,6 +28,7 @@ into the directory {esc(BOLD)}{parent_dir}{esc()}, \
 as database user {esc(BOLD)}{CFG.db_user}{esc()}
 """
     )
+    log.debug("Initialize root sections")
     # Get all sections of parentID ROOTID
     child_sections: tuple[Section, ...] = (
         Section.select()
@@ -35,9 +38,11 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
     nb: int = len(child_sections)
     # Write each subsections (write their entire subtree)
     for i, s in enumerate(child_sections):
+        log.debug(f"Begin exporting section {i}/{nb} {s._title}")
         s._parentdir = CFG.output_dir
         output.append(s.write_tree(i, nb))
         print()  # Break line between level 0 sections in output
+        log.debug(f"Finished exporting section {i}/{nb} {s._title}")
     return output
 
 
@@ -63,7 +68,10 @@ stored into {esc(BOLD)}{branches}{esc()} directories"""
         )
         # Warn about issued warnings in log file
         if isfile(CFG.logfile):
-            print(f"\nWarnings and informations in {esc(BOLD)}{CFG.logfile}{esc()}")
+            print(
+                f"Logging level was set to {esc(BOLD)}{CFG.loglevel}{esc()}, there are"
+                + f" warnings and informations in {esc(BOLD)}{CFG.logfile}{esc()}"
+            )
     return (branches, leaves)
 
 

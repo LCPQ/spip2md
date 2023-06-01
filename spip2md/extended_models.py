@@ -1,6 +1,5 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 import logging
-from copy import deepcopy
 from os import makedirs
 from os.path import basename, splitext
 from re import Pattern, finditer, search
@@ -15,7 +14,6 @@ from peewee import (
     IntegerField,
 )
 from slugify import slugify
-from typing_extensions import Self
 from yaml import dump
 
 from spip2md.config import CFG
@@ -109,32 +107,6 @@ class NormalizedDocument(SpipInterface, SpipDocuments):
 
 
 class WritableObject(SpipInterface):
-    translations: dict[str, Self]
-
-    # Detect every language present in <multi> blocks of text
-    # For each language in <multi> block, output a new object with the translation
-    def translate_multi(self, text: str) -> dict[str, str]:
-        translations: dict[str, str] = {self.lang: text}  # Dict such as lang: text
-        # for each langs of <multi> blocks, add its text to the corresponding dict key
-        for block in MULTILANG_BLOCK.finditer(text):
-            for lang in MULTILANGS.finditer(block.group(1)):
-                # To log the translation
-                trans: str = lang.group(2)[:50].strip()
-                if lang.group(1) == self.lang:
-                    LOG.debug(f"Keeping {lang.group(1)} of {self._title}: {trans}")
-                    translations[self.lang] = translations[self.lang].replace(
-                        block.group(), lang.group(2)
-                    )
-                elif lang.group(1) in translations:
-                    LOG.debug(f"Appending to {lang.group(1)} of {self._title}: {trans}")
-                    translations[lang.group(1)] += lang.group(2)
-                else:
-                    LOG.debug(
-                        f"Adding {lang.group(1)} translation of {self._title}: {trans}"
-                    )
-                    translations[lang.group(1)] = lang.group(2)
-        return translations
-
     # Apply a mapping from regex maps
     @staticmethod
     def apply_mapping(text: str, mapping: tuple) -> str:
@@ -203,6 +175,10 @@ class WritableObject(SpipInterface):
         return field.strip()  # Strip whitespaces around text
 
     def convert_title(self) -> str:
+        if self.titre is None:
+            self._title = ""  # Define temporary title to use in functions
+        else:
+            self._title = self.titre.strip()  # Define temporary title
         return self.convert_field(self.titre)
 
     def __init__(self, *args, **kwargs):
@@ -213,16 +189,18 @@ class WritableObject(SpipInterface):
         self._status = self.statut == "publie"
 
     # Print one or more line(s) in which special elements are stylized
-    def _style_print(self, string: str, indent: bool = True, end: str = "\n") -> str:
+    def style_print(
+        self, string: str, indent: Optional[str] = "  ", end: str = "\n"
+    ) -> str:
         stylized: str = string
         for o in SPECIAL_OUTPUT:
             stylized = o.sub(esc(*self._style) + r"\1" + esc(), stylized)
         for w in WARNING_OUTPUT:
             stylized = w.sub(esc(*WARNING_STYLE) + r"\1" + esc(), stylized)
-        if indent:
-            stylized = "  " * self._depth + stylized
+        if indent is not None and len(indent) > 0:
+            stylized = indent * self._depth + stylized
         print(stylized, end=end)
-        # Return the stylized string
+        # Return the stylized string in case
         return stylized
 
     # Print the message telling what is going to be done
@@ -237,16 +215,17 @@ class WritableObject(SpipInterface):
             s: str = "s" if limit - index > 1 else ""
             output[-1] += f" {type(self).__name__}{s}"
             # Print the output as the program goes
-            self._style_print(output[-1])
+            self.style_print(output[-1])
         # Output the counter & title of the object being exported
         output.append(f"{index + 1}. ")
-        output.append(prepend)
+        output[-1] += prepend
         if len(self._title) == 0:
             output[-1] += "EMPTY NAME"
         else:
             output[-1] += self._title
         # Print the output as the program goes
-        self._style_print(output[-1], end="")
+        # LOG.debug(f"Begin exporting {type(self).__name__} {output[-1]}")
+        self.style_print(output[-1], end="")
         return output
 
     # Write object to output destination
@@ -259,7 +238,8 @@ class WritableObject(SpipInterface):
         if type(message) is not str:
             output += "ERROR "
         # Print the output as the program goes
-        self._style_print(output + str(message), indent=False)
+        # LOG.debug(f"Finished exporting {type(self).__name__}: {message}")
+        self.style_print(output + str(message), indent=None)
         return output + str(message)
 
 
@@ -304,8 +284,56 @@ class RedactionalObject(WritableObject):
     id_secteur: BigIntegerField | int
     extra: str
     langue_choisie: str
-    # Custom
-    prefix: str = "index"
+    # Converted
+    _text: str
+
+    # Detect every language present in <multi> blocks of text
+    # For each language in <multi> block in which we want to translate, create
+    # a new self-similar object in self.translations dict
+    def translate_multi(self, spipattr: str, convertattr: str) -> str:
+        # Function specific logger
+        log = logging.getLogger(CFG.logname + ".models.translate_multi")
+        text: str = getattr(self, spipattr)  # Get text of attribute
+        log.debug(f"Begin translation of `{self._title}` `{spipattr}`")
+        # Handle <multi> multi language blocks
+        translations: dict[str, str] = {}  # Dict such as lang: text
+        original_translation: str = text
+        # for each langs of <multi> blocks, add its text to the corresponding dict key
+        for block in MULTILANG_BLOCK.finditer(text):
+            for lang in MULTILANGS.finditer(block.group(1)):
+                # To log the translation
+                trans: str = lang.group(2)[:50].strip()
+                if lang.group(1) == self.lang:
+                    log.debug(f"Keeping {lang.group(1)} of `{self._title}`: {trans}")
+                    original_translation = original_translation.replace(
+                        block.group(), lang.group(2)
+                    )
+                elif lang.group(1) in translations:
+                    log.debug(
+                        f"Appending to {lang.group(1)} of `{self._title}`: {trans}"
+                    )
+                    translations[lang.group(1)] += lang.group(2)
+                else:
+                    log.debug(
+                        f"Add {lang.group(1)} translation of `{self._title}`: {trans}"
+                    )
+                    translations[lang.group(1)] = lang.group(2)
+        # Iterate over translations, creating translated sub-WritableObjects if needed
+        for lang, translation in translations.items():
+            if lang in CFG.export_languages:
+                if lang not in self._translations:
+                    self._translations[lang] = {}
+                self._translations[lang][convertattr] = translation
+                log.debug(
+                    f"Set {lang} `{self._title}` `{convertattr}`"
+                    + f" to `{self._translations[lang][convertattr]}`"
+                )
+
+        log.debug(
+            f"{self.lang} `{self._title}` `{spipattr}`"
+            + f" translated into `{original_translation}`"
+        )
+        return original_translation
 
     def replace_links(
         self,
@@ -339,59 +367,53 @@ class RedactionalObject(WritableObject):
 
     # Get filename of this object
     def dest_filename(self) -> str:
-        return self.prefix + "." + self.lang + "." + CFG.export_filetype
+        return self._fileprefix + "." + self.lang + "." + CFG.export_filetype
 
     def convert_title(self) -> str:
-        # Use memoïzed value in priority
         if hasattr(self, "_title"):
+            LOG.debug(
+                "convert_title() call"
+                + f" but {type(self).__name__} {self._title}._title is already set"
+            )
             return self._title
         if self.titre is None:
+            LOG.debug(f"convert_title() call but {type(self).__name__}.title is None")
             return ""
         if len(self.titre) == 0:
+            LOG.debug(f"convert_title() call but {type(self).__name__}.title is empty")
             return ""
-        text: str = self.titre
-        self._title = self.titre.strip()  # Define temporary title for translate
-        # Handle <multi> multi language blocks
-        LOG.debug(f"Begin translation of {text.strip()} title")
-        for lang, translation in self.translate_multi(text).items():
-            if lang == self.lang:
-                text = translation
-            else:
-                LOG.debug(f"Not setting current article title to {lang} {translation}")
-                continue
-                self.translations: dict[str, Self] = {}
-                self.translations[lang] = deepcopy(self)
-                self.translations[lang].titre = translation
-        LOG.debug(f"Setting current article title to {text.strip()}")
-        return self.convert_field(text)
+        self._title = self.titre.strip()  # Define temporary title to use in functions
+        self._title = self.translate_multi("titre", "_title")
+        LOG.debug(f"`{self._title}` current translations: {self._translations}")
+        return self.convert_field(self._title)
 
     def convert_text(self) -> str:
-        # Use memoïzed value in priority
         if hasattr(self, "_text"):
+            LOG.debug(
+                "convert_text() call"
+                + f" but {type(self).__name__} {self._title}._text is already set"
+            )
             return self._text
         if self.texte is None:
+            LOG.debug(
+                "convert_text() call"
+                + f" but {type(self).__name__} {self._title}.text is None"
+            )
             return ""
         if len(self.texte) == 0:
+            LOG.debug(
+                "convert_text() call"
+                + f" but {type(self).__name__} {self._title}.text is empty"
+            )
             return ""
-        text: str = self.texte
-        # Handle <multi> multi language blocks
-        LOG.debug(f"Begin translation of {text.strip()} text")
-        for lang, translation in self.translate_multi(text):
-            if lang == self.lang:
-                text = translation
-            else:
-                continue
-                self.translations: dict[str, Self] = {}
-                self.translations[lang] = deepcopy(self)
-                self.translations[lang].texte = translation
-        # Replace ID based SPIP links with relative path links
+        text: str = self.translate_multi("texte", "_title")
+        LOG.debug(f"`{self._title}` current translations: {self._translations}")
         text = self.replace_links(text, DOCUMENT_LINK, Document)
         text = self.replace_links(text, ARTICLE_LINK, Article)
         text = self.replace_links(text, SECTION_LINK, Section)
         return self.convert_field(text)
 
     def convert_extra(self) -> str:
-        # Use memoïzed value in priority
         if hasattr(self, "_extra"):
             return self._extra
         if self.extra is None:
@@ -404,6 +426,9 @@ class RedactionalObject(WritableObject):
         return self.convert_field(text)
 
     def __init__(self, *args, **kwargs):
+        self._translations: dict[str, dict[str, str]] = {}  # prevent inherithance
+        # for lang in CFG.export_languages:
+        #     self._translations[lang] = {}  # Initialize keys for export langugaes
         super().__init__(*args, **kwargs)
         # Initialize converted fields beginning with underscore
         self._choosen_language = self.langue_choisie == "oui"
@@ -465,6 +490,17 @@ class RedactionalObject(WritableObject):
         with open(self.dest_path(), "w") as f:
             f.write(self.content())
         return self.dest_path()
+
+    # Output information about file that was just exported
+    def end_message(self, message: str | Exception) -> str:
+        output: str = super().end_message(message)
+        # Write eventual translations of self
+        LOG.debug(f"`{self._title}` contains translations: `{self._translations}`")
+        for lang, translation in self._translations.items():
+            LOG.debug(f"Writing {lang} translation of section `{self._title}`")
+            self.style_print(f"{lang}: " + translation["_title"])
+            # translated.end_message(translated.write())
+        return output
 
 
 class Article(RedactionalObject, NormalizedArticle):
@@ -546,6 +582,8 @@ class Section(RedactionalObject, NormalizedSection):
         )
 
     def write_tree(self, index: int, total: int) -> list[str | list[Any]]:
+        # Define logger for this method’s logs
+        log = logging.getLogger(CFG.logname + ".models.write_tree")
         # Define dictionary output to diplay
         output: list[str | list[Any]] = []
         # Print & add to output the message before the section write
@@ -572,10 +610,13 @@ class Section(RedactionalObject, NormalizedSection):
                     output[-1] += obj.end_message(err)
             return output
 
+        log.debug(f"Export section {index} `{self._title}` articles")
         output.append(write_loop(articles))
+        log.debug(f"Export section {index} `{self._title}` documents")
         output.append(write_loop(documents))
 
         # Get all child section of this section
+        log.debug(f"Initialize subsections of `{self._title}`")
         child_sections: tuple[Section, ...] = (
             Section.select()
             .where(Section.id_parent == self._id)
@@ -584,6 +625,8 @@ class Section(RedactionalObject, NormalizedSection):
         nb: int = len(child_sections)
         # Do the same for subsections (write their entire subtree)
         for i, s in enumerate(child_sections):
+            log.debug(f"Begin exporting section {i}/{nb} `{s._title}`")
             s._parentdir = self.dest_directory()
             output.append(s.write_tree(i, nb))
+            log.debug(f"Finished exporting section {i}/{nb} `{s._title}`")
         return output
