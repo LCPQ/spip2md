@@ -35,7 +35,7 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
     nb: int = len(child_sections)
     # Write each subsections (write their entire subtree)
     for i, s in enumerate(child_sections):
-        s.parentdir = CFG.output_dir
+        s._parentdir = CFG.output_dir
         output.append(s.write_tree(i, nb))
         print()  # Break line between level 0 sections in output
     return output
@@ -68,15 +68,15 @@ stored into {esc(BOLD)}{branches}{esc()} directories"""
 
 
 # Clear the previous log file if needed, then configure logging
-def init_logging() -> None:
+def init_logging(**kwargs) -> None:
     if CFG.clear_log and isfile(CFG.logfile):
         remove(CFG.logfile)
+
     logging.basicConfig(
-        format="%(levelname)s:%(message)s",
-        filename=CFG.logfile,
-        encoding="utf-8",
-        level=CFG.loglevel,
+        encoding="utf-8", filename=CFG.logfile, level=CFG.loglevel, **kwargs
     )
+
+    # return logging.getLogger(CFG.logname)
 
 
 # Clear the output dir if needed & create a new

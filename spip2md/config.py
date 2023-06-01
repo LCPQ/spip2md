@@ -28,6 +28,7 @@ class Configuration:
     clear_output: bool = False  # Remove eventual output dir before running
     clear_log: bool = False  # Clear log before every run instead of appending to
     logfile: str = "spip2md.log"  # File where logs will be written, relative to wd
+    logname: str = "spip2md"  # Labelling of logs
     loglevel: str = "WARNING"  # Minimum criticity of logs written in logfile
     remove_html: bool = True  # Should spip2md remove every HTML tags
     max_articles_export: int = 1000  # TODO reimplement
