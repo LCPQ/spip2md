@@ -4,8 +4,6 @@ from os import makedirs, remove
 from os.path import isfile
 from shutil import rmtree
 
-from peewee import ModelSelect
-
 from spip2md.config import CFG
 from spip2md.extended_models import Section
 from spip2md.spip_models import DB
@@ -29,7 +27,7 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
 """
     )
     # Get all sections of parentID ROOTID
-    child_sections: list[Section] = (
+    child_sections: tuple[Section, ...] = (
         Section.select()
         .where(Section.id_parent == ROOTID)
         .order_by(Section.date.desc())
@@ -88,7 +86,7 @@ def clear_output() -> None:
     makedirs(CFG.output_dir, exist_ok=True)
 
 
-# To execute when script is directly executed as a script
+# When directly executed as a script
 def cli():
     # def cli(*addargv: str):
     # import sys
@@ -101,8 +99,8 @@ def cli():
     # else:
     #     sections_export = CFG.max_sections_export
 
-    init_logging()
-    clear_output()
+    init_logging()  # Initialize logging and logfile
+    clear_output()  # Eventually remove already existing output dir
 
     # Connect to the MySQL database with Peewee ORM
     DB.init(CFG.db, host=CFG.db_host, user=CFG.db_user, password=CFG.db_pass)

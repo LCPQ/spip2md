@@ -15,22 +15,23 @@ def config_file() -> Optional[str]:
 
 
 class Configuration:
-    db: str = "spip"
-    db_host: str = "localhost"
-    db_user: str = "spip"
-    db_pass: str = "password"
-    output_dir: str = "output/"
-    data_dir: str = "data/"
-    clear_output: bool = False
-    clear_log: bool = True
-    prepend_h1: bool = True
-    export_filetype: str = "md"
-    logfile: str = "spip2md.log"
-    loglevel: str = "WARNING"
-    unknown_char_replacement: str = "??"
-    alternative_languages = ("fr", "en", "es")
-    # max_articles_export: int = 1000  # TODO reimplement with recursion
-    # max_sections_export: int = 500  # TODO reimplement with recursion
+    db: str = "spip"  # DB name
+    db_host: str = "localhost"  # Where is the DB
+    db_user: str = "spip"  # A DB user with read access to SPIP database
+    db_pass: str = "password"  # Password of db_user
+    output_dir: str = "output/"  # The directory to which DB will be exported
+    data_dir: str = "data/"  # The directory in which SPIP images & documents are stored
+    prepend_h1: bool = True  # Add the title of the article as a Markdown h1
+    unknown_char_replacement: str = "??"  # Replaces unknown characters
+    export_languages = ("fr", "en")  # Languages that will be exported
+    export_filetype: str = "md"  # Extension of exported text files
+    clear_output: bool = False  # Remove eventual output dir before running
+    clear_log: bool = False  # Clear log before every run instead of appending to
+    logfile: str = "spip2md.log"  # File where logs will be written, relative to wd
+    loglevel: str = "WARNING"  # Minimum criticity of logs written in logfile
+    remove_html: bool = True  # Should spip2md remove every HTML tags
+    max_articles_export: int = 1000  # TODO reimplement
+    max_sections_export: int = 500  # TODO reimplement
 
     def __init__(self, config_file: Optional[str] = None):
         if config_file is not None:

@@ -74,8 +74,8 @@ class NormalizedSection(SpipNormalized, SpipRubriques):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.obj_id = self.id_rubrique
-        self.depth = self.profondeur
+        self.obj_id = self.id_rubrique.cast(as_type="int")
+        self.depth = self.profondeur.cast(as_type="int")
 
 
 class NormalizedArticle(SpipNormalized, SpipArticles):
@@ -84,7 +84,7 @@ class NormalizedArticle(SpipNormalized, SpipArticles):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.obj_id = self.id_article
+        self.obj_id = self.id_article.cast(as_type="int")
 
 
 class NormalizedDocument(SpipNormalized, SpipDocuments):
@@ -93,7 +93,7 @@ class NormalizedDocument(SpipNormalized, SpipDocuments):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.obj_id = self.id_document
+        self.obj_id = self.id_document.cast(as_type="int")
 
 
 class WritableObject(SpipNormalized):
@@ -515,7 +515,7 @@ class Section(RedactionalObject, NormalizedSection):
     def articles(self) -> list[Article]:
         return (
             Article.select()
-            .where(Article.id_rubrique == self.obj_id)
+            .where((Article.id_rubrique == self.obj_id) & (Article.lang == self.lang))
             .order_by(Article.date.desc())
             # .limit(limit)
         )
@@ -551,7 +551,7 @@ class Section(RedactionalObject, NormalizedSection):
         output.append(write_loop(documents))
 
         # Get all child section of this section
-        child_sections: list[Section] = (
+        child_sections: tuple[Section, ...] = (
             Section.select()
             .where(Section.id_parent == self.obj_id)
             .order_by(Section.date.desc())
