@@ -1,13 +1,21 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 import logging
+from copy import deepcopy
 from os import makedirs
 from os.path import basename, splitext
 from re import Pattern, finditer, search
 from shutil import copyfile
 from typing import Any, Optional
 
-from peewee import DateTimeField, DoesNotExist
+from peewee import (
+    BigAutoField,
+    BigIntegerField,
+    DateTimeField,
+    DoesNotExist,
+    IntegerField,
+)
 from slugify import slugify
+from typing_extensions import Self
 from yaml import dump
 
 from spip2md.config import CFG
@@ -45,8 +53,8 @@ class SpipNormalized:
     statut: str
     # profondeur: int
     # Custom
-    obj_id: int = 0  # database ID of object, but same attribute name for all objects
-    depth: int  # Equals `profondeur` for sections
+    obj_id: BigAutoField | int = 0  # same ID attribute name for all objects
+    depth: IntegerField | int  # Equals `profondeur` for sections
     fileprefix: str  # String to prepend to written files
     parentdir: str  # Path from output dir to direct parent
     style: tuple[int, ...]  # Styles to apply to some elements of printed output
@@ -74,8 +82,8 @@ class NormalizedSection(SpipNormalized, SpipRubriques):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.obj_id = self.id_rubrique.cast(as_type="int")
-        self.depth = self.profondeur.cast(as_type="int")
+        self.obj_id = self.id_rubrique
+        self.depth = self.profondeur
 
 
 class NormalizedArticle(SpipNormalized, SpipArticles):
@@ -84,7 +92,7 @@ class NormalizedArticle(SpipNormalized, SpipArticles):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.obj_id = self.id_article.cast(as_type="int")
+        self.obj_id = self.id_article
 
 
 class NormalizedDocument(SpipNormalized, SpipDocuments):
@@ -93,71 +101,36 @@ class NormalizedDocument(SpipNormalized, SpipDocuments):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.obj_id = self.id_document.cast(as_type="int")
+        self.obj_id = self.id_document
 
 
 class WritableObject(SpipNormalized):
+    translations: dict[str, Self]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    # Set the lang attribute of self to the first one detected
-    # Then, if there’s other langs remaining, instanciate a new object with same
-    # input text but stripped of first lang
-    # Then returns the text of first detected language
-    # WARNING currently only supports ONE <multi> block per text
-    def translate_multi(self, text: str) -> str:
-        # Memoize self title
-        title: str = self.title()
-        # First translation found, with eventual preexisting text
-        current_translation: str = text
-        next_text: str = text  # <multi> block(s) without first lang
-        block = MULTILANG_BLOCK.search(text)
-        if block is not None:
-            lang = MULTILANGS.search(block.group(1))
-            if lang is not None:
-                # set current lang to found first lang
-                self.lang = lang.group(1)
-                # replace multi blocks of current text with first lang
-                current_translation = current_translation.replace(
-                    block.group(), lang.group(2)
-                )
-                # Log the translation
-                translated: str = lang.group(2)[:60].strip()
-                logging.info(
-                    f"{title} lang becomes {self.lang}, with text {translated} …"
-                )
-                # remove first lang from next_text
-                next_text = next_text.replace(lang.group(), "")
-            else:
-                # Log the unexpected situation
-                logging.warning(
-                    f"Unexpected empty <multi> block in {title}, deleting it anyway"
-                )
-        # Do the same for the next text
-        next_block = MULTILANG_BLOCK.search(next_text)
-        if next_block is not None:
-            next_lang = MULTILANGS.search(next_block.group(1))
-            if next_lang is not None:
-                # If there is a remaining lang
-                # Instantiate & write a similar object with modified text & lang
-                logging.info(f"Instanciate {next_lang.group(1)} translation of {title}")
-                next_lang_obj: WritableObject = type(self)(
-                    texte=next_text,
-                    lang=next_lang.group(1),
-                    titre=self.titre,
-                    descriptif=self.descriptif,
-                )
-                next_lang_obj.style = self.style
-                next_lang_obj.depth = self.depth
-                next_lang_obj.parentdir = self.dest_directory()
-                # WARNING the output will appear in terminal & logfile but won’t return
-                next_lang_obj.begin_message(0, 0)  # WARNING wrong counter
-                try:
-                    next_lang_obj.end_message(next_lang_obj.write())
-                except Exception as err:
-                    next_lang_obj.end_message(err)
-        # Return the first detected language
-        return current_translation
+    # Detect every language present in <multi> blocks of text
+    # For each language in <multi> block, output a new object with the translation
+    def translate_multi(self, text: str) -> dict[str, str]:
+        # title: str = self.title()  # Memoize self title # WARNING recurses
+        title: str = self.titre.strip()  # Memoize self title # WARNING recurses
+        translations: dict[str, str] = {self.lang: text}  # Dict such as lang: text
+        # for each langs of <multi> blocks, add its text to the corresponding dict key
+        for block in MULTILANG_BLOCK.finditer(text):
+            for lang in MULTILANGS.finditer(block.group(1)):
+                if lang.group(1) == self.lang:
+                    translations[self.lang] = translations[self.lang].replace(
+                        block.group(), lang.group(2)
+                    )
+                elif lang.group(1) in translations:
+                    translations[lang.group(1)] += lang.group(2)
+                else:
+                    translations[lang.group(1)] = lang.group(2)
+                # Logs the translation
+                translated: str = lang.group(2)[:50].strip()
+                logging.info(f"{title} {lang.group(1)} translation: {translated}")
+        return translations
 
     # Apply a mapping from regex maps
     @staticmethod
@@ -246,7 +219,9 @@ class WritableObject(SpipNormalized):
         return stylized
 
     # Print the message telling what is going to be done
-    def begin_message(self, index: int, limit: int, step: int = 100) -> list[str]:
+    def begin_message(
+        self, index: int, limit: int, prepend: str = "", step: int = 100
+    ) -> list[str]:
         output: list[str] = []
         # Output the remaining number of objects to export every step object
         if index % step == 0:
@@ -258,6 +233,7 @@ class WritableObject(SpipNormalized):
             self.style_print(output[-1])
         # Output the counter & title of the object being exported
         output.append(f"{index + 1}. ")
+        output.append(prepend)
         if len(self.title()) == 0:
             output[-1] += "EMPTY NAME"
         else:
@@ -306,11 +282,12 @@ class Document(WritableObject, NormalizedDocument):
 
 
 class RedactionalObject(WritableObject):
-    id_trad: int
-    id_rubrique: int
+    id_trad: BigIntegerField | int
+    id_rubrique: BigIntegerField | int
+    # date: DateTimeField | str
     date: DateTimeField
     maj: str
-    id_secteur: int
+    id_secteur: BigIntegerField | int
     extra: str
     langue_choisie: str
     # Custom
@@ -342,6 +319,22 @@ class RedactionalObject(WritableObject):
                     )
         return text
 
+    def title(self) -> str:
+        if self.texte is None:
+            return ""
+        if len(self.texte) == 0:
+            return ""
+        text: str = self.texte
+        # Handle <multi> multi language blocks
+        for lang, translation in self.translate_multi(text):
+            if lang == self.lang:
+                text = translation
+            else:
+                self.translations: dict[str, Self] = {}
+                self.translations[lang] = deepcopy(self)
+                self.translations[lang].titre = translation
+        return self.convert_field(text)
+
     def text(self) -> str:
         if self.texte is None:
             return ""
@@ -349,7 +342,13 @@ class RedactionalObject(WritableObject):
             return ""
         text: str = self.texte
         # Handle <multi> multi language blocks
-        text = self.translate_multi(text)
+        for lang, translation in self.translate_multi(text):
+            if lang == self.lang:
+                text = translation
+            else:
+                self.translations: dict[str, Self] = {}
+                self.translations[lang] = deepcopy(self)
+                self.translations[lang].texte = translation
         # Replace ID based SPIP links with relative path links
         text = self.replace_links(text, DOCUMENT_LINK, Document)
         text = self.replace_links(text, ARTICLE_LINK, Article)
