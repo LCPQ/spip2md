@@ -40,7 +40,7 @@ from spip2md.spip_models import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
-from spip2md.style import BLUE, BOLD, GREEN, WARNING_STYLE, YELLOW, esc
+from spip2md.style import BLUE, BOLD, CYAN, GREEN, WARNING_STYLE, YELLOW, esc
 
 # Define recursive list type
 RecursiveList = list["str | RecursiveList"]
@@ -104,7 +104,7 @@ class NormalizedArticle(SpipInterface, SpipArticles):
 
 class NormalizedDocument(SpipInterface, SpipDocuments):
     _fileprefix: str = ""
-    _style = (BOLD, BLUE)  # Documents accent color is blue
+    _style = (BOLD, CYAN)  # Documents accent color is blue
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
