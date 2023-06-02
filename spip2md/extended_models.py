@@ -521,7 +521,7 @@ class RedactionalObject(WritableObject):
             translation.lang = lang
             translation._translations = {}
             # Replace the translated attributes of the translated object
-            for attr, value in translated_attrs.values():
+            for attr, value in translated_attrs.items():
                 setattr(translation, attr, value)
         return translations
 
@@ -547,6 +547,8 @@ class RedactionalObject(WritableObject):
     ) -> RecursiveList:
         output: RecursiveList = super().write_all(parentdepth, parentdir, index, total)
         output.append(self.write_children())
+        for translated in self.translations():
+            translated.write_all(parentdepth, parentdir, index, total)
         return output
 
 
