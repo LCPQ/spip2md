@@ -2,7 +2,7 @@
 import logging
 from os import makedirs
 from os.path import basename, splitext
-from re import Pattern, finditer, search
+from re import Match, Pattern, finditer, search
 from shutil import copyfile
 from typing import Any, Optional
 
@@ -20,11 +20,11 @@ from spip2md.config import CFG
 from spip2md.regexmaps import (
     ARTICLE_LINK,
     BLOAT,
+    CONFIGLANGS,
     DOCUMENT_LINK,
     HTMLTAGS,
     ISO_UTF,
     MULTILANG_BLOCK,
-    MULTILANGS,
     SECTION_LINK,
     SPECIAL_OUTPUT,
     SPIP_MARKDOWN,
@@ -149,7 +149,7 @@ class WritableObject(SpipInterface):
             for match in finditer("(" + char + ")+", text):
                 context: str = unknown_chars_context(text[lastend:], char)
                 LOG.warn(
-                    f"Unknown char {char} found in {self._title[:40]} at: {context}"
+                    f"Unknown char {char} found in {self.titre[:40]} at: {context}"
                 )
                 if CFG.unknown_char_replacement is not None:
                     LOG.warn(
@@ -178,19 +178,15 @@ class WritableObject(SpipInterface):
         field = self.warn_unknown(field, UNKNOWN_ISO)
         return field.strip()  # Strip whitespaces around text
 
-    def convert_title(self) -> str:
-        if self.titre is None:
-            self._title = ""  # Define temporary title to use in functions
-        else:
-            self._title = self.titre.strip()  # Define temporary title
-        return self.convert_field(self.titre)
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Initialize converted fields beginning with underscore
-        self._title: str = self.convert_title()
         self._description: str = self.convert_field(self.descriptif)
         self._status = self.statut == "publie"
+
+    # Apply post-init conversions and cancel the export if self not of the right lang
+    def convert(self) -> None:
+        self._title = self.convert_field(self.titre)
 
     # Print one or more line(s) in which special elements are stylized
     def style_print(
@@ -208,21 +204,20 @@ class WritableObject(SpipInterface):
         return stylized
 
     # Print the message telling what is going to be done
-    def begin_message(
-        self, index: int, limit: int, prepend: str = "", step: int = 100
-    ) -> list[str]:
+    def begin_message(self, index: int, limit: int, step: int = 100) -> list[str]:
         output: list[str] = []
         # Output the remaining number of objects to export every step object
         if index % step == 0 and limit > 0:
             output.append(f"Exporting {limit-index}")
             output[-1] += f" level {self._depth}"
             s: str = "s" if limit - index > 1 else ""
+            if hasattr(self, "lang"):
+                output[-1] += f" {self.lang}"
             output[-1] += f" {type(self).__name__}{s}"
             # Print the output as the program goes
             self.style_print(output[-1])
         # Output the counter & title of the object being exported
         output.append(f"{index + 1}. ")
-        output[-1] += prepend
         if len(self._title) == 0:
             output[-1] += "EMPTY NAME"
         else:
@@ -248,18 +243,13 @@ class WritableObject(SpipInterface):
 
     # Perform all the write steps of this object
     def write_all(
-        self,
-        parentdepth: int,
-        parentdir: str,
-        index: int,
-        total: int,
-        prepend: str = "",
+        self, parentdepth: int, parentdir: str, index: int, total: int
     ) -> RecursiveList:
         LOG.debug(f"Writing {type(self).__name__} `{self._title}`")
         output: RecursiveList = []
         self._depth = parentdepth + 1
         self._parentdir = parentdir
-        for m in self.begin_message(index, total, prepend):
+        for m in self.begin_message(index, total):
             output.append(m)
         try:
             output[-1] += self.end_message(self.write())
@@ -279,25 +269,37 @@ class Document(WritableObject, NormalizedDocument):
         return data_dir + self.fichier
 
     # Get directory of this object
-    def dest_directory(self, prepend: str = "", append: str = "") -> str:
-        return self._parentdir + prepend + slugify(self._title, max_length=100) + append
+    def dest_directory(
+        self, prepend_id: bool = True, prepend: str = "", append: str = ""
+    ) -> str:
+        _id: str = str(self._id) + "-" if prepend_id else ""
+        return (
+            self._parentdir
+            + prepend
+            + slugify(_id + self._title, max_length=100)
+            + append
+        )
 
     # Get destination slugified name of this file
     def dest_filename(self, prepend: str = "", append: str = "") -> str:
         name, filetype = splitext(basename(str(self.fichier)))
         return slugify(prepend + name, max_length=100) + append + filetype
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Initialize converted fields beginning with underscore
-        # self._src_path = self.src_path()
-        # self._dest_directory = self.dest_directory()
-        # self._dest_filename = self.dest_filename()
-
     # Write document to output destination
     def write(self) -> str:
         # Copy the document from it’s SPIP location to the new location
         return copyfile(self.src_path(), self.dest_path())
+
+    # Perform all the write steps of this object
+    def write_all(
+        self, parentdepth: int, parentdir: str, index: int, total: int
+    ) -> RecursiveList:
+        self.convert()  # Apply post-init conversions
+        return super().write_all(parentdepth, parentdir, index, total)
+
+
+class LangNotFoundError(Exception):
+    pass
 
 
 class RedactionalObject(WritableObject):
@@ -312,53 +314,25 @@ class RedactionalObject(WritableObject):
     # Converted
     _text: str
 
-    # Detect every language present in <multi> blocks of text
-    # For each language in <multi> block in which we want to translate, create
-    # a new self-similar object in self.translations dict
-    def translate_multi(self, spipattr: str) -> str:
-        # Function specific logger
-        log = logging.getLogger(CFG.logname + ".models.translate_multi")
-        text: str = getattr(self, spipattr)  # Get text of attribute
-        log.debug(f"Translating <multi> blocks of `{self._title}` `{spipattr}`")
-        # Handle <multi> multi language blocks
-        translations: dict[str, str] = {}  # Dict such as lang: text
-        original_translation: str = text
-        # for each langs of <multi> blocks, add its text to the corresponding dict key
+    # Get rid of other lang than forced in text and modify lang to forced if found
+    def translate_field(self, forced_lang: str, text: str) -> str:
+        LOG.debug(f"Translating <multi> blocks of `{self._title}`")
+        # for each <multi> blocks, keep only forced lang
+        lang: Optional[Match[str]] = None
         for block in MULTILANG_BLOCK.finditer(text):
-            for lang in MULTILANGS.finditer(block.group(1)):
-                # To log the translation
-                trans: str = lang.group(2)[:50].strip()
-                if lang.group(1) == self.lang:
-                    log.debug(
-                        f"Discovered {lang.group(1)} translation of `{self._title}`:"
-                        + f" `{trans}`, keeping it as the original lang"
-                    )
-                    original_translation = original_translation.replace(
-                        block.group(), lang.group(2)
-                    )
-                elif lang.group(1) in translations:
-                    log.debug(
-                        f"Discovered more {lang.group(1)} translation of"
-                        + f" `{self._title}`: `{trans}`"
-                    )
-                    translations[lang.group(1)] += lang.group(2)
-                else:
-                    log.debug(
-                        f"Discovered {lang.group(1)} translation of `{self._title}`: "
-                        + f" `{trans}`"
-                    )
-                    translations[lang.group(1)] = lang.group(2)
-        # Iterate over translations, adding translated attributes to translations dict
-        for lang, translation in translations.items():
-            if lang in CFG.export_languages:
-                if lang not in self._translations:
-                    self._translations[lang] = {}
-                self._translations[lang][spipattr] = translation
-                log.debug(
-                    f"{lang} `{self._title}` `{spipattr}`"
-                    + f" set to `{self._translations[lang][spipattr]}`"
+            lang = CONFIGLANGS[forced_lang].search(block.group(1))
+            if lang is not None:
+                # Log the translation
+                trans: str = lang.group(1)[:50].strip()
+                LOG.debug(
+                    f"Keeping {forced_lang} translation of `{self._title}`: "
+                    + f"`{trans}`, becoming its new lang"
                 )
-        return original_translation
+                text = text.replace(block.group(), lang.group(1))
+                self.lang = forced_lang  # So write-all will not be cancelled
+        if lang is None:
+            LOG.debug(f"{forced_lang} not found in `{self._title}`")
+        return text
 
     def replace_links(
         self,
@@ -387,86 +361,90 @@ class RedactionalObject(WritableObject):
         return text
 
     # Get slugified directory of this object
-    def dest_directory(self, prepend: str = "", append: str = "/") -> str:
-        return self._parentdir + prepend + slugify(self._title, max_length=100) + append
+    def dest_directory(
+        self, prepend_id: bool = True, prepend: str = "", append: str = "/"
+    ) -> str:
+        _id: str = str(self._id) + "-" if prepend_id else ""
+        return (
+            self._parentdir
+            + prepend
+            + slugify(_id + self._title, max_length=100)
+            + append
+        )
 
     # Get filename of this object
     def dest_filename(self) -> str:
         return self._fileprefix + "." + self.lang + "." + CFG.export_filetype
 
-    def convert_title(self) -> str:
+    def convert_title(self, forced_lang: str) -> None:
         LOG.debug(f"Convert title of currently untitled {type(self).__name__}")
         if hasattr(self, "_title"):
             LOG.debug(f"{type(self).__name__} {self._title} _title is already set")
-            return self._title
+            return
         if self.titre is None:
             LOG.debug(f"{type(self).__name__} title is None")
-            return ""
+            self._title = ""
+            return
         if len(self.titre) == 0:
             LOG.debug(f"{type(self).__name__} title is empty")
-            return ""
-        self._title = self.titre.strip()  # Define temporary title to use in functions
-        self._title = self.translate_multi("titre")
-        LOG.debug(
-            f"`{self.lang}` `{self._title}` title was translated to : `{self._title}`"
-        )
-        LOG.debug(f"Convert document links of `{self._title}`")
+            self._title = ""
+            return
+        self._title = self.titre.strip()
+        self._title = self.translate_field(forced_lang, self._title)
+        LOG.debug(f"Convert document links of `{self._title}` title")
         self._title = self.replace_links(self._title, DOCUMENT_LINK, Document)
-        LOG.debug(f"Convert article links of `{self._title}`")
+        LOG.debug(f"Convert article links of `{self._title}` title")
         self._title = self.replace_links(self._title, ARTICLE_LINK, Article)
-        LOG.debug(f"Convert section links of `{self._title}`")
+        LOG.debug(f"Convert section links of `{self._title}` title")
         self._title = self.replace_links(self._title, SECTION_LINK, Section)
-        return self.convert_field(self._title)
+        LOG.debug(f"Apply conversions to `{self._title}` title")
+        self._title = self.convert_field(self._title)
 
-    def convert_text(self) -> str:
+    def convert_text(self, forced_lang: str) -> None:
         LOG.debug(f"Convert text of `{self._title}`")
         if hasattr(self, "_text"):
             LOG.debug(f"{type(self).__name__} {self._title} _text is already set")
-            return self._text
+            return
         if self.texte is None:
             LOG.debug(f"{type(self).__name__} {self._title} text is None")
-            return ""
+            self._text = ""
+            return
         if len(self.texte) == 0:
             LOG.debug(f"{type(self).__name__} {self._title} text is empty")
-            return ""
-        self._text = self.translate_multi("texte")
+            self._text = ""
+            return
+        self._text = self.translate_field(forced_lang, self.texte.strip())
         LOG.debug(f"Convert document links of `{self._title}`")
         self._text = self.replace_links(self._text, DOCUMENT_LINK, Document)
         LOG.debug(f"Convert article links of `{self._title}`")
         self._text = self.replace_links(self._text, ARTICLE_LINK, Article)
         LOG.debug(f"Convert section links of `{self._title}`")
         self._text = self.replace_links(self._text, SECTION_LINK, Section)
-        return self.convert_field(self._text)
+        self._text = self.convert_field(self._text)
 
-    def convert_extra(self) -> str:
+    def convert_extra(self) -> None:
         LOG.debug(f"Convert extra of `{self._title}`")
         if hasattr(self, "_extra"):
             LOG.debug(f"{type(self).__name__} {self._title} _extra is already set")
-            return self._extra
+            return
         if self.extra is None:
             LOG.debug(f"{type(self).__name__} {self._title} extra is None")
-            return ""
+            self._extra = ""
+            return
         if len(self.extra) == 0:
             LOG.debug(f"{type(self).__name__} {self._title} extra is empty")
-            return ""
+            self._extra = ""
+            return
         LOG.debug(f"Convert article links of `{self._title}`")
         self._extra = self.replace_links(self.extra, ARTICLE_LINK, Article)
         LOG.debug(f"Convert section links of `{self._title}`")
         self._extra = self.replace_links(self._extra, SECTION_LINK, Section)
-        return self.convert_field(self._extra)
+        self._extra = self.convert_field(self._extra)
 
     def __init__(self, *args, **kwargs):
-        # Initialise translation dict as empty, in the form lang: attr: value
-        self._translations: dict[str, dict[str, str]] = {}
         super().__init__(*args, **kwargs)
-        # Initialize converted fields beginning with underscore
+        # Initialize converted fields, beginning with underscore
         self._choosen_language = self.langue_choisie == "oui"
-        self._text = self.convert_text()
-        self._extra = self.convert_extra()
-        LOG.debug(
-            f"After __init__, `{type(self).__name__}` `{self._title}` contains"
-            + f" translations: `{self._translations}`"
-        )
 
     # Get related documents
     def documents(self) -> tuple[Document]:
@@ -527,76 +505,31 @@ class RedactionalObject(WritableObject):
             f.write(self.content())
         return self.dest_path()
 
-    # Output translated self objects
-    def translations(self) -> list[Self]:
-        translations: list[Self] = []
-        LOG.debug(f"`{self._title}` contains translations: `{self._translations}`")
-        for lang, translated_attrs in self._translations.items():
-            # Copy itself (with every attribute) as a base for the translated object
-            # translation: Self = deepcopy(self)
-            # Define attributes that new translation will need
-            attributes: dict[str, Any] = {
-                "id_trad": self.id_trad,
-                "titre": self.titre,
-                "date": self.date,
-                "maj": self.maj,
-                "statut": self.statut,
-                "descriptif": self.descriptif,
-                "id_secteur": self.id_secteur,
-            }
-            # Replace default attributes with translated ones
-            for attr, value in translated_attrs.items():
-                attributes[attr] = value
-            LOG.debug(
-                f"Instanciating {lang} translation of section `{self._title}`"
-                + f" with attributes {attributes}"
+    # Apply post-init conversions and cancel the export if self not of the right lang
+    def convert(self, forced_lang: str) -> None:
+        self.convert_title(forced_lang)
+        self.convert_text(forced_lang)
+        self.convert_extra()
+        if self.lang != forced_lang:
+            raise LangNotFoundError(
+                f"`{self._title}` lang is {self.lang} instead of the wanted"
+                + f" {forced_lang} and it don’t contains"
+                + f" {forced_lang} translation in Markup either"
             )
-            translation: Self = type(self)(**attributes)
-            # Replace important attributes of the translated object
-            translation.lang = lang
-            translation._id = self._id  # WARNING ?
-            translation._depth = self._depth  # WARNING ?
-            translation._translations = {}
-            # Replace the translated attributes of the translated object
-            # For each translated attribute, output a DEBUG message
-            for attr in translated_attrs:
-                LOG.debug(
-                    f"Instanciated {lang} translation of `{self._title}` `{attr}`"
-                    + f" = `{getattr(translation, attr)}`"
-                )
-            translations.append(translation)
-        return translations
-
-    # Get the children of this object
-    def children(self) -> tuple[tuple[WritableObject], ...]:
-        return (self.documents(),)
 
     # Write all the children of this object
-    def write_children(self) -> RecursiveList:
+    def write_documents(self) -> RecursiveList:
         LOG.debug(f"Writing children of {type(self).__name__} `{self._title}`")
         output: RecursiveList = []
-        for children in self.children():
-            total = len(children)
-            for i, obj in enumerate(children):
+        children = self.documents()
+        total = len(children)
+        for i, obj in enumerate(children):
+            try:
                 output.append(
                     obj.write_all(self._depth, self.dest_directory(), i, total)
                 )
-        return output
-
-    # Perform all the write steps of this object
-    def write_all(
-        self, parentdepth: int, parentdir: str, index: int, total: int
-    ) -> RecursiveList:
-        prepend: str = self.lang + ": " if total <= 0 else ""
-        output: RecursiveList = super().write_all(
-            parentdepth, parentdir, index, total, prepend
-        )
-        output.append(self.write_children())
-        translations = self.translations()
-        LOG.debug(f"Initialized translations of {self._title}: {translations}")
-        for translated in translations:
-            LOG.debug(f"Writing {translated.lang} translation of {self._title}")
-            translated.write_all(parentdepth, parentdir, index, 0)
+            except LangNotFoundError:
+                pass  # For now, do nothing
         return output
 
 
@@ -654,6 +587,15 @@ class Article(RedactionalObject, NormalizedArticle):
             .where(SpipAuteursLiens.id_objet == self._id)
         )
 
+    # Perform all the write steps of this object
+    def write_all(
+        self, forced_lang: str, parentdepth: int, parentdir: str, index: int, total: int
+    ) -> RecursiveList:
+        self.convert(forced_lang)
+        output: RecursiveList = super().write_all(parentdepth, parentdir, index, total)
+        output.append(self.write_documents())
+        return output
+
 
 class Section(RedactionalObject, NormalizedSection):
     class Meta:
@@ -671,23 +613,48 @@ class Section(RedactionalObject, NormalizedSection):
             return super().frontmatter(meta)
 
     # Get articles of this section
-    def articles(self) -> tuple[Article]:
+    def articles(self, limit: int = 10**6) -> tuple[Article]:
         LOG.debug(f"Initialize articles of `{self._title}`")
         return (
             Article.select()
-            .where((Article.id_rubrique == self._id) & (Article.lang == self.lang))
+            .where(Article.id_rubrique == self._id)
             .order_by(Article.date.desc())
-            # .limit(limit)
+            .limit(limit)
         )
 
     # Get subsections of this section
-    def sections(self) -> tuple[Self]:
+    def sections(self, limit: int = 10**6) -> tuple[Self]:
         LOG.debug(f"Initialize subsections of `{self._title}`")
         return (
             Section.select()
             .where(Section.id_parent == self._id)
             .order_by(Section.date.desc())
+            .limit(limit)
         )
 
-    def children(self) -> tuple[tuple[WritableObject], ...]:
-        return (self.articles(),) + super().children() + (self.sections(),)
+    # Write all the children of this object
+    def write_children(self, forcedlang: str) -> RecursiveList:
+        super().write_documents()
+        LOG.debug(f"Writing children of {type(self).__name__} `{self._title}`")
+        output: RecursiveList = []
+        for children in (self.articles(), self.sections()):
+            total = len(children)
+            for i, obj in enumerate(children):
+                try:
+                    output.append(
+                        obj.write_all(
+                            forcedlang, self._depth, self.dest_directory(), i, total
+                        )
+                    )
+                except LangNotFoundError:
+                    pass  # For now, do nothing
+        return output
+
+    # Perform all the write steps of this object
+    def write_all(
+        self, forced_lang: str, parentdepth: int, parentdir: str, index: int, total: int
+    ) -> RecursiveList:
+        self.convert(forced_lang)
+        output: RecursiveList = super().write_all(parentdepth, parentdir, index, total)
+        output.append(self.write_children(forced_lang))
+        return output

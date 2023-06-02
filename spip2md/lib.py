@@ -5,7 +5,7 @@ from os.path import isfile
 from shutil import rmtree
 
 from spip2md.config import CFG
-from spip2md.extended_models import RecursiveList, Section
+from spip2md.extended_models import LangNotFoundError, RecursiveList, Section
 from spip2md.spip_models import DB
 from spip2md.style import BOLD, esc
 
@@ -29,21 +29,27 @@ into the directory {esc(BOLD)}{parent_dir}{esc()}, \
 as database user {esc(BOLD)}{CFG.db_user}{esc()}
 """
     )
-    ROOTLOG.debug("Initialize root sections")
-    # Get all sections of parentID ROOTID
-    child_sections: tuple[Section, ...] = (
-        Section.select()
-        .where(Section.id_parent == ROOTID)
-        .where(Section.lang == CFG.export_languages[0])
-        .order_by(Section.date.desc())
-    )
-    nb: int = len(child_sections)
-    # Write each subsections (write their entire subtree)
-    for i, s in enumerate(child_sections):
-        ROOTLOG.debug(f"Begin exporting section {i}/{nb} {s._title}")
-        output.append(s.write_all(-1, CFG.output_dir, i, nb))
-        print()  # Break line between level 0 sections in output
-        ROOTLOG.debug(f"Finished exporting section {i}/{nb} {s._title}")
+    # Write each sections (write their entire subtree) for each export language
+    # Force objects to handle <multi> blocks by setting them a lang
+    # Do this heavy looping because we don’t know if languages are set in database or
+    # in markup, and as such language specified in database can differ from markup
+    for lang in CFG.export_languages:
+        ROOTLOG.debug("Initialize root sections")
+        # Get all sections of parentID ROOTID
+        child_sections: tuple[Section, ...] = (
+            Section.select()
+            .where(Section.id_parent == ROOTID)
+            .order_by(Section.date.desc())
+        )
+        nb: int = len(child_sections)
+        for i, s in enumerate(child_sections):
+            ROOTLOG.debug(f"Begin exporting {lang} root section {i}/{nb}")
+            try:
+                output.append(s.write_all(lang, -1, CFG.output_dir, i, nb))
+            except LangNotFoundError:
+                pass  # For now, do nothing
+            print()  # Break line between level 0 sections in output
+            ROOTLOG.debug(f"Finished exporting {lang} root section {i}/{nb} {s._title}")
     return output
 
 

@@ -168,9 +168,13 @@ SECTION_LINK = (
 
 # Multi language block, to be further processed per lang
 MULTILANG_BLOCK = compile(r"<multi>(.+?)<\/multi>", S | I)
-MULTILANGS = compile(
+MULTILANGS = compile(  # Matches agains all langs of multi blocks
     r"\[([a-zA-Z\-]{2,6})\]\s*(.+?)\s*(?=\[[a-zA-Z\-]{2,6}\]|$)", S | I
 )
+CONFIGLANGS = {  # lang of configuration: (match against this lang)
+    lang: compile(r"\[ *" + lang + r" *\]\s*(.+?)\s*(?=\[[a-zA-Z\-]{2,6}\]|$)", S | I)
+    for lang in CFG.export_languages
+}
 
 # WARNING probably useless text in metadata fields, to be removed
 BLOAT = (
@@ -315,7 +319,7 @@ SPECIAL_OUTPUT = (
     compile(r"^([0-9]+?\.)(?= )"),  # Counter
     compile(r"(?<= )(->)(?= )"),  # Arrow
     compile(r"(?<=^Exporting )([0-9]+?)(?= )"),  # Total
-) + tuple(compile(r"(" + language + r"\:)") for language in CFG.export_languages)
+) + tuple(compile(r"( " + language + r" )") for language in CFG.export_languages)
 
 # Warning elements in terminal output to highlight
 WARNING_OUTPUT = (
