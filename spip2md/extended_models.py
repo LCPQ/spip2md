@@ -214,7 +214,7 @@ class WritableObject(SpipInterface):
     ) -> list[str]:
         output: list[str] = []
         # Output the remaining number of objects to export every step object
-        if index % step == 0:
+        if index % step == 0 and limit > 0:
             output.append(f"Exporting {limit-index}")
             output[-1] += f" level {self._depth}"
             s: str = "s" if limit - index > 1 else ""
@@ -535,16 +535,21 @@ class RedactionalObject(WritableObject):
         for lang, translated_attrs in self._translations.items():
             LOG.debug(f"Instanciating {lang} translation of section `{self._title}`")
             # Copy itself (with every attribute) as a base for the translated object
-            translation: Self = deepcopy(self)
+            # translation: Self = deepcopy(self)
+            # Define attributes that new translation will need
+            attributes: dict[str, str] = {}
+            translation: Self = type(self)(**translated_attrs, **attributes)
             # Replace the lang & the translations attributes of the translated object
             translation.lang = lang
             translation._translations = {}
             # Replace the translated attributes of the translated object
-            for attr, value in translated_attrs.items():
-                setattr(translation, attr, value)
+            # For each translated attribute, output a DEBUG message
+            for attr in translated_attrs:
                 LOG.debug(
-                    f"{lang} `{self._title}` `{attr}`= `{getattr(translation, attr)}`"
+                    f"Instanciated {lang} translation of `{self._title}` `{attr}`"
+                    + f" = `{getattr(translation, attr)}`"
                 )
+            translations.append(translation)
         return translations
 
     # Get the children of this object
@@ -565,19 +570,18 @@ class RedactionalObject(WritableObject):
 
     # Perform all the write steps of this object
     def write_all(
-        self,
-        parentdepth: int,
-        parentdir: str,
-        index: int,
-        total: int,
-        prepend: str = "",
+        self, parentdepth: int, parentdir: str, index: int, total: int
     ) -> RecursiveList:
+        prepend: str = self.lang + ": " if total <= 0 else ""
         output: RecursiveList = super().write_all(
             parentdepth, parentdir, index, total, prepend
         )
         output.append(self.write_children())
-        for i, translated in enumerate(self.translations()):
-            translated.write_all(parentdepth, parentdir, i, 0, self.lang)
+        translations = self.translations()
+        LOG.debug(f"Initialized translations of {self._title}: {translations}")
+        for translated in translations:
+            LOG.debug(f"Writing {translated.lang} translation of {self._title}")
+            translated.write_all(parentdepth, parentdir, index, 0)
         return output
 
 
