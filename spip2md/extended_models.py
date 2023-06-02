@@ -325,18 +325,23 @@ class RedactionalObject(WritableObject):
                 # To log the translation
                 trans: str = lang.group(2)[:50].strip()
                 if lang.group(1) == self.lang:
-                    log.debug(f"Keeping {lang.group(1)} of `{self._title}`: {trans}")
+                    log.debug(
+                        f"Discovered {lang.group(1)} translation of `{self._title}`:"
+                        + f" `{trans}`, keeping it as the original lang"
+                    )
                     original_translation = original_translation.replace(
                         block.group(), lang.group(2)
                     )
                 elif lang.group(1) in translations:
                     log.debug(
-                        f"Appending to {lang.group(1)} of `{self._title}`: {trans}"
+                        f"Discovered more {lang.group(1)} translation of"
+                        + f" `{self._title}`: `{trans}`"
                     )
                     translations[lang.group(1)] += lang.group(2)
                 else:
                     log.debug(
-                        f"Add {lang.group(1)} translation of `{self._title}`: {trans}"
+                        f"Discovered {lang.group(1)} translation of `{self._title}`: "
+                        + f" `{trans}`"
                     )
                     translations[lang.group(1)] = lang.group(2)
         # Iterate over translations, adding translated attributes to translations dict
@@ -346,13 +351,13 @@ class RedactionalObject(WritableObject):
                     self._translations[lang] = {}
                 self._translations[lang][convertattr] = translation
                 log.debug(
-                    f"Set {lang} `{self._title}` `{convertattr}`"
-                    + f" to `{self._translations[lang][convertattr]}`"
+                    f"{lang} `{self._title}` `{convertattr}`"
+                    + f" set to `{self._translations[lang][convertattr]}`"
                 )
 
         log.debug(
-            f"{self.lang} `{self._title}` `{spipattr}`"
-            + f" translated into `{original_translation}`"
+            f"Original lang `{self.lang}` `{self._title}` `{spipattr}`"
+            + f" set to `{original_translation}`"
         )
         return original_translation
 
@@ -362,7 +367,7 @@ class RedactionalObject(WritableObject):
         mapping: tuple,
         obj_type: type[NormalizedSection | NormalizedArticle | NormalizedDocument],
     ) -> str:
-        LOG.debug(f"Convert {mapping}s links of `{self._title}` as {obj_type}")
+        LOG.debug(f"Convert {type(obj_type).__name__} links of `{self._title}`")
         for id_link, path_link in mapping:
             # print(f"Looking for links like {id_link}")
             for match in id_link.finditer(text):

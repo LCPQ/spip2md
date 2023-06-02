@@ -34,6 +34,7 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
     child_sections: tuple[Section, ...] = (
         Section.select()
         .where(Section.id_parent == ROOTID)
+        .where(Section.lang == CFG.export_languages[0])
         .order_by(Section.date.desc())
     )
     nb: int = len(child_sections)
