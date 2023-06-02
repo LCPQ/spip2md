@@ -1,6 +1,5 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 import logging
-from copy import deepcopy
 from os import makedirs
 from os.path import basename, splitext
 from re import Pattern, finditer, search
@@ -316,7 +315,7 @@ class RedactionalObject(WritableObject):
     # Detect every language present in <multi> blocks of text
     # For each language in <multi> block in which we want to translate, create
     # a new self-similar object in self.translations dict
-    def translate_multi(self, spipattr: str, convertattr: str) -> str:
+    def translate_multi(self, spipattr: str) -> str:
         # Function specific logger
         log = logging.getLogger(CFG.logname + ".models.translate_multi")
         text: str = getattr(self, spipattr)  # Get text of attribute
@@ -354,10 +353,10 @@ class RedactionalObject(WritableObject):
             if lang in CFG.export_languages:
                 if lang not in self._translations:
                     self._translations[lang] = {}
-                self._translations[lang][convertattr] = translation
+                self._translations[lang][spipattr] = translation
                 log.debug(
-                    f"{lang} `{self._title}` `{convertattr}`"
-                    + f" set to `{self._translations[lang][convertattr]}`"
+                    f"{lang} `{self._title}` `{spipattr}`"
+                    + f" set to `{self._translations[lang][spipattr]}`"
                 )
         return original_translation
 
@@ -407,7 +406,7 @@ class RedactionalObject(WritableObject):
             LOG.debug(f"{type(self).__name__} title is empty")
             return ""
         self._title = self.titre.strip()  # Define temporary title to use in functions
-        self._title = self.translate_multi("titre", "_title")
+        self._title = self.translate_multi("titre")
         LOG.debug(
             f"`{self.lang}` `{self._title}` title was translated to : `{self._title}`"
         )
@@ -430,7 +429,7 @@ class RedactionalObject(WritableObject):
         if len(self.texte) == 0:
             LOG.debug(f"{type(self).__name__} {self._title} text is empty")
             return ""
-        self._text = self.translate_multi("texte", "_title")
+        self._text = self.translate_multi("texte")
         LOG.debug(f"Convert document links of `{self._title}`")
         self._text = self.replace_links(self._text, DOCUMENT_LINK, Document)
         LOG.debug(f"Convert article links of `{self._title}`")
@@ -533,14 +532,30 @@ class RedactionalObject(WritableObject):
         translations: list[Self] = []
         LOG.debug(f"`{self._title}` contains translations: `{self._translations}`")
         for lang, translated_attrs in self._translations.items():
-            LOG.debug(f"Instanciating {lang} translation of section `{self._title}`")
             # Copy itself (with every attribute) as a base for the translated object
             # translation: Self = deepcopy(self)
             # Define attributes that new translation will need
-            attributes: dict[str, str] = {}
-            translation: Self = type(self)(**translated_attrs, **attributes)
-            # Replace the lang & the translations attributes of the translated object
+            attributes: dict[str, Any] = {
+                "id_trad": self.id_trad,
+                "titre": self.titre,
+                "date": self.date,
+                "maj": self.maj,
+                "statut": self.statut,
+                "descriptif": self.descriptif,
+                "id_secteur": self.id_secteur,
+            }
+            # Replace default attributes with translated ones
+            for attr, value in translated_attrs.items():
+                attributes[attr] = value
+            LOG.debug(
+                f"Instanciating {lang} translation of section `{self._title}`"
+                + f" with attributes {attributes}"
+            )
+            translation: Self = type(self)(**attributes)
+            # Replace important attributes of the translated object
             translation.lang = lang
+            translation._id = self._id  # WARNING ?
+            translation._depth = self._depth  # WARNING ?
             translation._translations = {}
             # Replace the translated attributes of the translated object
             # For each translated attribute, output a DEBUG message
