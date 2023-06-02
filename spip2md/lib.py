@@ -5,20 +5,21 @@ from os.path import isfile
 from shutil import rmtree
 
 from spip2md.config import CFG
-from spip2md.extended_models import Section
+from spip2md.extended_models import RecursiveList, Section
 from spip2md.spip_models import DB
 from spip2md.style import BOLD, esc
 
 # Define parent ID of level 0 sections
 ROOTID = 0
+# Define loggers for this file
+ROOTLOG = logging.getLogger(CFG.logname + ".root")
+LIBLOG = logging.getLogger(CFG.logname + ".lib")
 
 
 # Write the level 0 sections and their subtrees
-def write_root_tree(parent_dir: str) -> list[str | list]:
-    # Define logger for this method’s logs
-    log = logging.getLogger(CFG.logname + ".write_root_tree")
+def write_root(parent_dir: str) -> RecursiveList:
     # Define dictionary output to diplay
-    output: list[str | list] = []
+    output: RecursiveList = []
     # Print starting message
     print(
         f"""\
@@ -28,7 +29,7 @@ into the directory {esc(BOLD)}{parent_dir}{esc()}, \
 as database user {esc(BOLD)}{CFG.db_user}{esc()}
 """
     )
-    log.debug("Initialize root sections")
+    ROOTLOG.debug("Initialize root sections")
     # Get all sections of parentID ROOTID
     child_sections: tuple[Section, ...] = (
         Section.select()
@@ -38,11 +39,10 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
     nb: int = len(child_sections)
     # Write each subsections (write their entire subtree)
     for i, s in enumerate(child_sections):
-        log.debug(f"Begin exporting section {i}/{nb} {s._title}")
-        s._parentdir = CFG.output_dir
-        output.append(s.write_tree(i, nb))
+        ROOTLOG.debug(f"Begin exporting section {i}/{nb} {s._title}")
+        output.append(s.write_all(-1, CFG.output_dir, i, nb))
         print()  # Break line between level 0 sections in output
-        log.debug(f"Finished exporting section {i}/{nb} {s._title}")
+        ROOTLOG.debug(f"Finished exporting section {i}/{nb} {s._title}")
     return output
 
 
@@ -63,7 +63,7 @@ def summarize(
     if depth == -1:
         print(
             f"""\
-Exported a total of {esc(BOLD)}{leaves}{esc()} Markdown files, \
+Exported a total of {esc(BOLD)}{leaves}{esc()} files, \
 stored into {esc(BOLD)}{branches}{esc()} directories"""
         )
         # Warn about issued warnings in log file
@@ -115,6 +115,6 @@ def cli():
     DB.connect()
 
     # Write everything while printing the output human-readably
-    summarize(write_root_tree(CFG.output_dir))
+    summarize(write_root(CFG.output_dir))
 
     DB.close()  # Close the connection with the database
