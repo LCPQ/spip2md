@@ -40,7 +40,7 @@ from spip2md.spip_models import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
-from spip2md.style import BLUE, BOLD, CYAN, GREEN, WARNING_STYLE, YELLOW, esc
+from spip2md.style import BOLD, CYAN, GREEN, WARNING_STYLE, YELLOW, esc
 
 # Define recursive list type
 RecursiveList = list["str | RecursiveList"]
@@ -249,13 +249,18 @@ class WritableObject(SpipInterface):
 
     # Perform all the write steps of this object
     def write_all(
-        self, parentdepth: int, parentdir: str, index: int, total: int
+        self,
+        parentdepth: int,
+        parentdir: str,
+        index: int,
+        total: int,
+        prepend: str = "",
     ) -> RecursiveList:
         LOG.debug(f"Writing {type(self).__name__} `{self._title}`")
         output: RecursiveList = []
         self._depth = parentdepth + 1
         self._parentdir = parentdir
-        for m in self.begin_message(index, total):
+        for m in self.begin_message(index, total, prepend):
             output.append(m)
         try:
             output[-1] += self.end_message(self.write())
@@ -354,11 +359,6 @@ class RedactionalObject(WritableObject):
                     f"{lang} `{self._title}` `{convertattr}`"
                     + f" set to `{self._translations[lang][convertattr]}`"
                 )
-
-        log.debug(
-            f"Original lang `{self.lang}` `{self._title}` `{spipattr}`"
-            + f" set to `{original_translation}`"
-        )
         return original_translation
 
     def replace_links(
@@ -367,7 +367,6 @@ class RedactionalObject(WritableObject):
         mapping: tuple,
         obj_type: type[NormalizedSection | NormalizedArticle | NormalizedDocument],
     ) -> str:
-        LOG.debug(f"Convert {type(obj_type).__name__} links of `{self._title}`")
         for id_link, path_link in mapping:
             # print(f"Looking for links like {id_link}")
             for match in id_link.finditer(text):
@@ -399,47 +398,63 @@ class RedactionalObject(WritableObject):
     def convert_title(self) -> str:
         LOG.debug(f"Convert title of currently untitled {type(self).__name__}")
         if hasattr(self, "_title"):
-            LOG.debug(f"{type(self).__name__} {self._title}._title is already set")
+            LOG.debug(f"{type(self).__name__} {self._title} _title is already set")
             return self._title
         if self.titre is None:
-            LOG.debug(f"{type(self).__name__}.title is None")
+            LOG.debug(f"{type(self).__name__} title is None")
             return ""
         if len(self.titre) == 0:
-            LOG.debug(f"{type(self).__name__}.title is empty")
+            LOG.debug(f"{type(self).__name__} title is empty")
             return ""
         self._title = self.titre.strip()  # Define temporary title to use in functions
         self._title = self.translate_multi("titre", "_title")
+        LOG.debug(
+            f"`{self.lang}` `{self._title}` title was translated to : `{self._title}`"
+        )
+        LOG.debug(f"Convert document links of `{self._title}`")
+        self._title = self.replace_links(self._title, DOCUMENT_LINK, Document)
+        LOG.debug(f"Convert article links of `{self._title}`")
+        self._title = self.replace_links(self._title, ARTICLE_LINK, Article)
+        LOG.debug(f"Convert section links of `{self._title}`")
+        self._title = self.replace_links(self._title, SECTION_LINK, Section)
         return self.convert_field(self._title)
 
     def convert_text(self) -> str:
         LOG.debug(f"Convert text of `{self._title}`")
         if hasattr(self, "_text"):
-            LOG.debug(f"{type(self).__name__} {self._title}._text is already set")
+            LOG.debug(f"{type(self).__name__} {self._title} _text is already set")
             return self._text
         if self.texte is None:
-            LOG.debug(f"{type(self).__name__} {self._title}.text is None")
+            LOG.debug(f"{type(self).__name__} {self._title} text is None")
             return ""
         if len(self.texte) == 0:
-            LOG.debug(f"{type(self).__name__} {self._title}.text is empty")
+            LOG.debug(f"{type(self).__name__} {self._title} text is empty")
             return ""
-        text: str = self.translate_multi("texte", "_title")
-        text = self.replace_links(text, DOCUMENT_LINK, Document)
-        text = self.replace_links(text, ARTICLE_LINK, Article)
-        text = self.replace_links(text, SECTION_LINK, Section)
-        return self.convert_field(text)
+        self._text = self.translate_multi("texte", "_title")
+        LOG.debug(f"Convert document links of `{self._title}`")
+        self._text = self.replace_links(self._text, DOCUMENT_LINK, Document)
+        LOG.debug(f"Convert article links of `{self._title}`")
+        self._text = self.replace_links(self._text, ARTICLE_LINK, Article)
+        LOG.debug(f"Convert section links of `{self._title}`")
+        self._text = self.replace_links(self._text, SECTION_LINK, Section)
+        return self.convert_field(self._text)
 
     def convert_extra(self) -> str:
         LOG.debug(f"Convert extra of `{self._title}`")
         if hasattr(self, "_extra"):
+            LOG.debug(f"{type(self).__name__} {self._title} _extra is already set")
             return self._extra
         if self.extra is None:
+            LOG.debug(f"{type(self).__name__} {self._title} extra is None")
             return ""
         if len(self.extra) == 0:
+            LOG.debug(f"{type(self).__name__} {self._title} extra is empty")
             return ""
-        text: str = self.extra
-        text = self.replace_links(text, ARTICLE_LINK, Article)
-        text = self.replace_links(text, SECTION_LINK, Section)
-        return self.convert_field(text)
+        LOG.debug(f"Convert article links of `{self._title}`")
+        self._extra = self.replace_links(self.extra, ARTICLE_LINK, Article)
+        LOG.debug(f"Convert section links of `{self._title}`")
+        self._extra = self.replace_links(self._extra, SECTION_LINK, Section)
+        return self.convert_field(self._extra)
 
     def __init__(self, *args, **kwargs):
         # Initialise translation dict as empty, in the form lang: attr: value
@@ -449,6 +464,10 @@ class RedactionalObject(WritableObject):
         self._choosen_language = self.langue_choisie == "oui"
         self._text = self.convert_text()
         self._extra = self.convert_extra()
+        LOG.debug(
+            f"After __init__, `{type(self).__name__}` `{self._title}` contains"
+            + f" translations: `{self._translations}`"
+        )
 
     # Get related documents
     def documents(self) -> tuple[Document]:
@@ -523,6 +542,9 @@ class RedactionalObject(WritableObject):
             # Replace the translated attributes of the translated object
             for attr, value in translated_attrs.items():
                 setattr(translation, attr, value)
+                LOG.debug(
+                    f"{lang} `{self._title}` `{attr}`= `{getattr(translation, attr)}`"
+                )
         return translations
 
     # Get the children of this object
@@ -543,12 +565,19 @@ class RedactionalObject(WritableObject):
 
     # Perform all the write steps of this object
     def write_all(
-        self, parentdepth: int, parentdir: str, index: int, total: int
+        self,
+        parentdepth: int,
+        parentdir: str,
+        index: int,
+        total: int,
+        prepend: str = "",
     ) -> RecursiveList:
-        output: RecursiveList = super().write_all(parentdepth, parentdir, index, total)
+        output: RecursiveList = super().write_all(
+            parentdepth, parentdir, index, total, prepend
+        )
         output.append(self.write_children())
-        for translated in self.translations():
-            translated.write_all(parentdepth, parentdir, index, total)
+        for i, translated in enumerate(self.translations()):
+            translated.write_all(parentdepth, parentdir, i, 0, self.lang)
         return output
 
 
