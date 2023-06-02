@@ -269,10 +269,8 @@ class Document(WritableObject, NormalizedDocument):
         return data_dir + self.fichier
 
     # Get directory of this object
-    def dest_directory(
-        self, prepend_id: bool = True, prepend: str = "", append: str = ""
-    ) -> str:
-        _id: str = str(self._id) + "-" if prepend_id else ""
+    def dest_directory(self, prepend: str = "", append: str = "") -> str:
+        _id: str = str(self._id) + "-" if CFG.prepend_id else ""
         return (
             self._parentdir
             + prepend
@@ -361,10 +359,8 @@ class RedactionalObject(WritableObject):
         return text
 
     # Get slugified directory of this object
-    def dest_directory(
-        self, prepend_id: bool = True, prepend: str = "", append: str = "/"
-    ) -> str:
-        _id: str = str(self._id) + "-" if prepend_id else ""
+    def dest_directory(self, prepend: str = "", append: str = "/") -> str:
+        _id: str = str(self._id) + "-" if CFG.prepend_id else ""
         return (
             self._parentdir
             + prepend
