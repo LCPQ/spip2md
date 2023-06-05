@@ -103,19 +103,19 @@ def clear_output() -> None:
     makedirs(CFG.output_dir, exist_ok=True)
 
 
+# def main(*addargv: str):
+# import sys
+# argv: list[str] = sys.argv + list(addargv)
+
+# TODO Define max nb of sections/articles to export based on first CLI argument
+# if len(argv) >= 2:
+#     sections_export = int(argv[1])
+# else:
+#     sections_export = CFG.max_sections_export
+
+
 # When directly executed as a script
 def cli():
-    # def cli(*addargv: str):
-    # import sys
-
-    # argv: list[str] = sys.argv + list(addargv)
-
-    # TODO Define max nb of sections/articles to export based on first CLI argument
-    # if len(argv) >= 2:
-    #     sections_export = int(argv[1])
-    # else:
-    #     sections_export = CFG.max_sections_export
-
     init_logging()  # Initialize logging and logfile
     clear_output()  # Eventually remove already existing output dir
 
