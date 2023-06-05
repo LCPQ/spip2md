@@ -1,7 +1,7 @@
 # SPIP website to plain Markdown files converter, Copyright (C) 2023 Guilhem Fauré
 import logging
-from os import makedirs
-from os.path import basename, splitext
+from os import listdir, makedirs
+from os.path import basename, isfile, splitext
 from re import Match, Pattern, finditer, match, search
 from shutil import copyfile
 from typing import Any, Optional
@@ -376,7 +376,7 @@ class RedactionalObject(WritableObject):
         # If directory already exists, append a number or increase appended number
         if self._dest_dir_conflict:
             self.style_print(
-                f"Changing name of {directory} because another directory already has it"
+                f"Name of {directory} conflicting with an existing one, changing it"
             )
             m = match(r"^(.+)_([0-9]+)$", directory)
             if m is not None:
@@ -515,8 +515,25 @@ class RedactionalObject(WritableObject):
         try:
             makedirs(self.dest_directory())
         except FileExistsError:
-            self._dest_dir_conflict = True
-            makedirs(self.dest_directory())
+            # Create a new directory if write is about to overwrite an existing file
+            # or to write into a directory without the same fileprefix
+            directory = self.dest_directory()
+            for file in listdir(directory):
+                logging.debug(
+                    f"Testing if {type(self).__name__} `{self.dest_path()}` of prefix "
+                    + f"{self._fileprefix} can be written along with `{file}` "
+                    + f"of prefix `{file.split('.')[0]}` in `{self.dest_directory()}`"
+                )
+                if isfile(directory + file) and (
+                    self.dest_directory() + file == self.dest_path()
+                    or file.split(".")[0] != self._fileprefix
+                ):
+                    logging.debug(
+                        f"Not writing {self._title} in {self.dest_directory()} along "
+                        + file
+                    )
+                    self._dest_dir_conflict = True
+                    makedirs(self.dest_directory())
         # Write the content of this object into a file named as self.filename()
         with open(self.dest_path(), "w") as f:
             f.write(self.content())

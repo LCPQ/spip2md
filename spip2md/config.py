@@ -23,6 +23,7 @@ class Configuration:
     data_dir: str = "data/"  # The directory in which SPIP images & documents are stored
     prepend_h1: bool = True  # Add the title of the article as a Markdown h1
     prepend_id: bool = True  # Add the ID of object before slug
+    prepend_lang: bool = False  # Add the lang of object before slug
     unknown_char_replacement: str = "??"  # Replaces unknown characters
     export_languages = ("fr", "en")  # Languages that will be exported
     export_filetype: str = "md"  # Extension of exported text files
