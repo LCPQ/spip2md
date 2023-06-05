@@ -26,6 +26,7 @@ class Configuration:
     unknown_char_replacement: str = "??"  # Replaces unknown characters
     export_languages = ("fr", "en")  # Languages that will be exported
     export_filetype: str = "md"  # Extension of exported text files
+    export_drafts: bool = True  # Should we export drafts as draft:true articles
     clear_output: bool = False  # Remove eventual output dir before running
     clear_log: bool = False  # Clear log before every run instead of appending to
     logfile: str = "spip2md.log"  # File where logs will be written, relative to wd

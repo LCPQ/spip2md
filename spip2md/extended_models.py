@@ -58,8 +58,9 @@ class SpipInterface:
     profondeur: int
     # Converted fields
     _title: str
-    _status: bool
+    _draft: bool
     # Additional fields
+    # _id: BigAutoField | int = 0  # same ID attribute name for all objects
     _id: BigAutoField | int = 0  # same ID attribute name for all objects
     # _depth: IntegerField | int  # Equals `profondeur` for sections
     _depth: int  # Equals `profondeur` for sections
@@ -182,11 +183,13 @@ class WritableObject(SpipInterface):
         super().__init__(*args, **kwargs)
         # Initialize converted fields beginning with underscore
         self._description: str = self.convert_field(self.descriptif)
-        self._status = self.statut == "publie"
+        self._draft = self.statut != "publie"
 
     # Apply post-init conversions and cancel the export if self not of the right lang
     def convert(self) -> None:
         self._title = self.convert_field(self.titre)
+        if not CFG.export_drafts and self._draft:
+            raise NoExportDraftError(f"{self.titre} is a draft, cancelling export")
 
     # Print one or more line(s) in which special elements are stylized
     def style_print(
@@ -300,8 +303,12 @@ class LangNotFoundError(Exception):
     pass
 
 
+class NoExportDraftError(Exception):
+    pass
+
+
 class RedactionalObject(WritableObject):
-    id_trad: BigIntegerField | int
+    id_trad: BigIntegerField | BigAutoField | int
     id_rubrique: BigIntegerField | int
     # date: DateTimeField | str
     date: DateTimeField
@@ -465,7 +472,7 @@ class RedactionalObject(WritableObject):
             "title": self._title,
             "publishDate": self.date,
             "lastmod": self.maj,
-            "draft": self._status,
+            "draft": self._draft,
             "description": self._description,
             # Debugging
             "spip_id_secteur": self.id_secteur,
@@ -525,8 +532,10 @@ class RedactionalObject(WritableObject):
                 output.append(
                     obj.write_all(self._depth, self.dest_directory(), i, total)
                 )
-            except LangNotFoundError:
-                pass  # For now, do nothing
+            except LangNotFoundError as err:
+                logging.debug(err)
+            except NoExportDraftError as err:
+                logging.debug(err)
         return output
 
 
