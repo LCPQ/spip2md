@@ -5,7 +5,12 @@ from os.path import isfile
 from shutil import rmtree
 
 from spip2md.config import CFG
-from spip2md.extended_models import LangNotFoundError, RecursiveList, Section
+from spip2md.extended_models import (
+    DontExportDraftError,
+    LangNotFoundError,
+    RecursiveList,
+    Section,
+)
 from spip2md.spip_models import DB
 from spip2md.style import BOLD, esc
 
@@ -48,8 +53,10 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
             ROOTLOG.debug(f"Begin exporting {lang} root section {i}/{nb}")
             try:
                 output.append(s.write_all(lang, -1, CFG.output_dir, i, nb))
-            except LangNotFoundError:
-                pass  # For now, do nothing
+            except LangNotFoundError as err:
+                logging.debug(err)  # Log the error message
+            except DontExportDraftError as err:  # Will happen in not CFG.export_drafts
+                logging.debug(err)  # Log the error message
             print()  # Break line between level 0 sections in output
             ROOTLOG.debug(f"Finished exporting {lang} root section {i}/{nb} {s._title}")
     return output

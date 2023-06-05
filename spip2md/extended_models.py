@@ -190,7 +190,7 @@ class WritableObject(SpipInterface):
     def convert(self) -> None:
         self._title = self.convert_field(self.titre)
         if not CFG.export_drafts and self._draft:
-            raise NoExportDraftError(f"{self.titre} is a draft, cancelling export")
+            raise DontExportDraftError(f"{self.titre} is a draft, cancelling export")
 
     # Print one or more line(s) in which special elements are stylized
     def style_print(
@@ -308,7 +308,7 @@ class LangNotFoundError(Exception):
     pass
 
 
-class NoExportDraftError(Exception):
+class DontExportDraftError(Exception):
     pass
 
 
@@ -564,7 +564,7 @@ class RedactionalObject(WritableObject):
                 )
             except LangNotFoundError as err:
                 logging.debug(err)
-            except NoExportDraftError as err:
+            except DontExportDraftError as err:
                 logging.debug(err)
         return output
 
@@ -682,8 +682,10 @@ class Section(RedactionalObject, NormalizedSection):
                             forcedlang, self._depth, self.dest_directory(), i, total
                         )
                     )
-                except LangNotFoundError:
-                    pass  # For now, do nothing
+                except LangNotFoundError as err:
+                    logging.debug(err)
+                except DontExportDraftError as err:
+                    logging.debug(err)
         return output
 
     # Perform all the write steps of this object
