@@ -14,6 +14,8 @@ ROOTID = 0
 # Define loggers for this file
 ROOTLOG = logging.getLogger(CFG.logname + ".root")
 LIBLOG = logging.getLogger(CFG.logname + ".lib")
+# Initialize the database with settings from CFG
+DB.init(CFG.db, host=CFG.db_host, user=CFG.db_user, password=CFG.db_pass)
 
 
 # Write the level 0 sections and their subtrees
@@ -117,11 +119,6 @@ def cli():
     init_logging()  # Initialize logging and logfile
     clear_output()  # Eventually remove already existing output dir
 
-    # Connect to the MySQL database with Peewee ORM
-    DB.init(CFG.db, host=CFG.db_host, user=CFG.db_user, password=CFG.db_pass)
-    DB.connect()
-
-    # Write everything while printing the output human-readably
-    summarize(write_root(CFG.output_dir))
-
-    DB.close()  # Close the connection with the database
+    with DB:  # Connect to the database where SPIP site is stored in this block
+        # Write everything while printing the output human-readably
+        summarize(write_root(CFG.output_dir))
