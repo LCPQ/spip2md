@@ -2,7 +2,7 @@
 import logging
 from os import makedirs
 from os.path import basename, splitext
-from re import Match, Pattern, finditer, search
+from re import Match, Pattern, finditer, match, search
 from shutil import copyfile
 from typing import Any, Optional
 
@@ -66,6 +66,7 @@ class SpipInterface:
     _depth: int  # Equals `profondeur` for sections
     _fileprefix: str  # String to prepend to written files
     _parentdir: str  # Path from output dir to direct parent
+    _dest_dir_conflict: bool = False  # Whether another same-named directory exists
     _style: tuple[int, ...]  # _styles to apply to some elements of printed output
     # memo: dict[str, str] = {}  # Memoïze values
 
@@ -136,28 +137,28 @@ class WritableObject(SpipInterface):
         # Return unknown char surrounded by context_length chars
         def unknown_chars_context(text: str, char: str, context_len: int = 24) -> str:
             context: str = r".{0," + str(context_len) + r"}"
-            match = search(
+            m = search(
                 context + r"(?=" + char + r")" + char + context,
                 text,
             )
-            if match is not None:
-                return match.group()
+            if m is not None:
+                return m.group()
             else:
                 return char
 
         for char in unknown_mapping:
             lastend: int = 0
-            for match in finditer("(" + char + ")+", text):
+            for m in finditer("(" + char + ")+", text):
                 context: str = unknown_chars_context(text[lastend:], char)
                 LOG.warn(
                     f"Unknown char {char} found in {self.titre[:40]} at: {context}"
                 )
                 if CFG.unknown_char_replacement is not None:
                     LOG.warn(
-                        f"Replacing {match.group()} with {CFG.unknown_char_replacement}"
+                        f"Replacing {m.group()} with {CFG.unknown_char_replacement}"
                     )
-                    text = text.replace(match.group(), CFG.unknown_char_replacement, 1)
-                lastend = match.end()
+                    text = text.replace(m.group(), CFG.unknown_char_replacement, 1)
+                lastend = m.end()
         return text
 
     # Apply needed methods on text fields
@@ -237,8 +238,12 @@ class WritableObject(SpipInterface):
     # Output information about file that was just exported
     def end_message(self, message: str | Exception) -> str:
         output: str = " -> "
-        if type(message) is not str:
-            output += "ERROR "
+        if type(message) is FileNotFoundError:
+            output += "ERROR: NOT FOUND: "
+        elif type(message) is DoesNotExist:
+            output += "ERROR: NO DESTINATION DIR "
+        elif type(message) is not str:
+            output += "ERROR: UNKNOWN: "
         # Print the output as the program goes
         # LOG.debug(f"Finished exporting {type(self).__name__}: {message}")
         self.style_print(output + str(message), indent=None)
@@ -348,33 +353,37 @@ class RedactionalObject(WritableObject):
     ) -> str:
         for id_link, path_link in mapping:
             # print(f"Looking for links like {id_link}")
-            for match in id_link.finditer(text):
-                LOG.debug(f"Found document link {match.group()} in {self._title}")
+            for m in id_link.finditer(text):
+                LOG.debug(f"Found document link {m.group()} in {self._title}")
                 try:
-                    o: obj_type = obj_type.get(obj_type._id == match.group(2))
+                    o: obj_type = obj_type.get(obj_type._id == m.group(2))
                     # TODO get relative path
-                    if len(match.group(1)) > 0:
-                        repl: str = path_link.format(match.group(1), o.dest_path())
+                    if len(m.group(1)) > 0:
+                        repl: str = path_link.format(m.group(1), o.dest_path())
                     else:
                         repl: str = path_link.format(o._title, o.dest_path())
                     LOG.debug(f"Translating link to {repl}")
-                    text = text.replace(match.group(), repl)
+                    text = text.replace(m.group(), repl)
                 except DoesNotExist:
-                    LOG.warn(f"No object for link {match.group()} in {self._title}")
-                    text = text.replace(
-                        match.group(), path_link.format("", "NOT FOUND"), 1
-                    )
+                    LOG.warn(f"No object for link {m.group()} in {self._title}")
+                    text = text.replace(m.group(), path_link.format("", "NOT FOUND"), 1)
         return text
 
     # Get slugified directory of this object
-    def dest_directory(self, prepend: str = "", append: str = "/") -> str:
+    def dest_directory(self) -> str:
         _id: str = str(self._id) + "-" if CFG.prepend_id else ""
-        return (
-            self._parentdir
-            + prepend
-            + slugify(_id + self._title, max_length=100)
-            + append
-        )
+        directory: str = self._parentdir + slugify(_id + self._title, max_length=100)
+        # If directory already exists, append a number or increase appended number
+        if self._dest_dir_conflict:
+            self.style_print(
+                f"Changing name of {directory} because another directory already has it"
+            )
+            m = match(r"^(.+)_([0-9]+)$", directory)
+            if m is not None:
+                directory = m.group(1) + "_" + str(int(m.group(2)) + 1)
+            else:
+                directory += "_1"
+        return directory + r"/"
 
     # Get filename of this object
     def dest_filename(self) -> str:
@@ -503,7 +512,11 @@ class RedactionalObject(WritableObject):
     # Write object to output destination
     def write(self) -> str:
         # Make a directory for this object if there isn’t
-        makedirs(self.dest_directory(), exist_ok=True)
+        try:
+            makedirs(self.dest_directory())
+        except FileExistsError:
+            self._dest_dir_conflict = True
+            makedirs(self.dest_directory())
         # Write the content of this object into a file named as self.filename()
         with open(self.dest_path(), "w") as f:
             f.write(self.content())

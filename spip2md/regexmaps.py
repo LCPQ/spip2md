@@ -323,8 +323,6 @@ SPECIAL_OUTPUT = (
 
 # Warning elements in terminal output to highlight
 WARNING_OUTPUT = (
-    compile(r"(ERROR)"),  # ERROR
-    compile(r"(MISSING NAME)"),  # MISSING NAME
-    compile(r"(EMPTY NAME)"),  # EMPTY NAME
-    compile(r"(NOT FOUND)"),  # NOT FOUND
+    compile(r"(EMPTY NAME)"),  # EMPTY
+    compile(r"(?<= )(ERROR: [A-Z ]+:)(?= )"),  # ERRORS (CAPS)
 )
