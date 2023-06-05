@@ -328,6 +328,7 @@ class RedactionalObject(WritableObject):
                 )
                 text = text.replace(block.group(), lang.group(1))
                 self.lang = forced_lang  # So write-all will not be cancelled
+                self.id_trad = self._id  # Assign translation key to id so hugo can link
         if lang is None:
             LOG.debug(f"{forced_lang} not found in `{self._title}`")
         return text
