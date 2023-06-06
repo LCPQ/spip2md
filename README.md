@@ -1,78 +1,93 @@
+---
+lang: en
+---
+
 # SPIP Database to Markdown
-Python scripts to export the SPIP MySQL database of the current website to plain text Markdown files with YAML front-matter metadata.
 
-## Notes on exporting the SPIP MySQL data to Markdown files
-There are 40 tables, of which :
+`spip2md` is a litle Python app that can export a SPIP database into a plain text,
+Markdown + YAML repository, usable with static site generators.
 
-- 8 contain the major part of the data
-- 4 are relations between other tables
-- 5 contain as few data as global parameters
-- 13 seems to be technical information specific to SPIP
-- 10 are completely empty
+## Features
 
-### Tables & Database schema
-Elements to take into account :
+`spip2md` is currently able to :
 
-- SPIP [Markup language](https://www.spip.net/fr_article1578.html)
+- Export every section (`spip_rubriques`), with every article (`spip_articles`) they
+  contain
+  - Replace authors (`spip_auteurs`) IDs with their name (in YAML block)
+  - Generate different files for each language found in `<multi>` blocks
+  - Copy over all the attached files (`spip_documents`), with proper links
+  - Convert SPIP [Markup language](https://www.spip.net/fr_article1578.html)
+  - Convert SPIP ID-based internal links (like `<art123>`) into path-based, normal links
+
+## Usage
+
+To use the app, simply run the command `spip2md`. However, you probably want to
+configure certain settings before running it, like the database credentials.
+Here are the available _configuration options_, to put in a `spip2md.yml` file :
+
+```yaml
+db: Name of the database (default is spip)
+db_host: Host of the database (default is localhost)
+db_user: The database user (default is spip)
+db_pass: The database password (default is password)
+data_dir: The directory in which SPIP images & files are stored
+export_languages: Array of languages to export (default is ["en",])
+output_dir: The directory in which files will be written (default is output/)
+prepend_h1: Should spip2md prepend the title of articles as Markdown h1 (default true)
+prepend_id: Whether to prepend ID of the object to directory slug
+prepend_lang: Whether to prepend lang of the object to directory slug
+export_drafts: Should we export drafts (default true)
+remove_html: Should we clean remaining HTML blocks (default true)
+unknown_char_replacement: Broken encoding that cannot be repaired is replaced with that
+clear_log: Clear logfile between runs instead of appending to (default false)
+clear_output: Clear output dir between runs instead of merging into (default false)
+logfile: Name of the logs file (default is spip2md.log)
+```
+
+## External links
+
 - SPIP [Database structure](https://www.spip.net/fr_article713.html)
-- SPIP [HTML templates](https://www.spip.net/fr_article879.html)
 
-#### Main tables, with a lot of data
-These tables contains a lot of data. Each row will probably correspond to one Markdown file.
+## TODO
 
-- spip_articles
-- spip_auteurs
-- spip_documents
-- spip_evenements
-- spip_meta
-- spip_mots
-- spip_rubriques
-- spip_syndic_articles
+These tables could represent additional data to export :
 
-#### Relational tables, making links between main tables
-These tables join information between main tables. They will probably correspond to entries in YAML front-matters.
+- `spip_evenements`
+- `spip_meta`
+- `spip_mots`
+- `spip_syndic_articles`
+- `spip_mots_liens`
+- `spip_zones_liens`
 
-- spip_auteurs_liens
-- spip_documents_liens
-- spip_mots_liens
-- spip_zones_liens
+- `spip_groupes_mots`
+- `spip_meslettres`
+- `spip_messages`
+- `spip_syndic`
+- `spip_zones`
 
-#### Tables with little data
-These tables contains a few rows. They will probably correspond to global configuration files in static website. 
+- `spip_depots`
+- `spip_depots_plugins`
+- `spip_jobs`
+- `spip_ortho_cache`
+- `spip_paquets`
+- `spip_plugins`
+- `spip_referers`
+- `spip_referers_articles`
+- `spip_types_documents`
+- `spip_versions`
+- `spip_versions_fragments`
+- `spip_visites`
+- `spip_visites_articles`
 
-- spip_groupes_mots
-- spip_meslettres
-- spip_messages
-- spip_syndic
-- spip_zones
+These tables are empty :
 
-#### Technical tables
-These tables contain technical information that is probably specific to SPIP or the system on which it is installed.
-
-- spip_depots
-- spip_depots_plugins
-- spip_jobs
-- spip_ortho_cache
-- spip_paquets
-- spip_plugins
-- spip_referers
-- spip_referers_articles
-- spip_types_documents
-- spip_versions
-- spip_versions_fragments
-- spip_visites
-- spip_visites_articles
-
-#### Empty tables
-These tables are empty, so they don’t need to be treated.
-
-- spip_breves
-- spip_evenements_participants
-- spip_forum
-- spip_jobs_liens
-- spip_ortho_dico
-- spip_petitions
-- spip_resultats
-- spip_signatures
-- spip_test
-- spip_urls
+- `spip_breves`
+- `spip_evenements_participants`
+- `spip_forum`
+- `spip_jobs_liens`
+- `spip_ortho_dico`
+- `spip_petitions`
+- `spip_resultats`
+- `spip_signatures`
+- `spip_test`
+- `spip_urls`
