@@ -14,17 +14,14 @@ from spip2md.extended_models import (
 from spip2md.spip_models import DB
 from spip2md.style import BOLD, esc
 
-# Define parent ID of level 0 sections
-ROOTID = 0
 # Define loggers for this file
 ROOTLOG = logging.getLogger(CFG.logname + ".root")
-LIBLOG = logging.getLogger(CFG.logname + ".lib")
 # Initialize the database with settings from CFG
 DB.init(CFG.db, host=CFG.db_host, user=CFG.db_user, password=CFG.db_pass)
 
 
-# Write the level 0 sections and their subtrees
-def write_root(parent_dir: str) -> RecursiveList:
+# Write the root sections and their subtrees
+def write_root(parent_dir: str, parent_id: int = 0) -> RecursiveList:
     # Define dictionary output to diplay
     output: RecursiveList = []
     # Print starting message
@@ -45,7 +42,7 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
         # Get all sections of parentID ROOTID
         child_sections: tuple[Section, ...] = (
             Section.select()
-            .where(Section.id_parent == ROOTID)
+            .where(Section.id_parent == parent_id)
             .order_by(Section.date.desc())
         )
         nb: int = len(child_sections)
@@ -54,9 +51,9 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
             try:
                 output.append(s.write_all(lang, -1, CFG.output_dir, i, nb))
             except LangNotFoundError as err:
-                logging.debug(err)  # Log the error message
+                ROOTLOG.debug(err)  # Log the error message
             except DontExportDraftError as err:  # Will happen in not CFG.export_drafts
-                logging.debug(err)  # Log the error message
+                ROOTLOG.debug(err)  # Log the error message
             print()  # Break line between level 0 sections in output
             ROOTLOG.debug(f"Finished exporting {lang} root section {i}/{nb} {s._title}")
     return output
