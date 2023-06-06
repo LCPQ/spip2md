@@ -58,12 +58,13 @@ These tables could represent additional data to export :
 - `spip_syndic_articles`
 - `spip_mots_liens`
 - `spip_zones_liens`
-
 - `spip_groupes_mots`
 - `spip_meslettres`
 - `spip_messages`
 - `spip_syndic`
 - `spip_zones`
+
+These tables seem more technical :
 
 - `spip_depots`
 - `spip_depots_plugins`
