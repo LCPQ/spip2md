@@ -41,8 +41,6 @@ from spip2md.spip_models import (
 )
 from spip2md.style import BOLD, CYAN, GREEN, WARNING_STYLE, YELLOW, esc
 
-# Define recursive list type
-# DeepDict = dict[str, "list[DeepDict] | list[str] | str"]
 DeepDict = dict[str, "list[DeepDict] | list[str] | str"]
 
 # Define logger for this file’s logs
@@ -68,6 +66,9 @@ class SpipInterface:
     _fileprefix: str  # String to prepend to written files
     _parentdir: str  # Path from output dir to direct parent
     _dest_dir_conflict: bool = False  # Whether another same-named directory exists
+    _storage_parentdir: Optional[str] = None
+    _storage_title: Optional[str] = None
+    _url: Optional[str] = None  # In case URL in frontmatter different of dest dir
     _style: tuple[int, ...]  # _styles to apply to some elements of printed output
     # memo: dict[str, str] = {}  # Memoïze values
 
@@ -250,11 +251,18 @@ class WritableObject(SpipInterface):
 
     # Perform all the write steps of this object
     def write_all(
-        self, parentdepth: int, parentdir: str, index: int, total: int
+        self,
+        parentdepth: int,
+        parentdir: str,
+        index: int,
+        total: int,
+        storage_parentdir: Optional[str] = None,
     ) -> str:
         LOG.debug(f"Writing {type(self).__name__} `{self._title}`")
         self._depth = parentdepth + 1
         self._parentdir = parentdir
+        if storage_parentdir:
+            self._storage_parentdir = storage_parentdir
         output: str = self.begin_message(index, total)
         try:
             output += self.end_message(self.write())
@@ -295,10 +303,18 @@ class Document(WritableObject, NormalizedDocument):
 
     # Perform all the write steps of this object
     def write_all(
-        self, parentdepth: int, parentdir: str, index: int, total: int
+        self,
+        parentdepth: int,
+        parentdir: str,
+        index: int,
+        total: int,
+        forcedlang: str,
+        storage_parentdir: Optional[str],
     ) -> str:
         self.convert()  # Apply post-init conversions
-        return super().write_all(parentdepth, parentdir, index, total)
+        return super().write_all(
+            parentdepth, parentdir, index, total, storage_parentdir
+        )
 
 
 class IgnoredPatternError(Exception):
@@ -339,9 +355,11 @@ class RedactionalObject(WritableObject):
                     f"Keeping {forced_lang} translation of `{self._title}`: "
                     + f"`{trans}`, becoming its new lang"
                 )
-                text = text.replace(block.group(), lang.group(1))
                 self.lang = forced_lang  # So write-all will not be cancelled
-                self.id_trad = self._id  # Assign translation key to id so hugo can link
+                if self.id_trad == 0:  # Assign translation key to id so hugo can link
+                    self.id_trad = self._id
+                # Replace the mutli blocks with the text in the proper lang
+                text = text.replace(block.group(), lang.group(1))
         if lang is None:
             LOG.debug(f"{forced_lang} not found in `{self._title}`")
         return text
@@ -374,11 +392,22 @@ class RedactionalObject(WritableObject):
     def dest_directory(self) -> str:
         _id: str = str(self._id) + "-" if CFG.prepend_id else ""
         directory: str = self._parentdir + slugify(_id + self._title, max_length=100)
+        if self._storage_title is not None or self._storage_parentdir is not None:
+            self._url = directory
+            directory: str = (
+                self._storage_parentdir
+                if self._storage_parentdir is not None
+                else self._parentdir
+                + slugify(
+                    _id + self._storage_title
+                    if self._storage_title is not None
+                    else self._title,
+                    max_length=100,
+                )
+            )
         # If directory already exists, append a number or increase appended number
         if self._dest_dir_conflict:
-            self.style_print(
-                f"Name of {directory} conflicting with an existing one, changing it"
-            )
+            self.style_print(f" -| {directory} ALREADY EXISTS")
             m = match(r"^(.+)_([0-9]+)$", directory)
             if m is not None:
                 directory = m.group(1) + "_" + str(int(m.group(2)) + 1)
@@ -404,6 +433,12 @@ class RedactionalObject(WritableObject):
             self._title = ""
             return
         self._title = self.titre.strip()
+        # Keep storage language title to store it
+        if CFG.storage_language is not None and CFG.storage_language != forced_lang:
+            self._storage_title = self.translate_field(
+                CFG.storage_language, self._title
+            )
+            self._storage_title = self.convert_field(self._storage_title)
         self._title = self.translate_field(forced_lang, self._title)
         LOG.debug(f"Convert document links of `{self._title}` title")
         self._title = self.replace_links(self._title, DOCUMENT_LINK, Document)
@@ -476,18 +511,23 @@ class RedactionalObject(WritableObject):
     # Get the YAML frontmatter string
     def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         # LOG.debug(f"Write frontmatter of `{self._title}`")
-        meta: dict[str, Any] = {
-            "lang": self.lang,
-            "translationKey": self.id_trad,
-            "title": self._title,
-            "publishDate": self.date,
-            "lastmod": self.maj,
-            "draft": self._draft,
-            "description": self._description,
-            # Debugging
-            "spip_id_secteur": self.id_secteur,
-            "spip_id": self._id,
-        }
+        meta: dict[str, Any] = (
+            {
+                "lang": self.lang,
+                "translationKey": self.id_trad,
+                "title": self._title,
+                "publishDate": self.date,
+                "lastmod": self.maj,
+                "draft": self._draft,
+                "description": self._description,
+                # Debugging
+                "spip_id_secteur": self.id_secteur,
+                "spip_id": self._id,
+            }
+            | {"url": self._url}
+            if self._url is not None
+            else {}
+        )
         if append is not None:
             return dump(meta | append, allow_unicode=True)
         else:
@@ -512,7 +552,10 @@ class RedactionalObject(WritableObject):
 
     # Write all the documents of this object
     def write_children(
-        self, children: tuple[WritableObject], **kwargs: str
+        self,
+        children: tuple[Document] | tuple[Any],
+        forcedlang: str,
+        storage_parentdir: Optional[str] = None,
     ) -> list[str]:
         LOG.debug(f"Writing documents of {type(self).__name__} `{self._title}`")
         output: list[str] = []
@@ -521,7 +564,12 @@ class RedactionalObject(WritableObject):
             try:
                 output.append(
                     obj.write_all(
-                        self._depth, self.dest_directory(), i, total, **kwargs
+                        self._depth,
+                        self.dest_directory(),
+                        i,
+                        total,
+                        forcedlang,
+                        storage_parentdir,
                     )
                 )
             except LangNotFoundError as err:
@@ -637,12 +685,22 @@ class Article(RedactionalObject, NormalizedArticle):
 
     # Perform all the write steps of this object
     def write_all(
-        self, parentdepth: int, parentdir: str, index: int, total: int, forced_lang: str
+        self,
+        parentdepth: int,
+        parentdir: str,
+        index: int,
+        total: int,
+        forced_lang: str,
+        storage_parentdir: Optional[str] = None,
     ) -> DeepDict:
         self.convert(forced_lang)
         return {
-            "msg": super().write_all(parentdepth, parentdir, index, total),
-            "documents": self.write_children(self.documents()),
+            "msg": super().write_all(
+                parentdepth, parentdir, index, total, storage_parentdir
+            ),
+            "documents": self.write_children(
+                self.documents(), forced_lang, storage_parentdir
+            ),
         }
 
 
@@ -683,12 +741,26 @@ class Section(RedactionalObject, NormalizedSection):
 
     # Perform all the write steps of this object
     def write_all(
-        self, parentdepth: int, parentdir: str, index: int, total: int, forced_lang: str
+        self,
+        parentdepth: int,
+        parentdir: str,
+        index: int,
+        total: int,
+        forced_lang: str,
+        storage_parentdir: Optional[str] = None,
     ) -> DeepDict:
         self.convert(forced_lang)
         return {
-            "msg": super().write_all(parentdepth, parentdir, index, total),
-            "documents": self.write_children(self.documents()),
-            "articles": self.write_children(self.articles(), forced_lang=forced_lang),
-            "sections": self.write_children(self.sections(), forced_lang=forced_lang),
+            "msg": super().write_all(
+                parentdepth, parentdir, index, total, storage_parentdir
+            ),
+            "documents": self.write_children(
+                self.documents(), forced_lang, storage_parentdir
+            ),
+            "articles": self.write_children(
+                self.articles(), forced_lang, storage_parentdir
+            ),
+            "sections": self.write_children(
+                self.sections(), forced_lang, storage_parentdir
+            ),
         }
