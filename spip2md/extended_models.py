@@ -506,6 +506,26 @@ class RedactionalObject(WritableObject):
             body += "\n\n# EXTRA\n\n" + self._extra
         return body
 
+    # Write all the documents of this object
+    def write_children(
+        self, children: tuple[WritableObject], **kwargs: str
+    ) -> list[str]:
+        LOG.debug(f"Writing documents of {type(self).__name__} `{self._title}`")
+        output: list[str] = []
+        total = len(children)
+        for i, obj in enumerate(children):
+            try:
+                output.append(
+                    obj.write_all(
+                        self._depth, self.dest_directory(), i, total, **kwargs
+                    )
+                )
+            except LangNotFoundError as err:
+                LOG.debug(err)
+            except DontExportDraftError as err:
+                LOG.debug(err)
+        return output
+
     # Write object to output destination
     def write(self) -> str:
         # Make a directory for this object if there isn’t
@@ -516,7 +536,7 @@ class RedactionalObject(WritableObject):
             # or to write into a directory without the same fileprefix
             directory = self.dest_directory()
             for file in listdir(directory):
-                logging.debug(
+                LOG.debug(
                     f"Testing if {type(self).__name__} `{self.dest_path()}` of prefix "
                     + f"{self._fileprefix} can be written along with `{file}` "
                     + f"of prefix `{file.split('.')[0]}` in `{self.dest_directory()}`"
@@ -525,7 +545,7 @@ class RedactionalObject(WritableObject):
                     self.dest_directory() + file == self.dest_path()
                     or file.split(".")[0] != self._fileprefix
                 ):
-                    logging.debug(
+                    LOG.debug(
                         f"Not writing {self._title} in {self.dest_directory()} along "
                         + file
                     )
@@ -547,23 +567,6 @@ class RedactionalObject(WritableObject):
                 + f" {forced_lang} and it don’t contains"
                 + f" {forced_lang} translation in Markup either"
             )
-
-    # Write all the children of this object
-    def write_documents(self) -> list[str]:
-        LOG.debug(f"Writing children of {type(self).__name__} `{self._title}`")
-        output: list[str] = []
-        children = self.documents()
-        total = len(children)
-        for i, obj in enumerate(children):
-            try:
-                output.append(
-                    obj.write_all(self._depth, self.dest_directory(), i, total)
-                )
-            except LangNotFoundError as err:
-                logging.debug(err)
-            except DontExportDraftError as err:
-                logging.debug(err)
-        return output
 
 
 class Article(RedactionalObject, NormalizedArticle):
@@ -622,12 +625,12 @@ class Article(RedactionalObject, NormalizedArticle):
 
     # Perform all the write steps of this object
     def write_all(
-        self, forced_lang: str, parentdepth: int, parentdir: str, index: int, total: int
+        self, parentdepth: int, parentdir: str, index: int, total: int, forced_lang: str
     ) -> DeepDict:
         self.convert(forced_lang)
         return {
             "msg": super().write_all(parentdepth, parentdir, index, total),
-            "documents": self.write_documents(),
+            "documents": self.write_children(self.documents()),
         }
 
 
@@ -666,39 +669,14 @@ class Section(RedactionalObject, NormalizedSection):
             .limit(limit)
         )
 
-    # Write all the children of this object
-    def write_children(self, forcedlang: str) -> DeepDict:
-        LOG.debug(f"Writing children of {type(self).__name__} `{self._title}`")
-        output: DeepDict = {
-            "documents": super().write_documents(),
-            "articles": [],
-            "sections": [],
-        }
-        for name, children in (
-            ("articles", self.articles()),
-            ("sections", self.sections()),
-        ):
-            buffer: list[DeepDict] = []
-            total = len(children)
-            for i, obj in enumerate(children):
-                try:
-                    buffer.append(
-                        obj.write_all(
-                            forcedlang, self._depth, self.dest_directory(), i, total
-                        )
-                    )
-                except LangNotFoundError as err:
-                    logging.debug(err)
-                except DontExportDraftError as err:
-                    logging.debug(err)
-            output[name] = buffer
-        return output
-
     # Perform all the write steps of this object
     def write_all(
-        self, forced_lang: str, parentdepth: int, parentdir: str, index: int, total: int
+        self, parentdepth: int, parentdir: str, index: int, total: int, forced_lang: str
     ) -> DeepDict:
         self.convert(forced_lang)
         return {
             "msg": super().write_all(parentdepth, parentdir, index, total),
-        } | self.write_children(forced_lang)
+            "documents": self.write_children(self.documents()),
+            "articles": self.write_children(self.articles(), forced_lang=forced_lang),
+            "sections": self.write_children(self.sections(), forced_lang=forced_lang),
+        }
