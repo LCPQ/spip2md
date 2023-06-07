@@ -33,7 +33,7 @@ into the directory {esc(BOLD)}{parent_dir}{esc()}, \
 as database user {esc(BOLD)}{CFG.db_user}{esc()}
 """
     )
-    output: DeepDict = {"sections": []}  # Define dictionary output
+    buffer: list[DeepDict] = []  # Define temporary storage for output
     # Write each sections (write their entire subtree) for each export language
     # Language specified in database can differ from markup, se we force a language
     #   and remove irrelevant ones at each looping
@@ -47,7 +47,6 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
         )
         nb: int = len(child_sections)
         for i, s in enumerate(child_sections):
-            buffer: list[DeepDict] = []
             ROOTLOG.debug(f"Begin exporting {lang} root section {i}/{nb}")
             try:
                 buffer.append(s.write_all(-1, CFG.output_dir, i, nb, lang))
@@ -57,8 +56,7 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
                 ROOTLOG.debug(err)  # Log the message
             print()  # Break line between level 0 sections in output
             ROOTLOG.debug(f"Finished exporting {lang} root section {i}/{nb} {s._title}")
-            output["sections"] = buffer
-    return output
+    return {"sections": buffer}
 
 
 # Count on outputted tree & print results if finished
