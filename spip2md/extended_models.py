@@ -208,28 +208,26 @@ class WritableObject(SpipInterface):
         return stylized
 
     # Print the message telling what is going to be done
-    def begin_message(self, index: int, limit: int, step: int = 100) -> list[str]:
-        output: list[str] = []
+    def begin_message(self, index: int, limit: int, step: int = 100) -> str:
         # Output the remaining number of objects to export every step object
         if index % step == 0 and limit > 0:
-            output.append(f"Exporting {limit-index}")
-            output[-1] += f" level {self._depth}"
+            counter: str = f"Exporting {limit-index} level {self._depth}"
             s: str = "s" if limit - index > 1 else ""
             if hasattr(self, "lang"):
-                output[-1] += f" {self.lang}"
-            output[-1] += f" {type(self).__name__}{s}"
+                counter += f" {self.lang}"
+            counter += f" {type(self).__name__}{s}"
             # Print the output as the program goes
-            self.style_print(output[-1])
+            self.style_print(counter)
         # Output the counter & title of the object being exported
-        output.append(f"{index + 1}. ")
+        msg: str = f"{index + 1}. "
         if len(self._title) == 0:
-            output[-1] += "EMPTY NAME"
+            msg += "EMPTY NAME"
         else:
-            output[-1] += self._title
+            msg += self._title
         # Print the output as the program goes
         # LOG.debug(f"Begin exporting {type(self).__name__} {output[-1]}")
-        self.style_print(output[-1], end="")
-        return output
+        self.style_print(msg, end="")
+        return msg
 
     # Write object to output destination
     def write(self) -> str:
@@ -252,17 +250,15 @@ class WritableObject(SpipInterface):
     # Perform all the write steps of this object
     def write_all(
         self, parentdepth: int, parentdir: str, index: int, total: int
-    ) -> RecursiveList:
+    ) -> str:
         LOG.debug(f"Writing {type(self).__name__} `{self._title}`")
-        output: RecursiveList = []
         self._depth = parentdepth + 1
         self._parentdir = parentdir
-        for m in self.begin_message(index, total):
-            output.append(m)
+        output: str = self.begin_message(index, total)
         try:
-            output[-1] += self.end_message(self.write())
+            output += self.end_message(self.write())
         except Exception as err:
-            output[-1] += self.end_message(err)
+            output += self.end_message(err)
         return output
 
 
@@ -299,7 +295,7 @@ class Document(WritableObject, NormalizedDocument):
     # Perform all the write steps of this object
     def write_all(
         self, parentdepth: int, parentdir: str, index: int, total: int
-    ) -> RecursiveList:
+    ) -> str:
         self.convert()  # Apply post-init conversions
         return super().write_all(parentdepth, parentdir, index, total)
 
@@ -628,9 +624,10 @@ class Article(RedactionalObject, NormalizedArticle):
         self, forced_lang: str, parentdepth: int, parentdir: str, index: int, total: int
     ) -> RecursiveList:
         self.convert(forced_lang)
-        output: RecursiveList = super().write_all(parentdepth, parentdir, index, total)
-        output.append(self.write_documents())
-        return output
+        return [
+            super().write_all(parentdepth, parentdir, index, total),
+            self.write_documents(),
+        ]
 
 
 class Section(RedactionalObject, NormalizedSection):
@@ -693,6 +690,7 @@ class Section(RedactionalObject, NormalizedSection):
         self, forced_lang: str, parentdepth: int, parentdir: str, index: int, total: int
     ) -> RecursiveList:
         self.convert(forced_lang)
-        output: RecursiveList = super().write_all(parentdepth, parentdir, index, total)
-        output.append(self.write_children(forced_lang))
-        return output
+        return [
+            super().write_all(parentdepth, parentdir, index, total),
+            self.write_children(forced_lang),
+        ]

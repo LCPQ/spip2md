@@ -16,6 +16,7 @@ from spip2md.style import BOLD, esc
 
 # Define loggers for this file
 ROOTLOG = logging.getLogger(CFG.logname + ".root")
+TREELOG = logging.getLogger(CFG.logname + ".tree")
 # Initialize the database with settings from CFG
 DB.init(CFG.db, host=CFG.db_host, user=CFG.db_user, password=CFG.db_pass)
 
@@ -72,6 +73,7 @@ def summarize(
             leaves += 1
     # End message only if it’s the root one
     if depth == -1:
+        TREELOG.debug(tree)
         print(
             f"""\
 Exported a total of {esc(BOLD)}{leaves}{esc()} files, \
