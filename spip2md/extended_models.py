@@ -42,7 +42,8 @@ from spip2md.spip_models import (
 from spip2md.style import BOLD, CYAN, GREEN, WARNING_STYLE, YELLOW, esc
 
 # Define recursive list type
-RecursiveList = list["str | RecursiveList"]
+# DeepDict = dict[str, "list[DeepDict] | list[str] | str"]
+DeepDict = dict[str, "list[DeepDict] | list[str] | str"]
 
 # Define logger for this file’s logs
 LOG = logging.getLogger(CFG.logname + ".models")
@@ -548,9 +549,9 @@ class RedactionalObject(WritableObject):
             )
 
     # Write all the children of this object
-    def write_documents(self) -> RecursiveList:
+    def write_documents(self) -> list[str]:
         LOG.debug(f"Writing children of {type(self).__name__} `{self._title}`")
-        output: RecursiveList = []
+        output: list[str] = []
         children = self.documents()
         total = len(children)
         for i, obj in enumerate(children):
@@ -622,12 +623,12 @@ class Article(RedactionalObject, NormalizedArticle):
     # Perform all the write steps of this object
     def write_all(
         self, forced_lang: str, parentdepth: int, parentdir: str, index: int, total: int
-    ) -> RecursiveList:
+    ) -> DeepDict:
         self.convert(forced_lang)
-        return [
-            super().write_all(parentdepth, parentdir, index, total),
-            self.write_documents(),
-        ]
+        return {
+            "msg": super().write_all(parentdepth, parentdir, index, total),
+            "documents": self.write_documents(),
+        }
 
 
 class Section(RedactionalObject, NormalizedSection):
@@ -666,15 +667,22 @@ class Section(RedactionalObject, NormalizedSection):
         )
 
     # Write all the children of this object
-    def write_children(self, forcedlang: str) -> RecursiveList:
-        super().write_documents()
+    def write_children(self, forcedlang: str) -> DeepDict:
         LOG.debug(f"Writing children of {type(self).__name__} `{self._title}`")
-        output: RecursiveList = []
-        for children in (self.articles(), self.sections()):
+        output: DeepDict = {
+            "documents": super().write_documents(),
+            "articles": [],
+            "sections": [],
+        }
+        for name, children in (
+            ("articles", self.articles()),
+            ("sections", self.sections()),
+        ):
+            buffer: list[DeepDict] = []
             total = len(children)
             for i, obj in enumerate(children):
                 try:
-                    output.append(
+                    buffer.append(
                         obj.write_all(
                             forcedlang, self._depth, self.dest_directory(), i, total
                         )
@@ -683,14 +691,14 @@ class Section(RedactionalObject, NormalizedSection):
                     logging.debug(err)
                 except DontExportDraftError as err:
                     logging.debug(err)
+            output[name] = buffer
         return output
 
     # Perform all the write steps of this object
     def write_all(
         self, forced_lang: str, parentdepth: int, parentdir: str, index: int, total: int
-    ) -> RecursiveList:
+    ) -> DeepDict:
         self.convert(forced_lang)
-        return [
-            super().write_all(parentdepth, parentdir, index, total),
-            self.write_children(forced_lang),
-        ]
+        return {
+            "msg": super().write_all(parentdepth, parentdir, index, total),
+        } | self.write_children(forced_lang)
