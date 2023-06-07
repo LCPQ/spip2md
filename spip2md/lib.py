@@ -9,6 +9,7 @@ from spip2md.config import CFG
 from spip2md.extended_models import (
     DeepDict,
     DontExportDraftError,
+    IgnoredPatternError,
     LangNotFoundError,
     Section,
 )
@@ -53,6 +54,8 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
             except LangNotFoundError as err:
                 ROOTLOG.debug(err)  # Log the message
             except DontExportDraftError as err:  # Will happen in not CFG.export_drafts
+                ROOTLOG.debug(err)  # Log the message
+            except IgnoredPatternError as err:
                 ROOTLOG.debug(err)  # Log the message
             print()  # Break line between level 0 sections in output
             ROOTLOG.debug(f"Finished exporting {lang} root section {i}/{nb} {s._title}")

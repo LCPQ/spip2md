@@ -2,7 +2,7 @@
 import logging
 from os import listdir, makedirs
 from os.path import basename, isfile, splitext
-from re import Match, Pattern, finditer, match, search
+from re import I, Match, Pattern, finditer, match, search
 from shutil import copyfile
 from typing import Any, Optional
 
@@ -301,6 +301,10 @@ class Document(WritableObject, NormalizedDocument):
         return super().write_all(parentdepth, parentdir, index, total)
 
 
+class IgnoredPatternError(Exception):
+    pass
+
+
 class LangNotFoundError(Exception):
     pass
 
@@ -524,6 +528,8 @@ class RedactionalObject(WritableObject):
                 LOG.debug(err)
             except DontExportDraftError as err:
                 LOG.debug(err)
+            except IgnoredPatternError as err:
+                LOG.debug(err)
         return output
 
     # Write object to output destination
@@ -559,6 +565,12 @@ class RedactionalObject(WritableObject):
     # Apply post-init conversions and cancel the export if self not of the right lang
     def convert(self, forced_lang: str) -> None:
         self.convert_title(forced_lang)
+        for p in CFG.ignore_pattern:
+            m = match(p, self._title, I)
+            if m is not None:
+                raise IgnoredPatternError(
+                    f"{self._title} is matching with ignore pattern {p}, ignoring"
+                )
         self.convert_text(forced_lang)
         self.convert_extra()
         if self.lang != forced_lang:
