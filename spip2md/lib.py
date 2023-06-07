@@ -22,8 +22,6 @@ DB.init(CFG.db, host=CFG.db_host, user=CFG.db_user, password=CFG.db_pass)
 
 # Write the root sections and their subtrees
 def write_root(parent_dir: str, parent_id: int = 0) -> RecursiveList:
-    # Define dictionary output to diplay
-    output: RecursiveList = []
     # Print starting message
     print(
         f"""\
@@ -33,10 +31,10 @@ into the directory {esc(BOLD)}{parent_dir}{esc()}, \
 as database user {esc(BOLD)}{CFG.db_user}{esc()}
 """
     )
+    output: RecursiveList = []  # Define dictionary output
     # Write each sections (write their entire subtree) for each export language
-    # Force objects to handle <multi> blocks by setting them a lang
-    # Do this heavy looping because we don’t know if languages are set in database or
-    # in markup, and as such language specified in database can differ from markup
+    # Language specified in database can differ from markup, se we force a language
+    #   and remove irrelevant ones at each looping
     for lang in CFG.export_languages:
         ROOTLOG.debug("Initialize root sections")
         # Get all sections of parentID ROOTID
@@ -51,9 +49,9 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
             try:
                 output.append(s.write_all(lang, -1, CFG.output_dir, i, nb))
             except LangNotFoundError as err:
-                ROOTLOG.debug(err)  # Log the error message
+                ROOTLOG.debug(err)  # Log the message
             except DontExportDraftError as err:  # Will happen in not CFG.export_drafts
-                ROOTLOG.debug(err)  # Log the error message
+                ROOTLOG.debug(err)  # Log the message
             print()  # Break line between level 0 sections in output
             ROOTLOG.debug(f"Finished exporting {lang} root section {i}/{nb} {s._title}")
     return output
