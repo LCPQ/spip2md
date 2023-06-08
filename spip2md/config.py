@@ -31,6 +31,7 @@ class Configuration:
     unknown_char_replacement: str = "??"  # Replaces unknown characters
     clear_log: bool = True  # Clear log before every run instead of appending to
     clear_output: bool = True  # Remove eventual output dir before running
+    conflict_strategy: str = "prepend id"  # Prepend or append : date, id or counter
     ignore_pattern: list[str] = []  # Ignore objects of which title match
     logfile: str = "log-spip2md.log"  # File where logs will be written, relative to wd
     loglevel: str = "WARNING"  # Minimum criticity of logs written in logfile

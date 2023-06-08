@@ -65,17 +65,14 @@ class SpipInterface:
     _depth: int  # Equals `profondeur` for sections
     _fileprefix: str  # String to prepend to written files
     _parentdir: str  # Path from output dir to direct parent
-    _dest_dir_conflict: bool = False  # Whether another same-named directory exists
     _storage_parentdir: Optional[str] = None
     _storage_title: Optional[str] = None
     _url: Optional[str] = None  # In case URL in frontmatter different of dest dir
     _style: tuple[int, ...]  # _styles to apply to some elements of printed output
     # memo: dict[str, str] = {}  # Memoïze values
 
-    def dest_directory(self, prepend: str = "", append: str = "") -> str:
-        raise NotImplementedError(
-            f"Subclasses need to implement directory(), params:{prepend}{append}"
-        )
+    def dest_directory(self) -> str:
+        raise NotImplementedError("Subclasses need to implement directory()")
 
     def dest_filename(self, prepend: str = "", append: str = "") -> str:
         raise NotImplementedError(
@@ -388,10 +385,32 @@ class RedactionalObject(WritableObject):
                     text = text.replace(m.group(), path_link.format("", "NOT FOUND"), 1)
         return text
 
+    # Modify this object’s title to prevent filename conflicts
+    def conflict_title(self, conflict: str) -> None:
+        if CFG.conflict_strategy == "prepend id":
+            title: str = str(self._id) + "_" + self._title
+        elif CFG.conflict_strategy == "append id":
+            title: str = self._title + "_" + str(self._id)
+        elif CFG.conflict_strategy == "prepend counter":
+            m = match(r"([0-9]+)_" + self._title, conflict)
+            if m is not None:
+                title: str = str(int(m.group(1)) + 1) + "_" + self._title
+            else:
+                title: str = "1_" + self._title
+        else:  # Defaults to append counter
+            m = match(self._title + r"_([0-9]+)$", conflict)
+            if m is not None:
+                title: str = self._title + "_" + str(int(m.group(1)) + 1)
+            else:
+                title: str = self._title + "_1"
+        LOG.debug(f"Rewriting {self._title} title to {title}")
+        self._title = title
+
     # Get slugified directory of this object
     def dest_directory(self) -> str:
         _id: str = str(self._id) + "-" if CFG.prepend_id else ""
-        directory: str = self._parentdir + slugify(_id + self._title, max_length=100)
+        slug: str = slugify(_id + self._title, max_length=100)
+        directory: str = self._parentdir + slug
         if self._storage_title is not None or self._storage_parentdir is not None:
             self._url = directory
             directory: str = (
@@ -405,14 +424,6 @@ class RedactionalObject(WritableObject):
                     max_length=100,
                 )
             )
-        # If directory already exists, append a number or increase appended number
-        if self._dest_dir_conflict:
-            self.style_print(f" -| {directory} ALREADY EXISTS")
-            m = match(r"^(.+)_([0-9]+)$", directory)
-            if m is not None:
-                directory = m.group(1) + "_" + str(int(m.group(2)) + 1)
-            else:
-                directory += "_1"
         return directory + r"/"
 
     # Get filename of this object
@@ -585,12 +596,12 @@ class RedactionalObject(WritableObject):
     # Write object to output destination
     def write(self) -> str:
         # Make a directory for this object if there isn’t
+        directory: str = self.dest_directory()
         try:
-            makedirs(self.dest_directory())
+            makedirs(directory)
         except FileExistsError:
             # Create a new directory if write is about to overwrite an existing file
             # or to write into a directory without the same fileprefix
-            directory = self.dest_directory()
             for file in listdir(directory):
                 LOG.debug(
                     f"Testing if {type(self).__name__} `{self.dest_path()}` of prefix "
@@ -598,15 +609,12 @@ class RedactionalObject(WritableObject):
                     + f"of prefix `{file.split('.')[0]}` in `{self.dest_directory()}`"
                 )
                 if isfile(directory + file) and (
-                    self.dest_directory() + file == self.dest_path()
+                    directory + file == self.dest_path()
                     or file.split(".")[0] != self._fileprefix
                 ):
-                    LOG.debug(
-                        f"Not writing {self._title} in {self.dest_directory()} along "
-                        + file
-                    )
-                    self._dest_dir_conflict = True
+                    self.conflict_title(directory.split("/")[-1])
                     makedirs(self.dest_directory())
+                    break
         # Write the content of this object into a file named as self.filename()
         with open(self.dest_path(), "w") as f:
             f.write(self.content())
