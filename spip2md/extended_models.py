@@ -560,7 +560,8 @@ class RedactionalObject(WritableObject):
         LOG.debug(f"Writing documents of {type(self).__name__} `{self._title}`")
         output: list[str] = []
         total = len(children)
-        for i, obj in enumerate(children):
+        i = 0
+        for obj in children:
             try:
                 output.append(
                     obj.write_all(
@@ -572,6 +573,7 @@ class RedactionalObject(WritableObject):
                         storage_parentdir,
                     )
                 )
+                i += 1
             except LangNotFoundError as err:
                 LOG.debug(err)
             except DontExportDraftError as err:
