@@ -23,7 +23,10 @@ from spip2md.regexmaps import (
     CONFIGLANGS,
     DOCUMENT_LINK,
     HTMLTAGS,
+    IMAGE_LINK,
+    IMAGE_REPL,
     ISO_UTF,
+    LINK_REPL,
     MULTILANG_BLOCK,
     SECTION_LINK,
     SPECIAL_OUTPUT,
@@ -109,6 +112,9 @@ class NormalizedDocument(SpipInterface, SpipDocuments):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._id = self.id_document
+
+
+SpipLinkable = NormalizedSection | NormalizedArticle | NormalizedDocument
 
 
 class WritableObject(SpipInterface):
@@ -361,28 +367,75 @@ class RedactionalObject(WritableObject):
             LOG.debug(f"{forced_lang} not found in `{self._title}`")
         return text
 
-    def replace_links(
-        self,
-        text: str,
-        mapping: tuple,
-        obj_type: type[NormalizedSection | NormalizedArticle | NormalizedDocument],
-    ) -> str:
-        for id_link, path_link in mapping:
-            # print(f"Looking for links like {id_link}")
-            for m in id_link.finditer(text):
-                LOG.debug(f"Found document link {m.group()} in {self._title}")
+    def replace_links(self, text: str) -> str:
+        class LinkMappings:
+            _link_types = IMAGE_LINK, DOCUMENT_LINK, SECTION_LINK, ARTICLE_LINK
+
+            def __iter__(self):
+                self._type_cursor = 0
+                self._link_cursor = -1
+                return self
+
+            @staticmethod
+            def getdocument(obj_id: int) -> Document:
+                doc: Document = Document.get(Document.id_document == obj_id)
+                doc.convert()
+                return doc
+
+            @staticmethod
+            def getsection(obj_id: int) -> Section:
+                sec: Section = Section.get(Section.id_rubrique == obj_id)
+                sec.convert(self.lang)
+                return sec
+
+            @staticmethod
+            def getarticle(obj_id: int) -> Article:
+                art: Article = Article.get(Article.id_article == obj_id)
+                art.convert(self.lang)
+                return art
+
+            _obj_getters = getdocument, getdocument, getsection, getarticle
+
+            def __next__(self):
+                self._link_cursor += 1
+                # If we reach end of current link type, pass to the beginning of next
+                if self._link_cursor >= len(self._link_types[self._type_cursor]):
+                    self._link_cursor = 0
+                    self._type_cursor += 1
+
+                if self._type_cursor >= len(self._link_types):
+                    raise StopIteration
+
+                return (
+                    self._link_types[self._type_cursor][self._link_cursor],
+                    self._obj_getters[self._type_cursor],
+                    IMAGE_REPL if self._type_cursor == 0 else LINK_REPL,
+                )
+
+        for link, getobj, repl in LinkMappings():
+            # LOG.debug(f"Looking for {link} in {text}")
+            for m in link.finditer(text):
+                LOG.debug(f"Found internal link {m.group()} in {self._title}")
                 try:
-                    o: obj_type = obj_type.get(obj_type._id == m.group(2))
-                    # TODO get relative path
+                    LOG.debug(f"Searching for object of id {m.group(2)} with {getobj}")
+                    o: SpipLinkable = getobj(int(m.group(2)))
+                    # TODO get full relative path for sections and articles
+                    # TODO rewrite links markup (bold/italic) after stripping
                     if len(m.group(1)) > 0:
-                        repl: str = path_link.format(m.group(1), o.dest_path())
+                        try:
+                            repl = repl.format(
+                                m.group(1).strip("{}"), o.dest_filename()
+                            )
+                        except KeyError as err:
+                            print(repl, m.group(1), o.dest_filename())
+                            raise err
                     else:
-                        repl: str = path_link.format(o._title, o.dest_path())
-                    LOG.debug(f"Translating link to {repl}")
+                        repl = repl.format(o._title, o.dest_filename())
+                    LOG.debug(f"Translate link {m.group()} to {repl} in {self._title}")
                     text = text.replace(m.group(), repl)
                 except DoesNotExist:
                     LOG.warn(f"No object for link {m.group()} in {self._title}")
-                    text = text.replace(m.group(), path_link.format("", "NOT FOUND"), 1)
+                    text = text.replace(m.group(), repl.format("", "NOT FOUND"), 1)
         return text
 
     # Modify this object’s title to prevent filename conflicts
@@ -451,13 +504,9 @@ class RedactionalObject(WritableObject):
             )
             self._storage_title = self.convert_field(self._storage_title)
         self._title = self.translate_field(forced_lang, self._title)
-        LOG.debug(f"Convert document links of `{self._title}` title")
-        self._title = self.replace_links(self._title, DOCUMENT_LINK, Document)
-        LOG.debug(f"Convert article links of `{self._title}` title")
-        self._title = self.replace_links(self._title, ARTICLE_LINK, Article)
-        LOG.debug(f"Convert section links of `{self._title}` title")
-        self._title = self.replace_links(self._title, SECTION_LINK, Section)
-        LOG.debug(f"Apply conversions to `{self._title}` title")
+        LOG.debug(f"Convert internal links of {self.lang} `{self._title}` title")
+        self._title = self.replace_links(self._title)
+        LOG.debug(f"Apply conversions to {self.lang} `{self._title}` title")
         self._title = self.convert_field(self._title)
 
     def convert_text(self, forced_lang: str) -> None:
@@ -474,12 +523,9 @@ class RedactionalObject(WritableObject):
             self._text = ""
             return
         self._text = self.translate_field(forced_lang, self.texte.strip())
-        LOG.debug(f"Convert document links of `{self._title}`")
-        self._text = self.replace_links(self._text, DOCUMENT_LINK, Document)
-        LOG.debug(f"Convert article links of `{self._title}`")
-        self._text = self.replace_links(self._text, ARTICLE_LINK, Article)
-        LOG.debug(f"Convert section links of `{self._title}`")
-        self._text = self.replace_links(self._text, SECTION_LINK, Section)
+        LOG.debug(f"Convert internal links of {self.lang} `{self._title}` text")
+        self._text = self.replace_links(self._text)
+        LOG.debug(f"Apply conversions to {self.lang} `{self._title}` text")
         self._text = self.convert_field(self._text)
 
     def convert_extra(self) -> None:
@@ -495,10 +541,9 @@ class RedactionalObject(WritableObject):
             LOG.debug(f"{type(self).__name__} {self._title} extra is empty")
             self._extra = ""
             return
-        LOG.debug(f"Convert article links of `{self._title}`")
-        self._extra = self.replace_links(self.extra, ARTICLE_LINK, Article)
-        LOG.debug(f"Convert section links of `{self._title}`")
-        self._extra = self.replace_links(self._extra, SECTION_LINK, Section)
+        LOG.debug(f"Convert internal links of {self.lang} `{self._title}` extra")
+        self._extra = self.replace_links(self._extra)
+        LOG.debug(f"Apply conversions to {self.lang} `{self._title}` extra")
         self._extra = self.convert_field(self._extra)
 
     def __init__(self, *args, **kwargs):
@@ -522,23 +567,20 @@ class RedactionalObject(WritableObject):
     # Get the YAML frontmatter string
     def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
         # LOG.debug(f"Write frontmatter of `{self._title}`")
-        meta: dict[str, Any] = (
-            {
-                "lang": self.lang,
-                "translationKey": self.id_trad,
-                "title": self._title,
-                "publishDate": self.date,
-                "lastmod": self.maj,
-                "draft": self._draft,
-                "description": self._description,
-                # Debugging
-                "spip_id_secteur": self.id_secteur,
-                "spip_id": self._id,
-            }
-            | {"url": self._url}
-            if self._url is not None
-            else {}
-        )
+        meta: dict[str, Any] = {
+            "lang": self.lang,
+            "translationKey": self.id_trad,
+            "title": self._title,
+            "publishDate": self.date,
+            "lastmod": self.maj,
+            "draft": self._draft,
+            "description": self._description,
+            # Debugging
+            "spip_id_secteur": self.id_secteur,
+            "spip_id": self._id,
+        }
+        if self._url is not None:
+            meta = meta | {"url": self._url}
         if append is not None:
             return dump(meta | append, allow_unicode=True)
         else:

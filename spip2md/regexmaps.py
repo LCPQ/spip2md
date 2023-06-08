@@ -110,61 +110,44 @@ SPIP_MARKDOWN = (
 )
 
 DOCUMENT_LINK = (
-    (  # SPIP style embeds
-        compile(r"<()(?:doc|document|emb|embed)([0-9]+)(?:\|(.*?))?>", S | I),
-        r"[{}]({})",
-    ),
-    (  # SPIP style documents & embeds links
-        compile(r"\[ *([^\]]*?) *-> *(?:doc|document|emb|embed)([0-9]+) *\]", S | I),
-        r"[{}]({})",
-    ),
-    (  # Markdown style documents & embeds links
-        compile(r"\[(.*?)\]\((?:doc|document|emb|embed)([0-9]+)(?:\|(.*?))?\)", S | I),
-        r"[{}]({})",
-    ),
-    (  # SPIP style images embeds
-        compile(r"<()(?:img|image)([0-9]+)(?:\|(.*?))?>", S | I),
-        r"![{}]({})",
-    ),
-    (  # SPIP style image links
-        compile(r"\[ *([^\]]*?) *-> *(?:img|image)([0-9]+) *\]", S | I),
-        r"[{}]({})",
-    ),
-    (  # Markdown style images links
-        compile(r"\[(.*?)\]\((?:img|image)([0-9]+)(?:\|(.*?))?\)", S | I),
-        r"![{}]({})",
-    ),
-)  # Name and path can be further replaced with .format()
+    # SPIP style embeds
+    compile(r"<()(?:doc|document|emb|embed)([0-9]+)(?:\|(.*?))?>", S | I),
+    # SPIP style documents & embeds links
+    compile(r"\[ *([^\]]*?) *-> *(?:doc|document|emb|embed)([0-9]+) *\]", S | I),
+    # Markdown style documents & embeds links
+    compile(r"\[(.*?)\]\((?:doc|document|emb|embed)([0-9]+)(?:\|(.*?))?\)", S | I),
+    # SPIP style image links
+    compile(r"\[ *([^\]]*?) *-> *(?:img|image)([0-9]+) *\]", S | I),
+)
+
+IMAGE_LINK = (
+    # SPIP style images embeds
+    compile(r"<()(?:img|image)([0-9]+)(?:\|(.*?))?>", S | I),
+    # Markdown style images links
+    compile(r"!?\[(.*?)\]\((?:img|image)([0-9]+)(?:\|(.*?))?\)", S | I),
+)
 
 ARTICLE_LINK = (
-    (  # SPIP style article embeds
-        compile(r"<()(?:art|article)([0-9]+)(?:\|(.*?))?>", S | I),
-        r"[{}]({})",
-    ),
-    (  # SPIP style article links
-        compile(r"\[ *([^\]]*?) *-> *(?:art|article)([0-9]+) *\]", S | I),
-        r"[{}]({})",
-    ),
-    (  # Markdown style internal links
-        compile(r"\[(.*?)\]\((?:art|article)([0-9]+)(?:\|(.*?))?\)", S | I),
-        r"[{}]({})",
-    ),
-)  # Name and path can be further replaced with .format()
+    # SPIP style article embeds
+    compile(r"<()(?:art|article)([0-9]+)(?:\|(.*?))?>", S | I),
+    # SPIP style article links
+    compile(r"\[ *([^\]]*?) *-> *(?:art|article)([0-9]+) *\]", S | I),
+    # Markdown style internal links
+    compile(r"\[(.*?)\]\((?:art|article)([0-9]+)(?:\|(.*?))?\)", S | I),
+)
 
 SECTION_LINK = (
-    (  # SPIP style sections embeds
-        compile(r"<()(?:rub|rubrique)([0-9]+)(?:\|(.*?))?>", S | I),
-        r"[{}]({})",
-    ),
-    (  # SPIP style sections links
-        compile(r"\[ *([^\]]*?) *-> *(?:rub|rubrique)([0-9]+) *\]", S | I),
-        r"[{}]({})",
-    ),
-    (  # Markdown style internal links
-        compile(r"\[(.*?)\]\((?:rub|rubrique)([0-9]+)(?:\|(.*?))?\)", S | I),
-        r"[{}]({})",
-    ),
-)  # Name and path can be further replaced with .format()
+    # SPIP style sections embeds
+    compile(r"<()(?:rub|rubrique)([0-9]+)(?:\|(.*?))?>", S | I),
+    # SPIP style sections links
+    compile(r"\[ *([^\]]*?) *-> *(?:rub|rubrique)([0-9]+) *\]", S | I),
+    # Markdown style internal links
+    compile(r"\[(.*?)\]\((?:rub|rubrique)([0-9]+)(?:\|(.*?))?\)", S | I),
+)
+
+LINK_REPL = r"[{}]({})"  # Name and path can be further replaced with .format()
+IMAGE_REPL = r"![{}]({})"  # Name and path can be further replaced with .format()
+
 
 # Multi language block, to be further processed per lang
 MULTILANG_BLOCK = compile(r"<multi>(.+?)<\/multi>", S | I)
@@ -319,7 +302,10 @@ SPECIAL_OUTPUT = (
     compile(r"^([0-9]+?\.)(?= )"),  # Counter
     compile(r"(?<= )(->)(?= )"),  # Arrow
     compile(r"(?<=^Exporting )([0-9]+?)(?= )"),  # Total
-) + tuple(compile(r"( " + language + r" )") for language in CFG.export_languages)
+) + tuple(
+    compile(r"(?<=level [0-9] )(" + language + r" )")
+    for language in CFG.export_languages
+)
 
 # Warning elements in terminal output to highlight
 WARNING_OUTPUT = (
