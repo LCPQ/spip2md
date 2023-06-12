@@ -53,7 +53,7 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
                 buffer.append(s.write_all(-1, CFG.output_dir, i, nb, lang))
             except LangNotFoundError as err:
                 ROOTLOG.debug(err)  # Log the message
-            except DontExportDraftError as err:  # Will happen in not CFG.export_drafts
+            except DontExportDraftError as err:  # Will happen if not CFG.export_drafts
                 ROOTLOG.debug(err)  # Log the message
             except IgnoredPatternError as err:
                 ROOTLOG.debug(err)  # Log the message

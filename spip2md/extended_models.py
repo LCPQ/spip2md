@@ -62,8 +62,8 @@ class SpipInterface:
     _title: str
     _draft: bool
     # Additional fields
-    # _id: BigAutoField | int = 0  # same ID attribute name for all objects
     _id: BigAutoField | int = 0  # same ID attribute name for all objects
+    # _id: BigIntegerField | int = 0  # same ID attribute name for all objects
     # _depth: IntegerField | int  # Equals `profondeur` for sections
     _depth: int  # Equals `profondeur` for sections
     _fileprefix: str  # String to prepend to written files
@@ -84,37 +84,6 @@ class SpipInterface:
 
     def dest_path(self) -> str:
         return self.dest_directory() + self.dest_filename()
-
-
-class NormalizedSection(SpipInterface, SpipRubriques):
-    _fileprefix: str = "_index"
-    _style = (BOLD, GREEN)  # Sections accent color is green
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._id = self.id_rubrique
-        self._depth = self.profondeur
-
-
-class NormalizedArticle(SpipInterface, SpipArticles):
-    _fileprefix: str = "index"
-    _style = (BOLD, YELLOW)  # Articles accent color is yellow
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._id = self.id_article
-
-
-class NormalizedDocument(SpipInterface, SpipDocuments):
-    _fileprefix: str = ""
-    _style = (BOLD, CYAN)  # Documents accent color is blue
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._id = self.id_document
-
-
-SpipLinkable = NormalizedSection | NormalizedArticle | NormalizedDocument
 
 
 class WritableObject(SpipInterface):
@@ -274,9 +243,16 @@ class WritableObject(SpipInterface):
         return output
 
 
-class Document(WritableObject, NormalizedDocument):
+class Document(WritableObject, SpipDocuments):
+    _fileprefix: str = ""
+    _style = (BOLD, CYAN)  # Documents accent color is blue
+
     class Meta:
         table_name: str = "spip_documents"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._id = self.id_document
 
     # Get source name of this file
     def src_path(self, data_dir: Optional[str] = None) -> str:
@@ -334,7 +310,7 @@ class DontExportDraftError(Exception):
 
 class RedactionalObject(WritableObject):
     id_trad: BigIntegerField | BigAutoField | int
-    id_rubrique: BigIntegerField | int
+    id_rubrique: BigAutoField | int
     # date: DateTimeField | str
     date: DateTimeField
     maj: str
@@ -418,7 +394,7 @@ class RedactionalObject(WritableObject):
                 LOG.debug(f"Found internal link {m.group()} in {self._title}")
                 try:
                     LOG.debug(f"Searching for object of id {m.group(2)} with {getobj}")
-                    o: SpipLinkable = getobj(int(m.group(2)))
+                    o: "Document | Article | Section" = getobj(int(m.group(2)))
                     # TODO get full relative path for sections and articles
                     # TODO rewrite links markup (bold/italic) after stripping
                     if len(m.group(1)) > 0:
@@ -681,12 +657,16 @@ class RedactionalObject(WritableObject):
             )
 
 
-class Article(RedactionalObject, NormalizedArticle):
+class Article(RedactionalObject, SpipArticles):
+    _fileprefix: str = "index"
+    _style = (BOLD, YELLOW)  # Articles accent color is yellow
+
     class Meta:
         table_name: str = "spip_articles"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._id = self.id_article
         # Initialize converted fields beginning with underscore
         self._accept_forum = self.accepter_forum == "oui"
         self._surtitle = self.convert_field(str(self.surtitre))
@@ -756,7 +736,10 @@ class Article(RedactionalObject, NormalizedArticle):
         }
 
 
-class Section(RedactionalObject, NormalizedSection):
+class Section(RedactionalObject, SpipRubriques):
+    _fileprefix: str = "_index"
+    _style = (BOLD, GREEN)  # Sections accent color is green
+
     class Meta:
         table_name: str = "spip_rubriques"
 
@@ -790,6 +773,11 @@ class Section(RedactionalObject, NormalizedSection):
             .order_by(Section.date.desc())
             .limit(limit)
         )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._id = self.id_rubrique
+        self._depth = self.profondeur
 
     # Perform all the write steps of this object
     def write_all(
