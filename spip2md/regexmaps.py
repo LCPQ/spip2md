@@ -13,11 +13,11 @@ SPIP_MARKDOWN = (
     ),
     (  # line break
         compile(r"\r?\n_ *(?=\r?\n)|<br ?.*?>", I),
-        "\n",  # WARNING not the real translation
+        "\n",  # WARNING May not be the real translation
     ),
     (  # heading
         compile(r"\r?\n?\r?\n?\{\{\{ *(.*?) *\}\}\}\r?\n?\r?\n?", S | I),
-        "\n\n## \\1\n\n",  # Translate SPIP headings to h2
+        "\n\n## \\1\n\n",  # Translate headings to h2
     ),
     (  # strong
         compile(r"\{\{ *(.*?) *\}\} ?", S | I),
@@ -151,13 +151,13 @@ IMAGE_REPL = r"![{}]({})"  # Name and path can be further replaced with .format(
 
 # Multi language block, to be further processed per lang
 MULTILANG_BLOCK = compile(r"<multi>(.+?)<\/multi>", S | I)
-MULTILANGS = compile(  # Matches agains all langs of multi blocks
-    r"\[([a-zA-Z\-]{2,6})\]\s*(.+?)\s*(?=\[[a-zA-Z\-]{2,6}\]|$)", S | I
-)
-CONFIGLANGS = {  # lang of configuration: (match against this lang)
+CONFIG_LANGS = {  # lang of configuration: (match against this lang)
     lang: compile(r"\[ *" + lang + r" *\]\s*(.+?)\s*(?=\[[a-zA-Z\-]{2,6}\]|$)", S | I)
     for lang in CFG.export_languages
 }
+# MULTILANGS = compile(  # Matches agains all langs of multi blocks
+#     r"\[([a-zA-Z\-]{2,6})\]\s*(.+?)\s*(?=\[[a-zA-Z\-]{2,6}\]|$)", S | I
+# )
 
 # WARNING probably useless text in metadata fields, to be removed
 BLOAT = (

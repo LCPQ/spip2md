@@ -20,7 +20,7 @@ from spip2md.config import CFG
 from spip2md.regexmaps import (
     ARTICLE_LINK,
     BLOAT,
-    CONFIGLANGS,
+    CONFIG_LANGS,
     DOCUMENT_LINK,
     HTMLTAGS,
     IMAGE_LINK,
@@ -134,7 +134,7 @@ class WritableObject(SpipInterface):
                     text = old.sub("", text)
             else:
                 for old in mapping:
-                    text = old.replace("", text)
+                    text = text.replace(old, "")
         return text
 
     # Warn about unknown chars & replace them with config defined replacement
@@ -345,12 +345,12 @@ class RedactionalObject(WritableObject):
     _text: str
 
     # Get rid of other lang than forced in text and modify lang to forced if found
-    def translate_field(self, forced_lang: str, text: str) -> str:
+    def translate_multi(self, forced_lang: str, text: str) -> str:
         LOG.debug(f"Translating <multi> blocks of `{self._title}`")
         # for each <multi> blocks, keep only forced lang
         lang: Optional[Match[str]] = None
         for block in MULTILANG_BLOCK.finditer(text):
-            lang = CONFIGLANGS[forced_lang].search(block.group(1))
+            lang = CONFIG_LANGS[forced_lang].search(block.group(1))
             if lang is not None:
                 # Log the translation
                 trans: str = lang.group(1)[:50].strip()
@@ -499,11 +499,11 @@ class RedactionalObject(WritableObject):
         self._title = self.titre.strip()
         # Keep storage language title to store it
         if CFG.storage_language is not None and CFG.storage_language != forced_lang:
-            self._storage_title = self.translate_field(
+            self._storage_title = self.translate_multi(
                 CFG.storage_language, self._title
             )
             self._storage_title = self.convert_field(self._storage_title)
-        self._title = self.translate_field(forced_lang, self._title)
+        self._title = self.translate_multi(forced_lang, self._title)
         LOG.debug(f"Convert internal links of {self.lang} `{self._title}` title")
         self._title = self.replace_links(self._title)
         LOG.debug(f"Apply conversions to {self.lang} `{self._title}` title")
@@ -522,7 +522,7 @@ class RedactionalObject(WritableObject):
             LOG.debug(f"{type(self).__name__} {self._title} text is empty")
             self._text = ""
             return
-        self._text = self.translate_field(forced_lang, self.texte.strip())
+        self._text = self.translate_multi(forced_lang, self.texte.strip())
         LOG.debug(f"Convert internal links of {self.lang} `{self._title}` text")
         self._text = self.replace_links(self._text)
         LOG.debug(f"Apply conversions to {self.lang} `{self._title}` text")
