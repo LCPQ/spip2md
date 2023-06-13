@@ -31,14 +31,14 @@ class Configuration:
     unknown_char_replacement: str = "??"  # Replaces unknown characters
     clear_log: bool = True  # Clear log before every run instead of appending to
     clear_output: bool = True  # Remove eventual output dir before running
-    conflict_strategy: str = "prepend id"  # Prepend or append : date, id or counter
     ignore_pattern: list[str] = []  # Ignore objects of which title match
     logfile: str = "log-spip2md.log"  # File where logs will be written, relative to wd
     loglevel: str = "WARNING"  # Minimum criticity of logs written in logfile
     logname: str = "spip2md"  # Labelling of logs
     export_filetype: str = "md"  # Extension of exported text files
-    max_articles_export: int = 1000  # TODO reimplement
-    max_sections_export: int = 500  # TODO reimplement
+    title_max_length: int = 40  # Maximum length of a single title for directory names
+    # max_articles_export: int = 1000  # TODO reimplement
+    # max_sections_export: int = 500  # TODO reimplement
 
     def __init__(self, config_file: Optional[str] = None):
         if config_file is not None:

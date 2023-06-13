@@ -58,7 +58,9 @@ as database user {esc(BOLD)}{CFG.db_user}{esc()}
             except IgnoredPatternError as err:
                 ROOTLOG.debug(err)  # Log the message
             print()  # Break line between level 0 sections in output
-            ROOTLOG.debug(f"Finished exporting {lang} root section {i}/{nb} {s._title}")
+            ROOTLOG.debug(
+                f"Finished exporting {lang} root section {i}/{nb} {s._url_title}"
+            )
     return {"sections": buffer}
 
 
