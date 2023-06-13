@@ -50,7 +50,7 @@ DeepDict = dict[str, "list[DeepDict] | list[str] | str"]
 LOG = logging.getLogger(CFG.logname + ".models")
 
 
-class WritableObject:
+class SpipWritable:
     # From SPIP database
     texte: str
     lang: str
@@ -240,7 +240,7 @@ class WritableObject:
         return output
 
 
-class Document(WritableObject, SpipDocuments):
+class Document(SpipWritable, SpipDocuments):
     _fileprefix: str = ""
     _style = (BOLD, CYAN)  # Documents accent color is blue
 
@@ -311,7 +311,7 @@ class DontExportDraftError(Exception):
     pass
 
 
-class RedactionalObject(WritableObject):
+class SpipRedactional(SpipWritable):
     id_trad: BigIntegerField | BigAutoField | int
     id_rubrique: BigAutoField | int
     # date: DateTimeField | str
@@ -684,7 +684,7 @@ class RedactionalObject(WritableObject):
             )
 
 
-class Article(RedactionalObject, SpipArticles):
+class Article(SpipRedactional, SpipArticles):
     _fileprefix: str = "index"
     _style = (BOLD, YELLOW)  # Articles accent color is yellow
 
@@ -761,7 +761,7 @@ class Article(RedactionalObject, SpipArticles):
         }
 
 
-class Section(RedactionalObject, SpipRubriques):
+class Section(SpipRedactional, SpipRubriques):
     _fileprefix: str = "_index"
     _style = (BOLD, GREEN)  # Sections accent color is green
 
