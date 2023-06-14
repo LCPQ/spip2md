@@ -1,0 +1,7 @@
+*ignore*
+*.log
+log.*
+*.old
+old.*
+.*
+scripts/

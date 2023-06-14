@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "spip2md"
-version = "0.0.1"
+version = "0.1.0"
 description = "Generate a static website with plain Markdown+YAML files from a SPIP CMS database"
 license = "GPL-2.0"
 
@@ -13,7 +13,7 @@ repository = "https://git.irsamc.ups-tlse.fr/gfaure/spip-db-2-md"
 keywords = ["Markdown", "Static website", "SPIP", "Converter", "Exporter"]
 
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 3 - Alpha",
   "Environment :: Console",
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
@@ -27,6 +27,7 @@ pyyaml = "^6.0"
 python-slugify = {extras = ["unidecode"], version = "^8.0.1"}
 pymysql = "^1.0.3"
 peewee = "^3.16.2"
+typing-extensions = "^4.6.3"
 
 [tool.poetry.scripts]
 spip2md = "spip2md.lib:cli"
