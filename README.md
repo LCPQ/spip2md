@@ -28,14 +28,32 @@ Markdown + YAML repository, usable with static site generators.
 - Peewee, with a database connection for your database :
   - pymysql (MySQL/MariaDB)
 - PyYaml
-- python-slugify (unidecode)
+- python-slugify (unidecode variant prefered)
+
+## Installation
+
+### Simple `pip` method
+
+Install the package with `pip install spip2md` (or `python -m pip install spip2md`
+if you don’t have pip installed).
+
+Assuming your `$PATH` contains your `pip` install directory, you can now run
+`spip2md` a normal command of the same name.
+
+### Traditional method
+
+Clone this git repo with command `git clone` and `cd` into the created directory.
+
+Either make sure you have the dependencies installed system-wide, or create a
+Python virtual-environment and install them inside.
+
+You can then run `spip2md` as a Python module with command `python -m spip2md`.
+Make sure to replace `spip2md` with a relative path to directory `spip2md` if you
+didn’t `cd` into this repository’s directory.
 
 ## Usage
 
-First make sure you have the dependencies installed (system-wide or in a
-Python virtual-environment).
-
-Next, make sure you have access to the SPIP database you want to export on a
+Make sure you have access to the SPIP database you want to export on a
 MySQL/MariaDB server. By default, `spip2md` expects a database named `spip` hosted on
 `localhost`, with a user named `spip` of which password is `password`, but you can
 totally configure this as well as other settings in the YAML config file.
@@ -44,27 +62,44 @@ If you want to copy over attached files like images, you also need access to
 the data directory of your SPIP website, usually named `IMG`, and either rename it
 `data` in your current working directory, or set `data_dir` setting to its path.
 
-Currently, the config file can be given as the only CLI parameter, or if no parameter
-is given, the program searches a `spip2md.yml` file in the current working directory.
-Here’s the *configuration options* :
+Currently, the config file you want to use can be given as the only CLI parameter,
+or if no parameter is given, the program searches a `spip2md.yml` file in the current
+working directory. Here’s the *default configuration options* with commentaries
+explaining their meaning :
 
 ```yaml
-db: Name of the database (default is spip)
-db_host: Host of the database (default is localhost)
-db_user: The database user (default is spip)
-db_pass: The database password (default is password)
-data_dir: The directory in which SPIP images & files are stored
-export_languages: Array of languages to export (default is ["en",])
-output_dir: The directory in which files will be written (default is output/)
-prepend_h1: Should spip2md prepend the title of articles as Markdown h1 (default true)
-prepend_id: Whether to prepend ID of the object to directory slug
-prepend_lang: Whether to prepend lang of the object to directory slug
-export_drafts: Should we export drafts (default true)
-remove_html: Should we clean remaining HTML blocks (default true)
-unknown_char_replacement: Broken encoding that cannot be repaired is replaced with that
-clear_log: Clear logfile between runs instead of appending to (default false)
-clear_output: Clear output dir between runs instead of merging into (default false)
-logfile: Name of the logs file (default is spip2md.log)
+db: spip # Name of the database
+db_host: localhost # Host of the database
+db_user: spip # The database user
+db_pass: password # The database password
+data_dir: data # The directory in which SPIP images & files are stored
+
+export_languages: ["en"] # Array of languages to export, two letter lang code
+# If set, directories will be created only for this language, according to this
+# language’s titles. Other languages will be written along with correct url: attribute
+storage_language: null
+output_dir: output/ # The directory in which files will be written
+
+prepend_h1: false # Add title of articles as Markdown h1, looks better on certain themes
+# Prepend ID to directory slug, preventing collisions
+# If false, a counter will be appended in case of name collision
+prepend_id: false
+prepend_lang: false # Prepend lang of the object to directory slug (prenvents collision)
+export_drafts: true # Should we export drafts
+remove_html: true # Should we clean remaining HTML blocks
+title_max_length: 40 # Maximum length of a single filename
+unknown_char_replacement: ?? # String to replace broken encoding that cannot be repaired
+
+# You probably don’t want to modify the settings below
+
+clear_log: true # Clear logfile between runs instead of appending to
+clear_output: true # Clear output dir between runs instead of merging into
+
+logfile: log-spip2md.log # Name of the logs file
+loglevel: WARNING # Refer to Python’s loglevels
+logname: spip2md # Beginning of log lines
+
+export_filetype: md # Filetype of exported text files
 ```
 
 ## External links

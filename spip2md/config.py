@@ -33,15 +33,16 @@ class Configuration:
     db_host: str = "localhost"  # Where is the DB
     db_user: str = "spip"  # A DB user with read access to SPIP database
     db_pass: str = "password"  # Password of db_user
+    data_dir: str = "IMG/"  # The directory in which SPIP images & documents are stored
     export_languages = ("fr", "en")  # Languages that will be exported
     storage_language: Optional[str] = "fr"  # Language of files and directories names
-    data_dir: str = "IMG/"  # The directory in which SPIP images & documents are stored
     output_dir: str = "output/"  # The directory to which DB will be exported
     prepend_h1: bool = False  # Add the title of the article as a Markdown h1
     prepend_id: bool = False  # Add the ID of object before slug
     prepend_lang: bool = False  # Add the lang of object before slug
     export_drafts: bool = True  # Should we export drafts as draft:true articles
     remove_html: bool = True  # Should spip2md remove every HTML tags
+    title_max_length: int = 40  # Maximum length of a single title for directory names
     unknown_char_replacement: str = "??"  # Replaces unknown characters
     clear_log: bool = True  # Clear log before every run instead of appending to
     clear_output: bool = True  # Remove eventual output dir before running
@@ -50,7 +51,6 @@ class Configuration:
     loglevel: str = "WARNING"  # Minimum criticity of logs written in logfile
     logname: str = "spip2md"  # Labelling of logs
     export_filetype: str = "md"  # Extension of exported text files
-    title_max_length: int = 40  # Maximum length of a single title for directory names
     # max_articles_export: int = 1000  # TODO reimplement
     # max_sections_export: int = 500  # TODO reimplement
 
