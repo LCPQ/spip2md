@@ -27,7 +27,6 @@ from peewee import (
     DoesNotExist,
 )
 from slugify import slugify
-from typing_extensions import Self
 from yaml import dump
 
 from spip2md.config import CFG
@@ -804,7 +803,7 @@ class Section(SpipRedactional, SpipRubriques):
         )
 
     # Get subsections of this section
-    def sections(self, limit: int = 10**6) -> tuple[Self]:
+    def sections(self, limit: int = 10**6) -> tuple["Section"]:
         LOG.debug(f"Initialize subsections of `{self._url_title}`")
         return (
             Section.select()
