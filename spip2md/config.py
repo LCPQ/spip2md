@@ -51,6 +51,7 @@ class Configuration:
     loglevel: str = "WARNING"  # Minimum criticity of logs written in logfile
     logname: str = "spip2md"  # Labelling of logs
     export_filetype: str = "md"  # Extension of exported text files
+    debug_meta: bool = False  # Include more metadata from SPIP DB in frontmatters
     # max_articles_export: int = 1000  # TODO reimplement
     # max_sections_export: int = 500  # TODO reimplement
 

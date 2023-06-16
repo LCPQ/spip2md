@@ -583,10 +583,13 @@ class SpipRedactional(SpipWritable):
             "lastmod": self.maj,
             "draft": self._draft,
             "description": self._description,
-            # Debugging
-            "spip_id_secteur": self.id_secteur,
-            "spip_id": self._id,
         }
+        # Add debugging meta if needed
+        if CFG.debug_meta:
+            meta = meta | {
+                "spip_id": self._id,
+                "spip_id_secteur": self.id_secteur,
+            }
         # Add url if different of directory
         if self.url() not in self.dest_directory():
             meta = meta | {"url": self.url()}
@@ -723,9 +726,10 @@ class Article(SpipRedactional, SpipArticles):
             "subtitle": self.soustitre,
             "date": self.date_redac,
             "authors": [author.nom for author in self.authors()],
-            # Debugging
-            "spip_id_rubrique": self.id_rubrique,
         }
+        # Add debugging meta if needed
+        if CFG.debug_meta:
+            meta = meta | {"spip_id_rubrique": self.id_rubrique}
         if append is not None:
             return super().frontmatter(meta | append)
         else:
@@ -781,16 +785,17 @@ class Section(SpipRedactional, SpipRubriques):
     class Meta:
         table_name: str = "spip_rubriques"
 
-    def frontmatter(self, append: Optional[dict[str, Any]] = None) -> str:
-        meta: dict[str, Any] = {
-            # Debugging
-            "spip_id_parent": self.id_parent,
-            "spip_profondeur": self.profondeur,
-        }
-        if append is not None:
-            return super().frontmatter(meta | append)
-        else:
-            return super().frontmatter(meta)
+    def frontmatter(self, add: Optional[dict[str, Any]] = None) -> str:
+        meta: dict[str, Any] = {}
+        # Add debugging meta if needed
+        if CFG.debug_meta:
+            meta = meta | {
+                "spip_id_parent": self.id_parent,
+                "spip_profondeur": self.profondeur,
+            }
+        if add is not None:
+            meta = meta | add
+        return super().frontmatter(meta)
 
     # Get articles of this section
     def articles(self, limit: int = 10**6) -> tuple[Article]:
