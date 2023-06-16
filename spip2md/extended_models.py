@@ -354,8 +354,6 @@ class SpipRedactional(SpipWritable):
                 )
                 if change_lang:
                     self.lang = forced_lang  # So write-all will not be cancelled
-                    if self.id_trad == 0:  # Assign translation key to id for Hugo
-                        self.id_trad = self._id
                 # Replace the mutli blocks with the text in the proper lang
                 text = text.replace(block.group(), lang.group(1))
         if lang is None:
@@ -572,7 +570,7 @@ class SpipRedactional(SpipWritable):
         # LOG.debug(f"Write frontmatter of `{self._title}`")
         meta: dict[str, Any] = {
             "lang": self.lang,
-            "translationKey": self.id_trad,
+            "translationKey": self.id_trad if self.id_trad != 0 else self._id,
             "title": self._url_title,
             "publishDate": self.date,
             "lastmod": self.maj,
