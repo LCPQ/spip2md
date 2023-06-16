@@ -48,7 +48,7 @@ Either make sure you have the dependencies installed system-wide, or create a
 Python virtual-environment and install them inside.
 
 You can then run `spip2md` as a Python module with command `python -m spip2md`.
-Make sure to replace `spip2md` with a relative path to directory `spip2md` if you
+Make sure to replace `spip2md` with a path to directory `spip2md` if you
 didn’t `cd` into this repository’s directory.
 
 ## Usage
