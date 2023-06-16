@@ -9,7 +9,7 @@ authors = [
 ]
 
 readme = ["README.md", "LICENSE"]
-repository = "https://git.irsamc.ups-tlse.fr/gfaure/spip-db-2-md"
+repository = "https://git.irsamc.ups-tlse.fr/LCPQ/spip2md"
 keywords = ["Markdown", "Static website", "SPIP", "Converter", "Exporter"]
 
 classifiers = [
