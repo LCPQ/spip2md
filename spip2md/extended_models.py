@@ -37,9 +37,7 @@ from spip2md.regexmaps import (
     DOCUMENT_LINK,
     HTMLTAGS,
     IMAGE_LINK,
-    IMAGE_REPL,
     ISO_UTF,
-    LINK_REPL,
     MULTILANG_BLOCK,
     SECTION_LINK,
     SPECIAL_OUTPUT,
@@ -406,35 +404,32 @@ class SpipRedactional(SpipWritable):
                 return (
                     self._link_types[self._type_cursor][self._link_cursor],
                     self._obj_getters[self._type_cursor],
-                    IMAGE_REPL if self._type_cursor == 0 else LINK_REPL,
+                    "!" if self._type_cursor == 0 else "",
                 )
 
-        for link, getobj, repl in LinkMappings():
+        for link, getobj, prepend in LinkMappings():
             # LOG.debug(f"Looking for {link} in {text}")
             for m in link.finditer(text):
                 LOG.debug(f"Found internal link {m.group()} in {self._url_title}")
                 try:
-                    LOG.debug(f"Searching for object of id {m.group(2)} with {getobj}")
+                    LOG.debug(
+                        f"Searching for object of id {m.group(2)} with "
+                        + getobj.__name__
+                    )
                     o: "Document | Article | Section" = getobj(int(m.group(2)))
                     # TODO get full relative path for sections and articles
                     # TODO rewrite links markup (bold/italic) after stripping
                     if len(m.group(1)) > 0:
-                        try:
-                            repl = repl.format(
-                                m.group(1).strip("{}"), o.dest_filename()
-                            )
-                        except KeyError as err:
-                            print(repl, m.group(1), o.dest_filename())
-                            raise err
+                        repl = f"{prepend}[{m.group(1)}]({o.dest_filename()})"
                     else:
-                        repl = repl.format(o._storage_title, o.dest_filename())
+                        repl = f"{prepend}[{o._storage_title}]({o.dest_filename()})"
                     LOG.debug(
                         f"Translate link {m.group()} to {repl} in {self._url_title}"
                     )
                     text = text.replace(m.group(), repl)
                 except DoesNotExist:
                     LOG.warn(f"No object for link {m.group()} in {self._url_title}")
-                    text = text.replace(m.group(), repl.format("", "NOT FOUND"), 1)
+                    text = text.replace(m.group(), prepend + "[](NOT FOUND)", 1)
         return text
 
     # Get this object url, or none if it’s the same as directory

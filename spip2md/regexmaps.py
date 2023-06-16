@@ -159,8 +159,8 @@ SECTION_LINK = (
     compile(r"\[(.*?)\]\((?:rub|rubrique)([0-9]+)(?:\|(.*?))?\)", S | I),
 )
 
-LINK_REPL = r"[{}]({})"  # Name and path can be further replaced with .format()
-IMAGE_REPL = r"![{}]({})"  # Name and path can be further replaced with .format()
+# LINK_REPL = r"[{}]({})"  # Name and path can be further replaced with .format()
+# IMAGE_REPL = r"![{}]({})"  # Name and path can be further replaced with .format()
 
 
 # Multi language block, to be further processed per lang
