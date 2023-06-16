@@ -17,6 +17,7 @@ import logging
 from os import listdir, mkdir
 from os.path import basename, isfile, splitext
 from re import I, Match, Pattern, finditer, match, search
+from re import error as re_error
 from shutil import copyfile
 from typing import Any, Optional
 
@@ -82,14 +83,20 @@ class SpipWritable:
 
     # Apply a mapping from regex maps
     @staticmethod
-    def apply_mapping(text: str, mapping: tuple) -> str:
+    def apply_mapping(text: str, mapping: tuple, keep_markup: bool = True) -> str:
         if type(mapping) == tuple and len(mapping) > 0:
             if type(mapping[0]) == tuple and len(mapping[0]) > 0:
-                if type(mapping[0][0]) == Pattern:
+                if type(mapping[0][0]) == Pattern:  # Mostly for syntax conversion
                     for old, new in mapping:
-                        text = old.sub(new, text)
+                        if keep_markup:
+                            text = old.sub(new, text)
+                        else:
+                            try:
+                                text = old.sub(r"\1", text)
+                            except re_error:
+                                text = old.sub("", text)
                 else:
-                    for old, new in mapping:
+                    for old, new in mapping:  # Mostly for broken encoding
                         text = text.replace(old, new)
             elif type(mapping[0]) == Pattern:
                 for old in mapping:
@@ -129,18 +136,18 @@ class SpipWritable:
         return text
 
     # Apply needed methods on text fields
-    def convert_field(self, field: Optional[str], clean_html: bool = True) -> str:
+    def convert_field(self, field: Optional[str], keep_markup: bool = True) -> str:
         if field is None:
             return ""
         if len(field) == 0:
             return ""
         # Convert SPIP syntax to Markdown
-        field = self.apply_mapping(field, SPIP_MARKDOWN)
+        field = self.apply_mapping(field, SPIP_MARKDOWN, keep_markup)
         # Remove useless text
         field = self.apply_mapping(field, BLOAT)
         # Convert broken ISO encoding to UTF
         field = self.apply_mapping(field, ISO_UTF)
-        if clean_html:
+        if CFG.remove_html:
             # Delete remaining HTML tags in body WARNING
             field = self.apply_mapping(field, HTMLTAGS)
         # Warn about unknown chars
@@ -510,7 +517,7 @@ class SpipRedactional(SpipWritable):
         self._url_title = self.replace_links(self._url_title)
         LOG.debug(f"Apply conversions to {self.lang} `{self._url_title}` title")
         self._storage_title = self.convert_field(self._storage_title)
-        self._url_title = self.convert_field(self._url_title)
+        self._url_title = self.convert_field(self._url_title, CFG.metadata_markup)
         for p in CFG.ignore_patterns:
             for title in (self._storage_title, self._url_title):
                 m = match(p, title, I)
@@ -554,7 +561,7 @@ class SpipRedactional(SpipWritable):
         LOG.debug(f"Convert internal links of {self.lang} `{self._url_title}` extra")
         self._extra = self.replace_links(self._extra)
         LOG.debug(f"Apply conversions to {self.lang} `{self._url_title}` extra")
-        self._extra = self.convert_field(self._extra)
+        self._extra = self.convert_field(self._extra, CFG.metadata_markup)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

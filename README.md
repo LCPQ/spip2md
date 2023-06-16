@@ -100,6 +100,7 @@ ignore_patterns: [] # List of regexes : Matching sections or articles will be 
 
 # Text body processing settings
 remove_html: true # Should we clean remaining HTML blocks
+metadata_markup: true # Should we keep markup (Markdown) in metadata fields (like title)
 unknown_char_replacement: ?? # String to replace broken encoding that cannot be repaired
 
 # Settings you probably don’t want to modify
