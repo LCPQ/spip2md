@@ -19,7 +19,7 @@ from os.path import isfile
 from shutil import rmtree
 from typing import Optional
 
-from spip2md.config import CFG
+from spip2md.config import CFG, NAME
 from spip2md.extended_models import (
     DeepDict,
     DontExportDraftError,
@@ -31,8 +31,8 @@ from spip2md.spip_models import DB
 from spip2md.style import BOLD, esc
 
 # Define loggers for this file
-ROOTLOG = logging.getLogger(CFG.logname + ".root")
-TREELOG = logging.getLogger(CFG.logname + ".tree")
+ROOTLOG = logging.getLogger(NAME + ".root")
+TREELOG = logging.getLogger(NAME + ".tree")
 # Initialize the database with settings from CFG
 DB.init(CFG.db, host=CFG.db_host, user=CFG.db_user, password=CFG.db_pass)
 
@@ -135,17 +135,6 @@ def clear_output() -> None:
     if CFG.clear_output:
         rmtree(CFG.output_dir, True)
     makedirs(CFG.output_dir, exist_ok=True)
-
-
-# def main(*addargv: str):
-# import sys
-# argv: list[str] = sys.argv + list(addargv)
-
-# TODO Define max nb of sections/articles to export based on first CLI argument
-# if len(argv) >= 2:
-#     sections_export = int(argv[1])
-# else:
-#     sections_export = CFG.max_sections_export
 
 
 # When directly executed as a script

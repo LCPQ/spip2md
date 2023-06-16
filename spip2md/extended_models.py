@@ -29,7 +29,7 @@ from peewee import (
 from slugify import slugify
 from yaml import dump
 
-from spip2md.config import CFG
+from spip2md.config import CFG, NAME
 from spip2md.regexmaps import (
     ARTICLE_LINK,
     BLOAT,
@@ -60,7 +60,7 @@ from spip2md.style import BOLD, CYAN, GREEN, WARNING_STYLE, YELLOW, esc
 DeepDict = dict[str, "list[DeepDict] | list[str] | str"]
 
 # Define logger for this file’s logs
-LOG = logging.getLogger(CFG.logname + ".models")
+LOG = logging.getLogger(NAME + ".models")
 
 
 class SpipWritable:

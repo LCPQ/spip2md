@@ -14,20 +14,48 @@ You should have received a copy of the GNU General Public License along with spi
 If not, see <https://www.gnu.org/licenses/>.
 """
 # pyright: strict
+from os import environ
 from os.path import expanduser, isfile
 from typing import Optional
 
 from yaml import Loader, load
 
-CONFIG_PATHS = ("spip2md.yml", "spip2md.yaml")
+NAME: str = "spip2md"  # Name of program, notably used in logs
 
 
-def config_file() -> Optional[str]:
-    for path in CONFIG_PATHS:
+# Searches for a configuration file from all CLI args and in standard locations
+# & return his path if found
+def config(*start_locations: str) -> Optional[str]:
+    # Search for config files in CLI arguments and function params first
+    argv = __import__("sys").argv
+    config_locations: list[str] = argv[1:] + list(start_locations)
+
+    if "XDG_CONFIG_HOME" in environ:
+        config_locations += [
+            environ["XDG_CONFIG_HOME"] + "/spip2md.yml",
+            environ["XDG_CONFIG_HOME"] + "/spip2md.yaml",
+        ]
+
+    if "HOME" in environ:
+        config_locations += [
+            environ["HOME"] + "/.config/spip2md.yml",
+            environ["HOME"] + "/.config/spip2md.yaml",
+            environ["HOME"] + "/spip2md.yml",
+            environ["HOME"] + "/spip2md.yaml",
+        ]
+
+    # Search in working directory in last resort
+    config_locations += [
+        "/spip2md.yml",
+        "/spip2md.yaml",
+    ]
+
+    for path in config_locations:
         if isfile(path):
             return path
 
 
+# Global configuration object
 class Configuration:
     db: str = "spip"  # DB name
     db_host: str = "localhost"  # Where is the DB
@@ -49,11 +77,8 @@ class Configuration:
     ignore_pattern: list[str] = []  # Ignore objects of which title match
     logfile: str = "log-spip2md.log"  # File where logs will be written, relative to wd
     loglevel: str = "WARNING"  # Minimum criticity of logs written in logfile
-    logname: str = "spip2md"  # Labelling of logs
     export_filetype: str = "md"  # Extension of exported text files
     debug_meta: bool = False  # Include more metadata from SPIP DB in frontmatters
-    # max_articles_export: int = 1000  # TODO reimplement
-    # max_sections_export: int = 500  # TODO reimplement
 
     def __init__(self, config_file: Optional[str] = None):
         if config_file is not None:
@@ -72,4 +97,4 @@ class Configuration:
                     setattr(self, attr, config[attr])
 
 
-CFG = Configuration(config_file=config_file())
+CFG = Configuration(config())

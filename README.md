@@ -51,7 +51,7 @@ You can then run `spip2md` as a Python module with command `python -m spip2md`.
 Make sure to replace `spip2md` with a path to directory `spip2md` if you
 didn’t `cd` into this repository’s directory.
 
-## Usage
+## Configuration and Usage
 
 Make sure you have access to the SPIP database you want to export on a
 MySQL/MariaDB server. By default, `spip2md` expects a database named `spip` hosted on
@@ -62,10 +62,13 @@ If you want to copy over attached files like images, you also need access to
 the data directory of your SPIP website, usually named `IMG`, and either rename it
 `data` in your current working directory, or set `data_dir` setting to its path.
 
-Currently, the config file you want to use can be given as the only CLI parameter,
-or if no parameter is given, the program searches a `spip2md.yml` file in the current
-working directory. Here’s the *default configuration options* with commentaries
-explaining their meaning :
+### YAML configuration file
+
+To configure `spip2md` you can place a file named `spip2md.yml` in standard \*nix
+configuration locations, set it with the command line argument, or run the
+program with a `spip2md.yml` file in your working directory.
+
+Here’s the *default configuration options* with comments explaining their meaning :
 
 ```yaml
 db: spip # Name of the database
@@ -97,7 +100,6 @@ clear_output: true # Clear output dir between runs instead of merging into
 
 logfile: log-spip2md.log # Name of the logs file
 loglevel: WARNING # Refer to Python’s loglevels
-logname: spip2md # Beginning of log lines
 
 export_filetype: md # Filetype of exported text files
 ```
