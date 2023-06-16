@@ -217,7 +217,11 @@ class SpipWritable:
         if type(message) is FileNotFoundError:
             output += "ERROR: NOT FOUND: "
         elif type(message) is DoesNotExist:
-            output += "ERROR: NO DESTINATION DIR "
+            output += "ERROR: NO DESTINATION DIR: "
+        elif type(message) is DontExportDraftError:
+            output += "ERROR: NOT EXPORTING DRAFT: "
+        elif type(message) is DontExportEmptyError:
+            output += "ERROR: NOT EXPORTING EMPTY: "
         elif type(message) is not str:
             output += "ERROR: UNKNOWN: "
         # Print the output as the program goes
@@ -244,6 +248,7 @@ class SpipWritable:
         except (
             LangNotFoundError,
             DontExportDraftError,
+            DontExportEmptyError,
             IgnoredPatternError,
             FileNotFoundError,
         ) as err:
@@ -319,6 +324,10 @@ class LangNotFoundError(Exception):
 
 
 class DontExportDraftError(Exception):
+    pass
+
+
+class DontExportEmptyError(Exception):
     pass
 
 
@@ -502,7 +511,7 @@ class SpipRedactional(SpipWritable):
         LOG.debug(f"Apply conversions to {self.lang} `{self._url_title}` title")
         self._storage_title = self.convert_field(self._storage_title)
         self._url_title = self.convert_field(self._url_title)
-        for p in CFG.ignore_pattern:
+        for p in CFG.ignore_patterns:
             for title in (self._storage_title, self._url_title):
                 m = match(p, title, I)
                 if m is not None:
@@ -603,6 +612,8 @@ class SpipRedactional(SpipWritable):
         if len(self._text) > 0:
             # Remove remaining HTML after & append to body
             body += "\n\n" + self._text
+        elif not CFG.export_empty:
+            raise DontExportEmptyError
         # Same with an "extra" section
         if len(self._extra) > 0:
             body += "\n\n# EXTRA\n\n" + self._extra
@@ -634,6 +645,7 @@ class SpipRedactional(SpipWritable):
             except (
                 LangNotFoundError,
                 DontExportDraftError,
+                DontExportEmptyError,
                 IgnoredPatternError,
             ) as err:
                 LOG.debug(err)

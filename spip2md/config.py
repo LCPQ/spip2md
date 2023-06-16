@@ -69,12 +69,13 @@ class Configuration:
     prepend_id: bool = False  # Add the ID of object before slug
     prepend_lang: bool = False  # Add the lang of object before slug
     export_drafts: bool = True  # Should we export drafts as draft:true articles
+    export_empty: bool = True  # Should we export empty articles
     remove_html: bool = True  # Should spip2md remove every HTML tags
     title_max_length: int = 40  # Maximum length of a single title for directory names
     unknown_char_replacement: str = "??"  # Replaces unknown characters
     clear_log: bool = True  # Clear log before every run instead of appending to
     clear_output: bool = True  # Remove eventual output dir before running
-    ignore_pattern: list[str] = []  # Ignore objects of which title match
+    ignore_patterns: list[str] = []  # Ignore objects of which title match
     logfile: str = "log-spip2md.log"  # File where logs will be written, relative to wd
     loglevel: str = "WARNING"  # Minimum criticity of logs written in logfile
     export_filetype: str = "md"  # Extension of exported text files

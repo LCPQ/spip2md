@@ -71,30 +71,38 @@ program with a `spip2md.yml` file in your working directory.
 Here’s the *default configuration options* with comments explaining their meaning :
 
 ```yaml
+# Data source settings
 db: spip # Name of the database
 db_host: localhost # Host of the database
 db_user: spip # The database user
 db_pass: password # The database password
 data_dir: data # The directory in which SPIP images & files are stored
 
+# Data destination settings
 export_languages: ["en"] # Array of languages to export, two letter lang code
 # If set, directories will be created only for this language, according to this
 # language’s titles. Other languages will be written along with correct url: attribute
 storage_language: null
 output_dir: output/ # The directory in which files will be written
 
+# Destination directories names settings
 prepend_h1: false # Add title of articles as Markdown h1, looks better on certain themes
 # Prepend ID to directory slug, preventing collisions
 # If false, a counter will be appended in case of name collision
 prepend_id: false
 prepend_lang: false # Prepend lang of the object to directory slug (prenvents collision)
-export_drafts: true # Should we export drafts
-remove_html: true # Should we clean remaining HTML blocks
 title_max_length: 40 # Maximum length of a single filename
+
+# Ignored data settings
+export_drafts: true # Should we export drafts
+export_empty: true # Should we export empty articles
+ignore_patterns: [] # List of regexes : Matching sections or articles will be ignored
+
+# Text body processing settings
+remove_html: true # Should we clean remaining HTML blocks
 unknown_char_replacement: ?? # String to replace broken encoding that cannot be repaired
 
-# You probably don’t want to modify the settings below
-
+# Settings you probably don’t want to modify
 clear_log: true # Clear logfile between runs instead of appending to
 clear_output: true # Clear output dir between runs instead of merging into
 
