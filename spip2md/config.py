@@ -71,7 +71,7 @@ class Configuration:
     export_drafts: bool = True  # Should we export drafts as draft:true articles
     export_empty: bool = True  # Should we export empty articles
     remove_html: bool = True  # Should spip2md remove every HTML tags
-    metadata_markup: bool = True  # Should spip2md keep the markup in metadata fields
+    metadata_markup: bool = False  # Should spip2md keep the markup in metadata fields
     title_max_length: int = 40  # Maximum length of a single title for directory names
     unknown_char_replacement: str = "??"  # Replaces unknown characters
     clear_log: bool = True  # Clear log before every run instead of appending to
