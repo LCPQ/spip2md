@@ -125,7 +125,7 @@ class SpipWritable:
             for m in finditer("(" + char + ")+", text):
                 context: str = unknown_chars_context(text[lastend:], char)
                 LOG.warn(
-                    f"Unknown char {char} found in {self.titre[:40]} at: {context}"
+                    f"Unknown char {char} in file {self.dest_path()} at: {context}"
                 )
                 if CFG.unknown_char_replacement is not None:
                     LOG.warn(
@@ -150,8 +150,6 @@ class SpipWritable:
         if CFG.remove_html:
             # Delete remaining HTML tags in body WARNING
             field = self.apply_mapping(field, HTMLTAGS)
-        # Warn about unknown chars
-        field = self.warn_unknown(field, UNKNOWN_ISO)
         return field.strip()  # Strip whitespaces around text
 
     def __init__(self, *args, **kwargs):
@@ -161,8 +159,10 @@ class SpipWritable:
         self._draft = self.statut != "publie"
 
     # Apply post-init conversions and cancel the export if self not of the right lang
-    def convert(self) -> None:
+    def convert(self, forced_lang: Optional[str] = None) -> None:
         self._storage_title = self.convert_field(self.titre)
+        # Warn about unknown chars
+        self._storage_title = self.warn_unknown(self._storage_title, UNKNOWN_ISO)
         if not CFG.export_drafts and self._draft:
             raise DontExportDraftError(f"{self.titre} is a draft, cancelling export")
 
@@ -244,11 +244,13 @@ class SpipWritable:
         index: int,
         total: int,
         parenturl: str,
+        forced_lang: Optional[str] = None,
     ) -> str:
-        LOG.debug(f"Writing {type(self).__name__} `{self._storage_title}`")
         self._depth = parentdepth + 1
         self._storage_parentdir = storage_parentdir
         self._parenturl = parenturl
+        self.convert(forced_lang)  # Post init convertions
+        LOG.debug(f"Writing {type(self).__name__} `{self._storage_title}`")
         output: str = self.begin_message(index, total)
         try:
             output += self.end_message(self.write())
@@ -310,7 +312,7 @@ class Document(SpipWritable, SpipDocuments):
         forcedlang: Optional[str] = None,
         parenturl: str = "",
     ) -> str:
-        self.convert()  # Apply post-init conversions
+        # self.convert()  # Apply post-init conversions
         LOG.debug(
             f"Document {self._storage_title} doesn’t care about forcedlang {forcedlang}"
         )
@@ -525,6 +527,9 @@ class SpipRedactional(SpipWritable):
                     raise IgnoredPatternError(
                         f"{self._url_title} matches with ignore pattern {p}, ignoring"
                     )
+        # Warn about unknown chars
+        self._storage_title = self.warn_unknown(self._storage_title, UNKNOWN_ISO)
+        self._url_title = self.warn_unknown(self._url_title, UNKNOWN_ISO)
 
     def convert_text(self, forced_lang: str) -> None:
         LOG.debug(f"Convert text of `{self._url_title}`")
@@ -544,6 +549,8 @@ class SpipRedactional(SpipWritable):
         self._text = self.replace_links(self._text)
         LOG.debug(f"Apply conversions to {self.lang} `{self._url_title}` text")
         self._text = self.convert_field(self._text)
+        # Warn about unknown chars
+        self._text = self.warn_unknown(self._text, UNKNOWN_ISO)
 
     def convert_extra(self) -> None:
         LOG.debug(f"Convert extra of `{self._url_title}`")
@@ -562,6 +569,8 @@ class SpipRedactional(SpipWritable):
         self._extra = self.replace_links(self._extra)
         LOG.debug(f"Apply conversions to {self.lang} `{self._url_title}` extra")
         self._extra = self.convert_field(self._extra, CFG.metadata_markup)
+        # Warn about unknown chars
+        self._extra = self.warn_unknown(self._extra, UNKNOWN_ISO)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -781,7 +790,7 @@ class Article(SpipRedactional, SpipArticles):
         forced_lang: str,
         parenturl: str,
     ) -> DeepDict:
-        self.convert(forced_lang)
+        # self.convert(forced_lang)
         return {
             "msg": super().write_all(
                 parentdepth, storage_parentdir, index, total, parenturl
@@ -844,7 +853,7 @@ class Section(SpipRedactional, SpipRubriques):
         forced_lang: str,
         parenturl: str = "",
     ) -> DeepDict:
-        self.convert(forced_lang)
+        # self.convert(forced_lang)
         return {
             "msg": super().write_all(
                 parentdepth, storage_parentdir, index, total, parenturl
