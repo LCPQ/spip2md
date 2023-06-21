@@ -20,42 +20,11 @@ from typing import Optional
 
 from yaml import Loader, load
 
-NAME: str = "spip2md"  # Name of program, notably used in logs
-
-
-# Searches for a configuration file from standard locations or params
-def config(*start_locations: str) -> Optional[str]:
-    # Search for config files in function params first
-    config_locations: list[str] = list(start_locations)
-
-    if "XDG_CONFIG_HOME" in environ:
-        config_locations += [
-            environ["XDG_CONFIG_HOME"] + "/spip2md.yml",
-            environ["XDG_CONFIG_HOME"] + "/spip2md.yaml",
-        ]
-
-    if "HOME" in environ:
-        config_locations += [
-            environ["HOME"] + "/.config/spip2md.yml",
-            environ["HOME"] + "/.config/spip2md.yaml",
-            environ["HOME"] + "/spip2md.yml",
-            environ["HOME"] + "/spip2md.yaml",
-        ]
-
-    # Search in working directory in last resort
-    config_locations += [
-        "/spip2md.yml",
-        "/spip2md.yaml",
-    ]
-
-    # Return the first path that actually exists
-    for path in config_locations:
-        if isfile(path):
-            return path
-
 
 # Global configuration object
 class Configuration:
+    config_file: Optional[str] = None  # Location of the config file
+
     db: str = "spip"  # DB name
     db_host: str = "localhost"  # Where is the DB
     db_user: str = "spip"  # A DB user with read access to SPIP database
@@ -77,15 +46,46 @@ class Configuration:
     clear_log: bool = True  # Clear log before every run instead of appending to
     clear_output: bool = True  # Remove eventual output dir before running
     ignore_patterns: list[str] = []  # Ignore objects of which title match
-    logfile: str = "log-spip2md.log"  # File where logs will be written, relative to wd
-    loglevel: str = "WARNING"  # Minimum criticity of logs written in logfile
     export_filetype: str = "md"  # Extension of exported text files
     debug_meta: bool = False  # Include more metadata from SPIP DB in frontmatters
 
-    def __init__(self, config_file: Optional[str] = None):
-        if config_file is not None:
+    # Searches for a configuration file from standard locations or params
+    def _find_config_file(self, *start_locations: str) -> str:
+        # Search for config files in function params first
+        config_locations: list[str] = list(start_locations)
+
+        if "XDG_CONFIG_HOME" in environ:
+            config_locations += [
+                environ["XDG_CONFIG_HOME"] + "/spip2md.yml",
+                environ["XDG_CONFIG_HOME"] + "/spip2md.yaml",
+            ]
+
+        if "HOME" in environ:
+            config_locations += [
+                environ["HOME"] + "/.config/spip2md.yml",
+                environ["HOME"] + "/.config/spip2md.yaml",
+                environ["HOME"] + "/spip2md.yml",
+                environ["HOME"] + "/spip2md.yaml",
+            ]
+
+        # Search in working directory in last resort
+        config_locations += [
+            "/spip2md.yml",
+            "/spip2md.yaml",
+        ]
+
+        # Return the first path that actually exists
+        for path in config_locations:
+            if isfile(path):
+                self.config_file = path
+                return path
+        # If not found, raise error
+        raise FileNotFoundError
+
+    def __init__(self, *argv: str):
+        try:
             # Read config from config file
-            with open(config_file) as f:
+            with open(self._find_config_file(*argv)) as f:
                 config = load(f.read(), Loader=Loader)
             # Assign configuration for each attribute in config file
             for attr in config:
@@ -97,3 +97,7 @@ class Configuration:
                     setattr(self, attr, directory)
                 else:
                     setattr(self, attr, config[attr])
+            # Tell user about config
+            print(f"Successfully read configuration file from {self.config_file}")
+        except FileNotFoundError:
+            print("No configuration file found, using defaults")

@@ -12,8 +12,11 @@ See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with spip2md.
 If not, see <https://www.gnu.org/licenses/>.
+
+
+This file contains the core classes of spip2md that models internal objects of spip
+and methods to convert them to Markdown
 """
-import logging
 from os import listdir, mkdir
 from os.path import basename, isfile, splitext
 from re import I, Match, Pattern, finditer, match, search
@@ -30,7 +33,7 @@ from peewee import (
 from slugify import slugify
 from yaml import dump
 
-from spip2md.config import CFG, NAME
+from spip2md.config import Configuration
 from spip2md.regexmaps import (
     ARTICLE_LINK,
     BLOAT,
@@ -54,15 +57,26 @@ from spip2md.spip_models import (
     SpipDocumentsLiens,
     SpipRubriques,
 )
-from spip2md.style import BOLD, CYAN, GREEN, WARNING_STYLE, YELLOW, esc
-
-DeepDict = dict[str, "list[DeepDict] | list[str] | str"]
-
-# Define logger for this file’s logs
-LOG = logging.getLogger(NAME + ".models")
 
 
-class SpipWritable:
+# Declare exceptions
+class IgnoredPatternError(Exception):
+    pass
+
+
+class LangNotFoundError(Exception):
+    pass
+
+
+class DontExportDraftError(Exception):
+    pass
+
+
+class DontExportEmptyError(Exception):
+    pass
+
+
+class ConvertableObject:
     # From SPIP database
     texte: str
     lang: str
@@ -265,7 +279,7 @@ class SpipWritable:
         return output
 
 
-class Document(SpipWritable, SpipDocuments):
+class ConvertableDocument(ConvertableObject, SpipDocuments):
     _fileprefix: str = ""
     _style = (BOLD, CYAN)  # Documents accent color is blue
 
@@ -324,23 +338,7 @@ class Document(SpipWritable, SpipDocuments):
         )
 
 
-class IgnoredPatternError(Exception):
-    pass
-
-
-class LangNotFoundError(Exception):
-    pass
-
-
-class DontExportDraftError(Exception):
-    pass
-
-
-class DontExportEmptyError(Exception):
-    pass
-
-
-class SpipRedactional(SpipWritable):
+class ConvertableRedactional(ConvertableObject):
     id_trad: BigIntegerField | BigAutoField | int
     id_rubrique: BigAutoField | int
     # date: DateTimeField | str
@@ -721,12 +719,10 @@ class SpipRedactional(SpipWritable):
             )
 
 
-class Article(SpipRedactional, SpipArticles):
+class ConvertableArticle(ConvertableRedactional):
     _fileprefix: str = "index"
     _style = (BOLD, YELLOW)  # Articles accent color is yellow
-
-    class Meta:
-        table_name: str = "spip_articles"
+    _article: SpipArticles
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -799,12 +795,10 @@ class Article(SpipRedactional, SpipArticles):
         }
 
 
-class Section(SpipRedactional, SpipRubriques):
+class ConvertableSection(ConvertableRedactional):
     _fileprefix: str = "_index"
     _style = (BOLD, GREEN)  # Sections accent color is green
-
-    class Meta:
-        table_name: str = "spip_rubriques"
+    _section: SpipRubriques
 
     def frontmatter(self, add: Optional[dict[str, Any]] = None) -> str:
         meta: dict[str, Any] = {}
@@ -862,3 +856,22 @@ class Section(SpipRedactional, SpipRubriques):
             "articles": self.write_children(self.articles(), forced_lang),
             "sections": self.write_children(self.sections(), forced_lang),
         }
+
+
+class ConvertableSite:
+    _children: list[SpipDocuments | SpipArticles | SpipRubriques]
+
+    def __init__(self, cfg: Configuration) -> None:
+        pass
+
+    def init_children(self):
+        pass
+
+    def convert(self):
+        pass
+
+    def translate(self):
+        pass
+
+    def link(self):
+        pass

@@ -12,6 +12,9 @@ See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with spip2md.
 If not, see <https://www.gnu.org/licenses/>.
+
+
+This file defines Spip database as objects, attributes and methods with Peewee
 """
 # type: ignore
 from peewee import (
@@ -29,12 +32,7 @@ from peewee import (
     TextField,
 )
 
-DB = MySQLDatabase(None)
-
-
-# class UnknownField(object):
-#     def __init__(self, *_, **__):
-#         pass
+DB: MySQLDatabase = MySQLDatabase(None)
 
 
 class BaseModel(Model):
@@ -713,3 +711,8 @@ class SpipZonesLiens(BaseModel):
         table_name = "spip_zones_liens"
         indexes = ((("id_zone", "id_objet", "objet"), True),)
         primary_key = CompositeKey("id_objet", "id_zone", "objet")
+
+
+# class UnknownField(object):
+#     def __init__(self, *_, **__):
+#         pass
