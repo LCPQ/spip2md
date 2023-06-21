@@ -86,22 +86,31 @@ storage_language: null
 output_dir: output/ # The directory in which files will be written
 
 # Destination directories names settings
-prepend_h1: false # Add title of articles as Markdown h1, looks better on certain themes
 # Prepend ID to directory slug, preventing collisions
 # If false, a counter will be appended in case of name collision
 prepend_id: false
-prepend_lang: false # Prepend lang of the object to directory slug (prenvents collision)
-title_max_length: 40 # Maximum length of a single filename
+# Prepend lang of the object to directory slug, prenventing collision between langs
+prepend_lang: false
+title_max_length: 42 # Maximum length (chars) of a single filename
+
+# Text body processing settings
+remove_html: true # Should we clean remaining HTML blocks
+metadata_markup: false # Should we keep markup (Markdown) in metadata fields, like title
+unknown_char_replacement: ?? # String to replace broken encoding that cannot be repaired
+prepend_h1: false # Add title of articles as Markdown h1, looks better on certain themes
+# Array of objects with 2 or 3 values, allowing to move some fields into others.
+# {src: moved_field_name, dest: destination_field_name, repr: "how to merge them"}
+# repr is formatted with "{}" being the moved field, and "_" the destination one
+# For example, to append a field "subtitle" to a field "title":
+#   - src: subtitle
+#     dest: title
+#     repr: "{} _" # (this is the default repr)
+move_fields: []
 
 # Ignored data settings
 export_drafts: true # Should we export drafts
 export_empty: true # Should we export empty articles
 ignore_patterns: [] # List of regexes : Matching sections or articles will be ignored
-
-# Text body processing settings
-remove_html: true # Should we clean remaining HTML blocks
-metadata_markup: false # Should we keep markup (Markdown) in metadata fields (like title)
-unknown_char_replacement: ?? # String to replace broken encoding that cannot be repaired
 
 # Settings you probably don’t want to modify
 clear_log: true # Clear logfile between runs instead of appending to
