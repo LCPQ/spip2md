@@ -23,12 +23,10 @@ from yaml import Loader, load
 NAME: str = "spip2md"  # Name of program, notably used in logs
 
 
-# Searches for a configuration file from all CLI args and in standard locations
-# & return his path if found
+# Searches for a configuration file from standard locations or params
 def config(*start_locations: str) -> Optional[str]:
-    # Search for config files in CLI arguments and function params first
-    argv = __import__("sys").argv
-    config_locations: list[str] = argv[1:] + list(start_locations)
+    # Search for config files in function params first
+    config_locations: list[str] = list(start_locations)
 
     if "XDG_CONFIG_HOME" in environ:
         config_locations += [
@@ -50,6 +48,7 @@ def config(*start_locations: str) -> Optional[str]:
         "/spip2md.yaml",
     ]
 
+    # Return the first path that actually exists
     for path in config_locations:
         if isfile(path):
             return path
@@ -98,6 +97,3 @@ class Configuration:
                     setattr(self, attr, directory)
                 else:
                     setattr(self, attr, config[attr])
-
-
-CFG = Configuration(config())
