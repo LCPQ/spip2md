@@ -66,6 +66,7 @@ class Configuration:
     storage_language: Optional[str] = "fr"  # Language of files and directories names
     output_dir: str = "output/"  # The directory to which DB will be exported
     prepend_h1: bool = False  # Add the title of the article as a Markdown h1
+    move_fields: list[dict[str, str]] = []  # Alternative destination for fields
     prepend_id: bool = False  # Add the ID of object before slug
     prepend_lang: bool = False  # Add the lang of object before slug
     export_drafts: bool = True  # Should we export drafts as draft:true articles
