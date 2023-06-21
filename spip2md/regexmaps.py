@@ -16,7 +16,7 @@ If not, see <https://www.gnu.org/licenses/>.
 # pyright: strict
 from re import I, S, compile
 
-from spip2md.config import CFG
+LANGCODES = ("en", "fr", "es")  # And more …
 
 # ((SPIP syntax, Replacement Markdown syntax), …)
 SPIP_MARKDOWN = (
@@ -167,7 +167,7 @@ SECTION_LINK = (
 MULTILANG_BLOCK = compile(r"<multi>(.+?)<\/multi>", S | I)
 CONFIG_LANGS = {  # lang of configuration: (match against this lang)
     lang: compile(r"\[ *" + lang + r" *\]\s*(.+?)\s*(?=\[[a-zA-Z\-]{2,6}\]|$)", S | I)
-    for lang in CFG.export_languages
+    for lang in LANGCODES
 }
 # MULTILANGS = compile(  # Matches agains all langs of multi blocks
 #     r"\[([a-zA-Z\-]{2,6})\]\s*(.+?)\s*(?=\[[a-zA-Z\-]{2,6}\]|$)", S | I
@@ -316,10 +316,7 @@ SPECIAL_OUTPUT = (
     compile(r"^([0-9]+?\.)(?= )"),  # Counter
     compile(r"(?<= )(->)(?= )"),  # Arrow
     compile(r"(?<=^Exporting )([0-9]+?)(?= )"),  # Total
-) + tuple(
-    compile(r"(?<=level [0-9] )(" + language + r" )")
-    for language in CFG.export_languages
-)
+) + tuple(compile(r"(?<=level [0-9] )(" + language + r" )") for language in LANGCODES)
 
 # Warning elements in terminal output to highlight
 WARNING_OUTPUT = (
