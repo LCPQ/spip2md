@@ -21,11 +21,9 @@ As the __init__.py file, this file is executed whenever the package is imported.
 import logging
 from os.path import isfile
 
-NAME: str = "spip2md"  # Name of program, notably used in logs
-
-# Configure logging
 LOGFILE: str = "log-spip2md.log"  # File where logs will be written, relative to wd
 LOGLEVEL: str = "WARNING"  # Minimum criticity of logs written in logfile
+# Configure logging
 # __import__("os").remove(LOGFILE) # Clear log ?
 if isfile(LOGFILE):  # Break 2 lines before new log if there’s already one
     with open(LOGFILE, "a") as f:

@@ -16,20 +16,11 @@ If not, see <https://www.gnu.org/licenses/>.
 
 This file adds write to disk capabilities to spip objects
 """
-import logging
-from os import makedirs, remove
-from os.path import isfile
-from shutil import rmtree
-from typing import Optional
-
-from spip2md import NAME
-from spip2md.read import SpipSite
-
-LOG = logging.getLogger(NAME)  # Define a custom logger for spip2md
+from spip2md.convert import ConvertableSite
 
 
-class WritableSite(SpipSite):
-    def write_all(self):
+class WritableSite(ConvertableSite):
+    def write(self):
         pass
 
 

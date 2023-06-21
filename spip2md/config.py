@@ -25,6 +25,8 @@ from yaml import Loader, load
 class Configuration:
     config_file: Optional[str] = None  # Location of the config file
 
+    name: str = "spip2md"  # Name of program, notably used in logs
+
     db: str = "spip"  # DB name
     db_host: str = "localhost"  # Where is the DB
     db_user: str = "spip"  # A DB user with read access to SPIP database
@@ -47,7 +49,8 @@ class Configuration:
     clear_output: bool = True  # Remove eventual output dir before running
     ignore_patterns: list[str] = []  # Ignore objects of which title match
     export_filetype: str = "md"  # Extension of exported text files
-    debug_meta: bool = False  # Include more metadata from SPIP DB in frontmatters
+
+    debug: bool = False  # Enable debug mode
 
     # Searches for a configuration file from standard locations or params
     def _find_config_file(self, *start_locations: str) -> str:

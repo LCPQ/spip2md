@@ -18,18 +18,12 @@ This file contains functions needed to control this package from command line an
 define a printable classes which adds terminal printing capabilites to Spip objects
 """
 # pyright: strict
-import logging
 from os import makedirs
-from os.path import isfile
 from shutil import rmtree
-from typing import Any, Optional
 
-from spip2md import LOGFILE, NAME
 from spip2md.config import Configuration
 from spip2md.spip_models import DB
 from spip2md.write import WritableSite
-
-LOG = logging.getLogger(NAME)  # Define a custom logger for spip2md
 
 # Define styles for terminal printing
 BOLD = 1  # Bold
