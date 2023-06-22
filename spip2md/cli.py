@@ -56,15 +56,21 @@ def esc(*args: int) -> str:
 
 # Extend Site class to add terminal output capabilities
 class PrintableSite(WritableSite):
-    def write_all(self) -> None:
-        pass
+    def write(self) -> str:
+        return "write path"
+
+
+# Initialize DB database connection from config
+def init_db(cfg: Configuration):
+    DB.init(  # type: ignore
+        cfg.db, host=cfg.db_host, user=cfg.db_user, password=cfg.db_pass
+    )
 
 
 def main(*argv: str):
     cfg = Configuration(*argv)  # Get the configuration
 
-    # Initialize the database with settings from CFG
-    DB.init(cfg.db, host=cfg.db_host, user=cfg.db_user, password=cfg.db_pass)
+    init_db(cfg)
 
     # Eventually remove already existing output dir
     if cfg.clear_output:
@@ -73,40 +79,4 @@ def main(*argv: str):
 
     with DB:  # Connect to the database where SPIP site is stored in this block
         # Write everything while printing the output human-readably
-        PrintableSite(cfg).write_all()
-
-
-# def summarize(
-#     tree: dict[Any, Any] | list[Any],
-#     depth: int = -1,
-#     prevkey: Optional[str] = None,
-#     counter: Optional[dict[str, int]] = None,
-# ) -> dict[str, int]:
-#     if counter is None:
-#         counter = {}
-#         # __import__("pprint").pprint(tree)  # DEBUG
-#     if type(tree) == dict:
-#         for key, sub in tree.items():
-#             if type(sub) == list:
-#                 counter = summarize(sub, depth + 1, key, counter)
-#             # if type of sub is str, it’s just the name, don’t count
-#     if type(tree) == list:
-#         for sub in tree:
-#             if prevkey is not None:
-#                 if prevkey not in counter:
-#                     counter[prevkey] = 0
-#                 counter[prevkey] += 1
-#             if type(sub) == dict:
-#                 counter = summarize(sub, depth + 1, None, counter)
-#
-#     # End message only if it’s the root one
-#     if depth == -1:
-#         LOG.debug(tree)
-#         totals: str = ""
-#         for key, val in counter.items():
-#             totals += f"{esc(BOLD)}{val}{esc()} {key}, "
-#         print(f"Exported a total of {totals[:-2]}")
-#         # Warn about issued warnings in log file
-#         if isfile(LOGFILE):
-#             print(f"Check out warnings and infos in {esc(BOLD)}{LOGFILE}{esc()}")
-#     return counter
+        PrintableSite(cfg).write()

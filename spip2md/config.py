@@ -23,7 +23,7 @@ from yaml import Loader, load
 
 # Global configuration object
 class Configuration:
-    config_file: Optional[str] = None  # Location of the config file
+    # config_file: Optional[str] = None  # Location of the config file
 
     name: str = "spip2md"  # Name of program, notably used in logs
 
@@ -80,7 +80,7 @@ class Configuration:
         # Return the first path that actually exists
         for path in config_locations:
             if isfile(path):
-                self.config_file = path
+                # self.config_file = path
                 return path
         # If not found, raise error
         raise FileNotFoundError
@@ -88,7 +88,9 @@ class Configuration:
     def __init__(self, *argv: str):
         try:
             # Read config from config file
-            with open(self._find_config_file(*argv)) as f:
+            with open(self._find_config_file(*argv[1:])) as f:
+                # Tell user about config
+                print(f"Read configuration file from {f.name}")
                 config = load(f.read(), Loader=Loader)
             # Assign configuration for each attribute in config file
             for attr in config:
@@ -100,7 +102,5 @@ class Configuration:
                     setattr(self, attr, directory)
                 else:
                     setattr(self, attr, config[attr])
-            # Tell user about config
-            print(f"Successfully read configuration file from {self.config_file}")
         except FileNotFoundError:
             print("No configuration file found, using defaults")
