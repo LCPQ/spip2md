@@ -19,6 +19,7 @@ and methods to convert them to Markdown + YAML, static site structure
 """
 import logging
 from os.path import basename, splitext
+from typing_extensions import Self
 
 from slugify import slugify
 
@@ -35,22 +36,6 @@ from spip2md.spip_models import (
 )
 
 
-# Unique Spip object ID
-class ObjId:
-    _id: int
-    _type: type
-
-    def __init__(self, obj_id: int, type_string: str) -> None:
-        self._id = obj_id
-        self._type_str = type_string
-
-    def __hash__(self):
-        return hash((self._id, self._type_str))
-
-    def __eq__(self, other: "ObjId"):
-        return (self._id, self._type_str) == (other._id, other._type_str)
-
-
 class ConvertableDocument:
     _log_c: logging.Logger  # Logger for conversion operations
     _cfg: Configuration  # Global configuration
@@ -58,6 +43,7 @@ class ConvertableDocument:
     # Converted fields
     _src: str  # URL
     _slug: str = ""  # URL
+    _id: int
 
     class Meta:
         table_name: str = "spip_document"  # Define the name of the Spip DB table
@@ -80,18 +66,17 @@ class ConvertableRedactional:
     _cfg: Configuration  # Global configuration
     _spip_obj: SpipArticles | SpipRubriques  # The Spip Article this is representing
     _depth: int  # Depth
-    _children: dict[
-        ObjId, "ConvertableDocument | ConvertableRedactional"
-    ] = {}  # documents
-    _index: dict[ObjId, ObjId] = {}  # Index of the next-hop subsection to ObjId obj
+    _children: dict[tuple[str, int], ConvertableDocument] = {}  # Children
     _id: int
     _lang: str
     _authors: tuple[SpipAuteurs, ...]
     _tags: tuple[SpipMots, ...]
 
     # Initialize documents related to self
-    def documents(self, limit: int = 10**3) -> dict[ObjId, ConvertableDocument]:
-        print(
+    def documents(
+        self, limit: int = 10**3
+    ) -> dict[tuple[str, int], ConvertableDocument]:
+        self._log_c.debug(
             "Initialize documents.\n"
             + f"Section: {self._spip_obj.titre}, Depth : {self._depth}"
         )
@@ -108,11 +93,11 @@ class ConvertableRedactional:
             )
         ]
         # Store them mutably
-        return {ObjId(d._id, "document"): d for d in documents}
+        return {("document", d._id): d for d in documents}
 
     # Initialize self authors
     def authors(self) -> tuple[SpipAuteurs, ...]:
-        print("Initialize authors")
+        self._log_c.debug("Initialize authors")
         return (
             SpipAuteurs.select()
             .join(
@@ -124,7 +109,7 @@ class ConvertableRedactional:
 
     # Initialize self tags
     def tags(self) -> tuple[SpipMots]:
-        print("Initialize tags")
+        self._log_c.debug("Initialize tags")
         return (
             SpipMots.select()
             .join(
@@ -137,7 +122,6 @@ class ConvertableRedactional:
 
 class ConvertableArticle(ConvertableRedactional):
     _fileprefix: str = "index"
-    _children: dict[ObjId, ConvertableDocument] = {}  # documents
     # Converted fields
     _surtitle: str  # Content
     _title: str  # Content
@@ -161,21 +145,29 @@ class ConvertableArticle(ConvertableRedactional):
         self._draft = spip_obj.statut != "publie"
         self._children |= self.documents()  # Retreive documents & add them to the index
 
+    # Return children and itself in order to be indexed by the parent
+    def index(
+        self,
+    ) -> dict[tuple[str, int], tuple[str, int]]:
+        return {child_key: ("article", self._id) for child_key in self._children}
+
 
 # Define Section as an Article that can contain other Articles or Sections
 class ConvertableSection(ConvertableRedactional):
     _fileprefix: str = "_index"  # Prefix of written Markdown files
     # sub-sections, documents, articles
     _children: dict[
-        ObjId, "ConvertableSection | ConvertableArticle | ConvertableDocument"
+        tuple[str, int], "ConvertableSection | ConvertableArticle | ConvertableDocument"
     ] = {}
+    # Routing table to objects
+    _index: dict[tuple[str, int], tuple[str, int]] = {}
 
     class Meta:
         table_name: str = "spip_rubriques"  # Define the name of the Spip DB table
 
     # Get articles of this section
     def articles(self, limit: int = 10**6):
-        print(
+        self._log_c.debug(
             "Initialize articles.\n"
             + f"Section: {self._spip_obj.titre}, Depth : {self._depth}"
         )
@@ -188,18 +180,17 @@ class ConvertableSection(ConvertableRedactional):
                 .limit(limit)
             )
         ]
-        # Add these articles children to self index
-        for art in articles:
-            for doc in art._children:
-                self._index[ObjId(doc._id, "document")] = ObjId(art._id, "article")
+        # Add these articles and their children to self index
+        for article in articles:
+            self._index |= article.index()
         # Store them mutably
-        return {ObjId(a._id, "article"): a for a in articles}
+        return {("article", art._id): art for art in articles}
 
     # Get subsections of this section
     def sections(self, limit: int = 10**6):
-        print(
-            "Initialize subsections.\n"
-            + f"Section: {self._spip_obj.titre}, Depth : {self._depth}"
+        self._log_c.debug(
+            "Initialize subsections of\n"
+            + f"section {self._spip_obj.titre} of depth {self._depth}"
         )
         sections = [
             ConvertableSection(sec, self._cfg, self._depth)
@@ -211,10 +202,12 @@ class ConvertableSection(ConvertableRedactional):
             )
         ]
         # Add these sections’s indexes to self index, replacing next hop with section
-        for sec in sections:
-            self._index |= {obj: ObjId(sec._id, "section") for obj in sec._index.keys()}
+        for section in sections:
+            self._index |= {
+                obj_key: ("section", section._id) for obj_key in section._index
+            }
         # Store them mutably
-        return {ObjId(s._id, "section"): s for s in sections}
+        return {("section", sec._id): sec for sec in sections}
 
     def __init__(self, spip_obj: SpipRubriques, cfg: Configuration, parent_depth: int):
         self._log_c = logging.getLogger(cfg.name + ".convert.section")
@@ -232,14 +225,14 @@ class ConvertableSection(ConvertableRedactional):
 class ConvertableSite:
     _log_c: logging.Logger  # Logger for conversion operations
     _cfg: Configuration  # Global configuration
-    _children: dict[ObjId, ConvertableSection] = {}  # Root sections
-    _index: dict[ObjId, ObjId] = {}  # Routing table to nested objects
+    _children: dict[tuple[str, int], ConvertableSection] = {}  # Root sections
+    _index: dict[tuple[str, int], tuple[str, int]] = {}  # Routing table to objects
 
     _id: int = 0  # Parent ID of root sections
     _depth: int = 0  # Depth
 
-    def sections(self) -> dict[ObjId, ConvertableSection]:
-        print("Initialize ROOT sections")
+    def sections(self) -> dict[tuple[str, int], ConvertableSection]:
+        self._log_c.debug("Initialize ROOT sections")
         # Get all sections of parentID root_id
         sections = [
             ConvertableSection(sec, self._cfg, self._depth)
@@ -249,10 +242,15 @@ class ConvertableSite:
                 .order_by(SpipRubriques.date.desc())
             )
         ]
+
         # Add these sections’s indexes to self index, replacing next hop with section
-        for sec in sections:
-            self._index |= {obj: ObjId(sec._id, "section") for obj in sec._index.keys()}
-        return {ObjId(s._id, "section"): s for s in sections}
+        # do this while outputting it as the children
+        def sec_to_index(section: ConvertableSection):
+            for obj_key in section._index:
+                self._index[obj_key] = ("section", section._id)
+            return ("section", section._id)
+
+        return {sec_to_index(subsection): subsection for subsection in sections}
 
     def __init__(self, cfg: Configuration) -> None:
         self._log_c = logging.getLogger(cfg.name + ".convert.site")
