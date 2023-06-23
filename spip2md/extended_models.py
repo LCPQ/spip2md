@@ -63,6 +63,9 @@ DeepDict = dict[str, "list[DeepDict] | list[str] | str"]
 # Define logger for this file’s logs
 LOG = logging.getLogger(NAME + ".models")
 
+# Define type that images can have
+IMG_TYPES = ("jpg", "png", "jpeg", "gif", "webp", "ico")
+
 
 class SpipWritable:
     # From SPIP database
@@ -353,6 +356,7 @@ class SpipRedactional(SpipWritable):
     _text: str
     _url_title: str  # Title in metadata of articles
     _parenturl: str  # URL relative to lang to direct parent
+    _static_img_path: Optional[str] = None  # Path to the static img of this article
 
     # Get rid of other lang than forced in text and modify lang to forced if found
     def translate_multi(
@@ -699,7 +703,26 @@ class SpipRedactional(SpipWritable):
         # Write the content of this object into a file named as self.filename()
         with open(self.dest_path(), "w") as f:
             f.write(self.content())
+        # Write the eventual static image of this object
+        if self._static_img_path:
+            copyfile(
+                self._static_img_path,
+                self.dest_directory() + basename(self._static_img_path),
+            )
         return self.dest_path()
+
+    # Append static images based on filename instead of DB to objects texts
+    def append_static_images(self, obj_str: str = "art", load_str: str = "on"):
+        for t in IMG_TYPES:
+            path: str = CFG.data_dir + obj_str + load_str + str(self._id) + "." + t
+            LOG.debug(f"Search static image of `{self._url_title}` at: {path}")
+            if isfile(path):
+                LOG.debug(f"Found static image of `{self._url_title}` at: {path}")
+                # Append static image to content
+                self._text += f"\n\n![]({basename(path)})"
+                # Store it’s path to write it later
+                self._static_img_path = path
+                break
 
     # Apply post-init conversions and cancel the export if self not of the right lang
     def convert(self, forced_lang: str) -> None:
@@ -712,6 +735,7 @@ class SpipRedactional(SpipWritable):
                 + f" {forced_lang} and it don’t contains"
                 + f" {forced_lang} translation in Markup either"
             )
+        self.append_static_images()
 
 
 class Article(SpipRedactional, SpipArticles):
@@ -867,3 +891,7 @@ class Section(SpipRedactional, SpipRubriques):
             "articles": self.write_children(self.articles(), forced_lang),
             "sections": self.write_children(self.sections(), forced_lang),
         }
+
+    # Append static images based on filename instead of DB to objects texts
+    def append_static_images(self, obj_str: str = "rub", load_str: str = "on"):
+        super().append_static_images(obj_str, load_str)
