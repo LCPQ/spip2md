@@ -354,6 +354,7 @@ class SpipRedactional(SpipWritable):
     langue_choisie: str
     # Converted
     _text: str
+    _tags: list[str] = []
     _url_title: str  # Title in metadata of articles
     _parenturl: str  # URL relative to lang to direct parent
     _static_img_path: Optional[str] = None  # Path to the static img of this article
@@ -378,6 +379,9 @@ class SpipRedactional(SpipWritable):
                     self.lang = forced_lang  # So write-all will not be cancelled
                 # Replace the mutli blocks with the text in the proper lang
                 text = text.replace(block.group(), lang.group(1))
+            else:
+                # Replace the mutli blocks with the text inside
+                text = text.replace(block.group(), block.group(1))
         if lang is None:
             LOG.debug(f"{forced_lang} not found in `{self._url_title}`")
         return text
@@ -569,6 +573,18 @@ class SpipRedactional(SpipWritable):
         LOG.debug(f"Apply conversions to {self.lang} `{self._url_title}` extra")
         self._extra = self.convert_field(self._extra, CFG.metadata_markup)
 
+    def convert_tags(self, forcedlang: str) -> None:
+        def out_tag(tag: SpipMots) -> str:
+            LOG.debug(f"Translate tag of `{self._url_title}`: {tag.descriptif}")
+            return str(tag.descriptif)
+
+        self._tags = [
+            self.translate_multi(forcedlang, out_tag(tag), False)
+            for tag in self.tags()
+            if tag.type not in CFG.ignore_tags_types
+        ]
+        LOG.debug(f"After translation, tags of `{self._url_title}` are {self._tags}")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Initialize converted fields, beginning with underscore
@@ -631,6 +647,28 @@ class SpipRedactional(SpipWritable):
         if len(self._extra) > 0:
             body += "\n\n# EXTRA\n\n" + self._extra
         return body
+
+    def authors(self) -> tuple[SpipAuteurs, ...]:
+        LOG.debug(f"Initialize authors of `{self._url_title}`")
+        return (
+            SpipAuteurs.select()
+            .join(
+                SpipAuteursLiens,
+                on=(SpipAuteurs.id_auteur == SpipAuteursLiens.id_auteur),
+            )
+            .where(SpipAuteursLiens.id_objet == self._id)
+        )
+
+    def tags(self) -> tuple[SpipMots, ...]:
+        LOG.debug(f"Initialize tags of `{self._url_title}`")
+        return (
+            SpipMots.select()
+            .join(
+                SpipMotsLiens,
+                on=(SpipMots.id_mot == SpipMotsLiens.id_mot),
+            )
+            .where(SpipMotsLiens.id_objet == self._id)
+        )
 
     # Write all the documents of this object
     def write_children(
@@ -729,6 +767,7 @@ class SpipRedactional(SpipWritable):
         self.convert_title(forced_lang)
         self.convert_text(forced_lang)
         self.convert_extra()
+        self.convert_tags(forced_lang)
         if self.lang != forced_lang:
             raise LangNotFoundError(
                 f"`{self._url_title}` lang is {self.lang} instead of the wanted"
@@ -764,7 +803,7 @@ class Article(SpipRedactional, SpipArticles):
             "subtitle": self.soustitre,
             "date": self.date_redac,
             "authors": [author.nom for author in self.authors()],
-            "tags": [tag.titre for tag in self.tags()],
+            "tags": self._tags,
         }
         # Add debugging meta if needed
         if CFG.debug_meta:
@@ -786,28 +825,6 @@ class Article(SpipRedactional, SpipArticles):
         if len(self._microblog) > 0:
             body += "\n\n# MICROBLOGGING\n\n" + self._microblog
         return body
-
-    def authors(self) -> tuple[SpipAuteurs, ...]:
-        LOG.debug(f"Initialize authors of `{self._url_title}`")
-        return (
-            SpipAuteurs.select()
-            .join(
-                SpipAuteursLiens,
-                on=(SpipAuteurs.id_auteur == SpipAuteursLiens.id_auteur),
-            )
-            .where(SpipAuteursLiens.id_objet == self._id)
-        )
-
-    def tags(self) -> tuple[SpipMots, ...]:
-        LOG.debug(f"Initialize tags of `{self._url_title}`")
-        return (
-            SpipMots.select()
-            .join(
-                SpipMotsLiens,
-                on=(SpipMots.id_mot == SpipMotsLiens.id_mot),
-            )
-            .where(SpipMotsLiens.id_objet == self._id)
-        )
 
     # Perform all the write steps of this object
     def write_all(
