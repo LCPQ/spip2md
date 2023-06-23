@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "spip2md"
-version = "0.1.0"
+version = "0.1.1"
 description = "Generate a static website with plain Markdown+YAML files from a SPIP CMS database"
 license = "GPL-2.0"
 
