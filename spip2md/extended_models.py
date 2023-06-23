@@ -52,6 +52,8 @@ from spip2md.spip_models import (
     SpipAuteursLiens,
     SpipDocuments,
     SpipDocumentsLiens,
+    SpipMots,
+    SpipMotsLiens,
     SpipRubriques,
 )
 from spip2md.style import BOLD, CYAN, GREEN, WARNING_STYLE, YELLOW, esc
@@ -738,6 +740,7 @@ class Article(SpipRedactional, SpipArticles):
             "subtitle": self.soustitre,
             "date": self.date_redac,
             "authors": [author.nom for author in self.authors()],
+            "tags": [tag.titre for tag in self.tags()],
         }
         # Add debugging meta if needed
         if CFG.debug_meta:
@@ -760,7 +763,7 @@ class Article(SpipRedactional, SpipArticles):
             body += "\n\n# MICROBLOGGING\n\n" + self._microblog
         return body
 
-    def authors(self) -> list[SpipAuteurs]:
+    def authors(self) -> tuple[SpipAuteurs, ...]:
         LOG.debug(f"Initialize authors of `{self._url_title}`")
         return (
             SpipAuteurs.select()
@@ -769,6 +772,17 @@ class Article(SpipRedactional, SpipArticles):
                 on=(SpipAuteurs.id_auteur == SpipAuteursLiens.id_auteur),
             )
             .where(SpipAuteursLiens.id_objet == self._id)
+        )
+
+    def tags(self) -> tuple[SpipMots, ...]:
+        LOG.debug(f"Initialize tags of `{self._url_title}`")
+        return (
+            SpipMots.select()
+            .join(
+                SpipMotsLiens,
+                on=(SpipMots.id_mot == SpipMotsLiens.id_mot),
+            )
+            .where(SpipMotsLiens.id_objet == self._id)
         )
 
     # Perform all the write steps of this object
