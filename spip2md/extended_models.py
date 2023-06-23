@@ -354,7 +354,7 @@ class SpipRedactional(SpipWritable):
     langue_choisie: str
     # Converted
     _text: str
-    _tags: list[str] = []
+    _taxonomies: dict[str, list[str]] = {}
     _url_title: str  # Title in metadata of articles
     _parenturl: str  # URL relative to lang to direct parent
     _static_img_path: Optional[str] = None  # Path to the static img of this article
@@ -573,17 +573,30 @@ class SpipRedactional(SpipWritable):
         LOG.debug(f"Apply conversions to {self.lang} `{self._url_title}` extra")
         self._extra = self.convert_field(self._extra, CFG.metadata_markup)
 
-    def convert_tags(self, forcedlang: str) -> None:
-        def out_tag(tag: SpipMots) -> str:
-            LOG.debug(f"Translate tag of `{self._url_title}`: {tag.descriptif}")
-            return self.convert_field(
-                self.translate_multi(forcedlang, str(tag.descriptif), False)
-            )
+    def convert_taxonomies(self, forcedlang: str) -> None:
+        self._taxonomies = {}
 
-        self._tags = [
-            out_tag(tag) for tag in self.tags() if tag.type not in CFG.ignore_tags_types
-        ]
-        LOG.debug(f"After translation, tags of `{self._url_title}` are {self._tags}")
+        for tag in self.taxonomies():
+            if tag.type not in CFG.ignore_taxonomies:
+                LOG.debug(
+                    f"Translate taxonomy of `{self._url_title}`: {tag.descriptif}"
+                )
+                if str(tag.type) in self._taxonomies:
+                    self._taxonomies[str(tag.type)].append(
+                        self.convert_field(
+                            self.translate_multi(forcedlang, str(tag.descriptif), False)
+                        )
+                    )
+                else:
+                    self._taxonomies[str(tag.type)] = [
+                        self.convert_field(
+                            self.translate_multi(forcedlang, str(tag.descriptif), False)
+                        )
+                    ]
+
+        LOG.debug(
+            f"After translation, taxonomies of `{self._url_title}`: {self._taxonomies}"
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -659,8 +672,8 @@ class SpipRedactional(SpipWritable):
             .where(SpipAuteursLiens.id_objet == self._id)
         )
 
-    def tags(self) -> tuple[SpipMots, ...]:
-        LOG.debug(f"Initialize tags of `{self._url_title}`")
+    def taxonomies(self) -> tuple[SpipMots, ...]:
+        LOG.debug(f"Initialize taxonomies of `{self._url_title}`")
         return (
             SpipMots.select()
             .join(
@@ -767,7 +780,7 @@ class SpipRedactional(SpipWritable):
         self.convert_title(forced_lang)
         self.convert_text(forced_lang)
         self.convert_extra()
-        self.convert_tags(forced_lang)
+        self.convert_taxonomies(forced_lang)
         if self.lang != forced_lang:
             raise LangNotFoundError(
                 f"`{self._url_title}` lang is {self.lang} instead of the wanted"
@@ -803,11 +816,12 @@ class Article(SpipRedactional, SpipArticles):
             "subtitle": self.soustitre,
             "date": self.date_redac,
             "authors": [author.nom for author in self.authors()],
-            "tags": self._tags,
         }
         # Add debugging meta if needed
         if CFG.debug_meta:
-            meta = meta | {"spip_id_rubrique": self.id_rubrique}
+            meta |= {"spip_id_rubrique": self.id_rubrique}
+        if self._taxonomies:
+            meta |= self._taxonomies
         if append is not None:
             return super().frontmatter(meta | append)
         else:
