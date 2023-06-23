@@ -106,8 +106,9 @@ prepend_h1: false # Add title of articles as Markdown h1, looks better on certai
 #     dest: title
 #     repr: "{} _" # (this is the default repr)
 move_fields: []
-# Some Spip Mots (tags) types to not export, typically specific to Spip functions
-ignore_tags_types: ["Gestion du site", "Gestion des articles", "Mise en page"]
+# Some taxonomies (Spip Mots types) to not export, typically specific to Spip functions
+ignore_taxonomies: ["Gestion du site", "Gestion des articles", "Mise en page"]
+rename_taxonomies: { equipes: "tag-equipes" } # Rename taxonomies (prenvent conflict)
 
 # Ignored data settings
 export_drafts: true # Should we export drafts

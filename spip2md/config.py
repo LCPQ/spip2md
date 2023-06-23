@@ -73,6 +73,7 @@ class Configuration:
     export_empty: bool = True  # Should we export empty articles
     remove_html: bool = True  # Should spip2md remove every HTML tags
     ignore_taxonomies = ("Gestion du site", "Gestion des articles", "Mise en page")
+    rename_taxonomies: dict[str, str] = {"equipes": "tag-equipes"}
     metadata_markup: bool = False  # Should spip2md keep the markup in metadata fields
     title_max_length: int = 40  # Maximum length of a single title for directory names
     unknown_char_replacement: str = "??"  # Replaces unknown characters

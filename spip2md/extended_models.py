@@ -577,18 +577,24 @@ class SpipRedactional(SpipWritable):
         self._taxonomies = {}
 
         for tag in self.taxonomies():
-            if tag.type not in CFG.ignore_taxonomies:
+            taxonomy = str(tag.type)
+            if taxonomy not in CFG.ignore_taxonomies:
                 LOG.debug(
                     f"Translate taxonomy of `{self._url_title}`: {tag.descriptif}"
                 )
-                if str(tag.type) in self._taxonomies:
-                    self._taxonomies[str(tag.type)].append(
+                if taxonomy in CFG.rename_taxonomies:
+                    LOG.debug(
+                        f"Rename taxonomy {taxonomy}: {CFG.rename_taxonomies[taxonomy]}"
+                    )
+                    taxonomy = CFG.rename_taxonomies[taxonomy]
+                if str(taxonomy) in self._taxonomies:
+                    self._taxonomies[taxonomy].append(
                         self.convert_field(
                             self.translate_multi(forcedlang, str(tag.descriptif), False)
                         )
                     )
                 else:
-                    self._taxonomies[str(tag.type)] = [
+                    self._taxonomies[taxonomy] = [
                         self.convert_field(
                             self.translate_multi(forcedlang, str(tag.descriptif), False)
                         )
