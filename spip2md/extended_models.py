@@ -576,12 +576,12 @@ class SpipRedactional(SpipWritable):
     def convert_tags(self, forcedlang: str) -> None:
         def out_tag(tag: SpipMots) -> str:
             LOG.debug(f"Translate tag of `{self._url_title}`: {tag.descriptif}")
-            return str(tag.descriptif)
+            return self.convert_field(
+                self.translate_multi(forcedlang, str(tag.descriptif), False)
+            )
 
         self._tags = [
-            self.translate_multi(forcedlang, out_tag(tag), False)
-            for tag in self.tags()
-            if tag.type not in CFG.ignore_tags_types
+            out_tag(tag) for tag in self.tags() if tag.type not in CFG.ignore_tags_types
         ]
         LOG.debug(f"After translation, tags of `{self._url_title}` are {self._tags}")
 
